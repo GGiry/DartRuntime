@@ -14,9 +14,6 @@ import com.google.dart.compiler.DartCompilationPhase;
 import com.google.dart.compiler.DartCompiler;
 import com.google.dart.compiler.DefaultCompilerConfiguration;
 import com.google.dart.compiler.SystemLibraryManager;
-import com.google.dart.compiler.resolver.CompileTimeConstantAnalyzer;
-import com.google.dart.compiler.resolver.Resolver;
-import com.google.dart.compiler.type.TypeAnalyzer;
 
 public class Toto {
 	public static boolean test2() throws IOException {

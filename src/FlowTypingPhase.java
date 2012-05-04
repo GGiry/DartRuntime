@@ -96,7 +96,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 	public DartUnit exec(DartUnit unit, DartCompilerContext context,
 			CoreTypeProvider typeProvider) {
 		unit.accept(new FTVisitor());
-		return null;
+		return unit;
 	}
 
 	private class FTVisitor extends ASTVisitor<Set<Type>> {
