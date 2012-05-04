@@ -1,4 +1,13 @@
-**/*.class
+*.class
+
+# Eclipse files #
+.classpath
+.project
+.settings/
+
+# java bin & dart out #
+bin/
+out/
 
 # Package Files #
 *.jar
