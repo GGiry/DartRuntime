@@ -8,8 +8,3 @@
 # java bin & dart out #
 bin/
 out/
-
-# Package Files #
-*.jar
-*.war
-*.ear
