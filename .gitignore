@@ -8,3 +8,4 @@
 # java bin & dart out #
 bin/
 out/
+lib/
