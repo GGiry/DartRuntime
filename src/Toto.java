@@ -22,36 +22,35 @@ public class Toto {
 		File sourceFile = new File("Hello.dart");
 
 		CompilerOptions compilerOptions = new CompilerOptions();
-		SystemLibraryManager libraryManager = 
-				new SystemLibraryManager(sdkFile, DEFAULT_PLATFORM);
+		SystemLibraryManager libraryManager = new SystemLibraryManager(sdkFile,
+				DEFAULT_PLATFORM);
 
-		String[] options = {
-				"--dart-sdk", sdkPath};
+		String[] options = { "--dart-sdk", sdkPath };
 		try {
 			CommandLineOptions.parse(options, compilerOptions);
 		} catch (CmdLineException e) {
 			e.printStackTrace();
 		}
 
-		CompilerConfiguration config = 
-				new DefaultCompilerConfiguration(compilerOptions, libraryManager) {
+		CompilerConfiguration config = new DefaultCompilerConfiguration(
+				compilerOptions, libraryManager) {
 			@Override
 			public List<DartCompilationPhase> getPhases() {
 				List<DartCompilationPhase> phases = new ArrayList<DartCompilationPhase>();
-			/*
-				phases.add(new CompileTimeConstantAnalyzer.Phase());
-				phases.add(new Resolver.Phase());
-				phases.add(new TypeAnalyzer());
-			//*/
-			/*
-				phases.add(new DisplayPhase());
-			//*/
-			/*
-				phases.add(new InterpretorPhase());
-			//*/
-			//*
+				/*
+				 * phases.add(new CompileTimeConstantAnalyzer.Phase());
+				 * phases.add(new Resolver.Phase()); phases.add(new
+				 * TypeAnalyzer()); //
+				 */
+				/*
+				 * phases.add(new DisplayPhase()); //
+				 */
+				/*
+				 * phases.add(new InterpretorPhase()); //
+				 */
+				// *
 				phases.add(new FlowTypingPhase());
-			//*/
+				// */
 				return phases;
 			}
 		};
