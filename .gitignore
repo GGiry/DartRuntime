@@ -1,4 +1,4 @@
-*.class
+**/*.class
 
 # Package Files #
 *.jar
