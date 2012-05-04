@@ -1,4 +1,4 @@
 // test comment
 void main() {
-	print("Hello, Dart!\n");
+	var a = 12;
 }

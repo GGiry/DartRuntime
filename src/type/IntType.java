@@ -25,11 +25,11 @@ public class IntType extends AbstractType {
 		return min;
 	}
 	
-	public boolean maxIsInfinity() {
+	public boolean isMaxInfinity() {
 		return maxInfinity;
 	}
-
-	public boolean minIsInfinity() {
+	
+	public boolean isMinInfinity() {
 		return minInfinity;
 	}
 }
