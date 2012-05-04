@@ -60,8 +60,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
 	}
 
 	class FTVisitor extends ASTVisitor<Set<Type>> {
-		private ASTVisitor2<Set<Type>, HashMap<Variable, Set<Type>>> visitor;
-		private HashMap<Variable, Set<Type>> map;
+		private final ASTVisitor2<Set<Type>, HashMap<Variable, Set<Type>>> visitor = new ASTVisitor2<>();
+		private HashMap<Variable, Set<Type>> map = new HashMap<>();
+
+		
 
 		public Set<Type> visitNode(DartNode node) {
 			return visitor.visitNode(node, map);
