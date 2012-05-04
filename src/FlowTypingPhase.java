@@ -175,6 +175,16 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
 		@Override
 		public Set<Type> visitBinaryExpression(DartBinaryExpression node) {
+			switch (node.getOperator()) {
+			case ASSIGN:
+			case ASSIGN_ADD:
+			case ASSIGN_SUB:
+			case ASSIGN_MUL:
+			case ASSIGN_DIV:
+			//TODO handle other assign
+				
+			}
+
 			return visitor.visitBinaryExpression(node, map);
 		}
 
