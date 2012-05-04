@@ -9,7 +9,6 @@ import com.google.dart.compiler.ast.DartExpression;
 import com.google.dart.compiler.ast.DartUnit;
 import com.google.dart.compiler.parser.Token;
 import com.google.dart.compiler.resolver.CoreTypeProvider;
-import com.google.dart.compiler.type.Void;
 
 
 public class InterpretorPhase implements DartCompilationPhase {

@@ -16,7 +16,6 @@ import com.google.dart.compiler.ast.DartStringLiteral;
 import com.google.dart.compiler.ast.DartUnit;
 import com.google.dart.compiler.ast.DartUnqualifiedInvocation;
 import com.google.dart.compiler.resolver.CoreTypeProvider;
-import com.google.dart.compiler.type.Void;
 
 public class DisplayPhase implements DartCompilationPhase {
 	@Override
