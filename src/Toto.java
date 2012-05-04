@@ -49,7 +49,7 @@ public class Toto {
 				phases.add(new InterpretorPhase());
 			//*/
 			//*
-				phases.add(new FlawTypingPhase());
+				phases.add(new FlowTypingPhase());
 			//*/
 				return phases;
 			}

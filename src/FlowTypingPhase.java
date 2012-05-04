@@ -1,6 +1,9 @@
 import java.util.HashMap;
-import java.util.List;
 import java.util.Set;
+
+import type.Type;
+import variable.Variable;
+import visitor.ASTVisitor2;
 
 import com.google.dart.compiler.DartCompilationPhase;
 import com.google.dart.compiler.DartCompilerContext;
@@ -13,7 +16,6 @@ import com.google.dart.compiler.ast.DartBlock;
 import com.google.dart.compiler.ast.DartBooleanLiteral;
 import com.google.dart.compiler.ast.DartBreakStatement;
 import com.google.dart.compiler.ast.DartCase;
-import com.google.dart.compiler.ast.DartCatchBlock;
 import com.google.dart.compiler.ast.DartClass;
 import com.google.dart.compiler.ast.DartClassMember;
 import com.google.dart.compiler.ast.DartComment;
@@ -38,55 +40,16 @@ import com.google.dart.compiler.ast.DartFunctionTypeAlias;
 import com.google.dart.compiler.ast.DartGotoStatement;
 import com.google.dart.compiler.ast.DartIdentifier;
 import com.google.dart.compiler.ast.DartIfStatement;
-import com.google.dart.compiler.ast.DartImportDirective;
-import com.google.dart.compiler.ast.DartInitializer;
-import com.google.dart.compiler.ast.DartIntegerLiteral;
 import com.google.dart.compiler.ast.DartInvocation;
-import com.google.dart.compiler.ast.DartLabel;
-import com.google.dart.compiler.ast.DartLibraryDirective;
 import com.google.dart.compiler.ast.DartLiteral;
-import com.google.dart.compiler.ast.DartMapLiteral;
-import com.google.dart.compiler.ast.DartMapLiteralEntry;
-import com.google.dart.compiler.ast.DartMethodDefinition;
 import com.google.dart.compiler.ast.DartMethodInvocation;
-import com.google.dart.compiler.ast.DartNamedExpression;
-import com.google.dart.compiler.ast.DartNativeBlock;
-import com.google.dart.compiler.ast.DartNativeDirective;
-import com.google.dart.compiler.ast.DartNewExpression;
 import com.google.dart.compiler.ast.DartNode;
-import com.google.dart.compiler.ast.DartNullLiteral;
-import com.google.dart.compiler.ast.DartParameter;
-import com.google.dart.compiler.ast.DartParameterizedTypeNode;
-import com.google.dart.compiler.ast.DartParenthesizedExpression;
-import com.google.dart.compiler.ast.DartPropertyAccess;
-import com.google.dart.compiler.ast.DartRedirectConstructorInvocation;
-import com.google.dart.compiler.ast.DartResourceDirective;
-import com.google.dart.compiler.ast.DartReturnStatement;
-import com.google.dart.compiler.ast.DartSourceDirective;
 import com.google.dart.compiler.ast.DartStatement;
-import com.google.dart.compiler.ast.DartStringInterpolation;
-import com.google.dart.compiler.ast.DartStringLiteral;
 import com.google.dart.compiler.ast.DartSuperConstructorInvocation;
-import com.google.dart.compiler.ast.DartSuperExpression;
 import com.google.dart.compiler.ast.DartSwitchMember;
-import com.google.dart.compiler.ast.DartSwitchStatement;
-import com.google.dart.compiler.ast.DartSyntheticErrorExpression;
-import com.google.dart.compiler.ast.DartSyntheticErrorIdentifier;
-import com.google.dart.compiler.ast.DartSyntheticErrorStatement;
-import com.google.dart.compiler.ast.DartThisExpression;
-import com.google.dart.compiler.ast.DartThrowStatement;
-import com.google.dart.compiler.ast.DartTryStatement;
-import com.google.dart.compiler.ast.DartTypeExpression;
-import com.google.dart.compiler.ast.DartTypeNode;
-import com.google.dart.compiler.ast.DartTypeParameter;
-import com.google.dart.compiler.ast.DartUnaryExpression;
 import com.google.dart.compiler.ast.DartUnit;
 import com.google.dart.compiler.ast.DartUnqualifiedInvocation;
-import com.google.dart.compiler.ast.DartVariable;
-import com.google.dart.compiler.ast.DartVariableStatement;
-import com.google.dart.compiler.ast.DartWhileStatement;
 import com.google.dart.compiler.resolver.CoreTypeProvider;
-import com.google.dart.compiler.type.Void;
 
 public class FlowTypingPhase implements DartCompilationPhase {
 	@Override
@@ -96,170 +59,170 @@ public class FlowTypingPhase implements DartCompilationPhase {
 		return null;
 	}
 
-	class FTVisitor extends ASTVisitor<Void> {
-		ASTVisitor2<Void, HashMap<K, V>> visitor;
-		private HashMap<K, Set<Type>> map;
+	class FTVisitor extends ASTVisitor<Set<Type>> {
+		ASTVisitor2<Set<Type>, HashMap<Variable, Set<Type>>> visitor;
+		private HashMap<Variable, Set<Type>> map;
 
-		public Void visitNode(DartNode node) {
+		public Set<Type> visitNode(DartNode node) {
 			return visitor.visitNode(node, map);
 		}
 
-		public Void visitDirective(DartDirective node) {
+		public Set<Type> visitDirective(DartDirective node) {
 			return visitor.visitDirective(node, map);
 		}
 
-		public Void visitInvocation(DartInvocation node) {
+		public Set<Type> visitInvocation(DartInvocation node) {
 			return visitor.visitInvocation(node, map);
 		}
 
-		public Void visitExpression(DartExpression node)
+		public Set<Type> visitExpression(DartExpression node)
 		{
 			return visitor.visitExpression(node, map);
 		}
 
-		public Void visitStatement(DartStatement node) {
+		public Set<Type> visitStatement(DartStatement node) {
 			return visitor.visitStatement(node, map);
 		}
 
-		public Void visitLiteral(DartLiteral node) {
+		public Set<Type> visitLiteral(DartLiteral node) {
 			return visitor.visitLiteral(node, map);
 		}
 
-		public Void visitGotoStatement(DartGotoStatement node) {
+		public Set<Type> visitGotoStatement(DartGotoStatement node) {
 			return visitor.visitGotoStatement(node, map);
 		}
 
-		public Void visitSwitchMember(DartSwitchMember node) {
+		public Set<Type> visitSwitchMember(DartSwitchMember node) {
 			return visitor.visitSwitchMember(node, map);
 		}
 
-		public Void visitDeclaration(DartDeclaration<?> node) {
+		public Set<Type> visitDeclaration(DartDeclaration<?> node) {
 			return visitor.visitDeclaration(node, map);
 		}
 
-		public Void visitClassMember(DartClassMember<?> node) {
+		public Set<Type> visitClassMember(DartClassMember<?> node) {
 			return visitor.visitClassMember(node, map);
 		}
 
-		public Void visitComment(DartComment node) {
+		public Set<Type> visitComment(DartComment node) {
 			return visitor.visitComment(node, map);
 		}
 
-		public Void visitArrayAccess(DartArrayAccess node) {
+		public Set<Type> visitArrayAccess(DartArrayAccess node) {
 			return visitor.visitArrayAccess(node, map);
 		}
 
-		public Void visitArrayLiteral(DartArrayLiteral node) {
+		public Set<Type> visitArrayLiteral(DartArrayLiteral node) {
 			return visitor.visitArrayLiteral(node, map);
 		}
 
-		public Void visitAssertion(DartAssertion node) {
+		public Set<Type> visitAssertion(DartAssertion node) {
 			return visitor.visitAssertion(node, map);
 		}
 
-		public Void visitBinaryExpression(DartBinaryExpression node) {
+		public Set<Type> visitBinaryExpression(DartBinaryExpression node) {
 			return visitor.visitBinaryExpression(node, map);
 		}
 
-		public Void visitBlock(DartBlock node) {
+		public Set<Type> visitBlock(DartBlock node) {
 			return visitor.visitBlock(node, map);
 		}
 
-		public Void visitBooleanLiteral(DartBooleanLiteral node) {
+		public Set<Type> visitBooleanLiteral(DartBooleanLiteral node) {
 			return visitor.visitBooleanLiteral(node, map);
 		}
 
-		public Void visitBreakStatement(DartBreakStatement node) {
+		public Set<Type> visitBreakStatement(DartBreakStatement node) {
 			return visitor.visitBreakStatement(node, map);
 		}
 
-		public Void visitFunctionObjectInvocation(
-				DartFunctionObjectInvocation node, map) {
-			return visitor.visitFunctionObjectInvocation(node);
+		public Set<Type> visitFunctionObjectInvocation(
+				DartFunctionObjectInvocation node) {
+			return visitor.visitFunctionObjectInvocation(node, map);
 		}
 
-		public Void visitMethodInvocation(DartMethodInvocation node) {
+		public Set<Type> visitMethodInvocation(DartMethodInvocation node) {
 			return visitor.visitMethodInvocation(node, map);
 		}
 
-		public Void visitUnqualifiedInvocation(DartUnqualifiedInvocation node) {
+		public Set<Type> visitUnqualifiedInvocation(DartUnqualifiedInvocation node) {
 			return visitor.visitUnqualifiedInvocation(node, map);
 		}
 
-		public Void visitSuperConstructorInvocation(
-				DartSuperConstructorInvocation node, map) {
-			return visitor.visitSuperConstructorInvocation(node);
+		public Set<Type> visitSuperConstructorInvocation(
+				DartSuperConstructorInvocation node) {
+			return visitor.visitSuperConstructorInvocation(node, map);
 		}
 
-		public Void visitCase(DartCase node) {
+		public Set<Type> visitCase(DartCase node) {
 			return visitor.visitCase(node, map);
 		}
 
-		public Void visitClass(DartClass node) {
+		public Set<Type> visitClass(DartClass node) {
 			return visitor.visitClass(node, map);
 		}
 
-		public Void visitConditional(DartConditional node) {
+		public Set<Type> visitConditional(DartConditional node) {
 			return visitor.visitConditional(node, map);
 		}
 
-		public Void visitContinueStatement(DartContinueStatement node) {
+		public Set<Type> visitContinueStatement(DartContinueStatement node) {
 			return visitor.visitContinueStatement(node, map);
 		}
 
-		public Void visitDefault(DartDefault node) {
+		public Set<Type> visitDefault(DartDefault node) {
 			return visitor.visitDefault(node, map);
 		}
 
-		public Void visitDoubleLiteral(DartDoubleLiteral node) {
+		public Set<Type> visitDoubleLiteral(DartDoubleLiteral node) {
 			return visitor.visitDoubleLiteral(node, map);
 		}
 
-		public Void visitDoWhileStatement(DartDoWhileStatement node) {
+		public Set<Type> visitDoWhileStatement(DartDoWhileStatement node) {
 			return visitor.visitDoWhileStatement(node, map);
 		}
 
-		public Void visitEmptyStatement(DartEmptyStatement node) {
+		public Set<Type> visitEmptyStatement(DartEmptyStatement node) {
 			return visitor.visitEmptyStatement(node, map);
 		}
 
-		public Void visitExprStmt(DartExprStmt node) {
+		public Set<Type> visitExprStmt(DartExprStmt node) {
 			return visitor.visitExprStmt(node, map);
 		}
 
-		public Void visitField(DartField node) {
+		public Set<Type> visitField(DartField node) {
 			return visitor.visitField(node, map);
 		}
 
-		public Void visitFieldDefinition(DartFieldDefinition node) {
+		public Set<Type> visitFieldDefinition(DartFieldDefinition node) {
 			return visitor.visitFieldDefinition(node, map);
 		}
 
-		public Void visitForInStatement(DartForInStatement node) {
+		public Set<Type> visitForInStatement(DartForInStatement node) {
 			return visitor.visitForInStatement(node, map);
 		}
 
-		public Void visitForStatement(DartForStatement node) {
+		public Set<Type> visitForStatement(DartForStatement node) {
 			return visitor.visitForStatement(node, map);
 		}
 
-		public Void visitFunction(DartFunction node) {
+		public Set<Type> visitFunction(DartFunction node) {
 			return visitor.visitFunction(node, map);
 		}
 
-		public Void visitFunctionExpression(DartFunctionExpression node) {
+		public Set<Type> visitFunctionExpression(DartFunctionExpression node) {
 			return visitor.visitFunctionExpression(node, map);
 		}
 
-		public Void visitFunctionTypeAlias(DartFunctionTypeAlias node) {
+		public Set<Type> visitFunctionTypeAlias(DartFunctionTypeAlias node) {
 			return visitor.visitFunctionTypeAlias(node, map);
 		}
 
-		public Void visitIdentifier(DartIdentifier node) {
+		public Set<Type> visitIdentifier(DartIdentifier node) {
 			return visitor.visitIdentifier(node, map);
 		}
 
-		public Void visitIfStatement(DartIfStatement node) {
+		public Set<Type> visitIfStatement(DartIfStatement node) {
 			return visitor.visitIfStatement(node, map);
 		}
 	}
