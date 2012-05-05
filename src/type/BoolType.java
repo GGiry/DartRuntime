@@ -45,6 +45,17 @@ public class BoolType extends AbstractType {
 	}
 	
 	@Override
+	public Type asNonNull() {
+	  if (!isNullable()) {
+	    return this;
+	  }
+	  if (constant == null) {
+	    return Types.BOOL_NON_NULL_TYPE;
+	  }
+	  return (constant)? Types.TRUE: Types.FALSE;
+	}
+	
+	@Override
 	public Boolean asConstant() {
 	  return constant;
 	}

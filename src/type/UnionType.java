@@ -63,6 +63,14 @@ public class UnionType extends AbstractType {
   }
   
   @Override
+  public Type asNonNull() {
+    if (!isNullable()) {
+      return this;
+    }
+    return new UnionType(false, types);
+  }
+  
+  @Override
   Type merge(AbstractType type) {
     if (type instanceof UnionType) {
       UnionType unionType = (UnionType)type;

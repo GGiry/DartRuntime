@@ -19,5 +19,11 @@ public interface Type {
 	 */
 	Type asNullable();
 	
+	/** 
+   * Returns the non null type of the current type.
+   * @return the non null type of the current type.
+   */
+	Type asNonNull();
+	
 	public static final Object NULL_VALUE = new Object();
 }

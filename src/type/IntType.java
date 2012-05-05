@@ -82,6 +82,17 @@ public class IntType extends AbstractType {
 	}
 	
 	@Override
+	public Type asNonNull() {
+	  if (!isNullable()) {
+	    return this;
+	  }
+	  if (minBound == null && maxBound == null) {
+      return Types.INT_NON_NULL_TYPE;
+    }
+    return new IntType(false, minBound, maxBound);
+	}
+	
+	@Override
 	public BigInteger asConstant() {
 	  if (minBound == maxBound) {
 	    return minBound;

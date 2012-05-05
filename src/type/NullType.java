@@ -21,6 +21,11 @@ public class NullType implements Type {
 	}
 	
 	@Override
+	public Type asNonNull() {
+	  throw new IllegalStateException("null type");
+	}
+	
+	@Override
 	public Object asConstant() {
 	  return NULL_VALUE;
 	}

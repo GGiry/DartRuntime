@@ -38,7 +38,21 @@ public class DoubleType extends AbstractType {
     if (isNullable()) {
       return this;
     }
-    return Types.DOUBLE_TYPE;
+    if (constant == null) {
+      return Types.DOUBLE_TYPE;
+    }
+    return new DoubleType(true, constant);
+  }
+  
+  @Override
+  public Type asNonNull() {
+    if (!isNullable()) {
+      return this;
+    }
+    if (constant == null) {
+      return Types.DOUBLE_NON_NULL_TYPE;
+    }
+    return new DoubleType(false, constant);
   }
   
   @Override
