@@ -1,6 +1,5 @@
 package type;
 
-import java.util.HashMap;
 import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
