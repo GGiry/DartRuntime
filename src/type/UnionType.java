@@ -51,7 +51,12 @@ public class UnionType extends AbstractType {
   
   @Override
   public String toString() {
-    return "union" + (isNullable()? "?": "")+types;
+    return super.toString()+types;
+  }
+  
+  @Override
+  public String getName() {
+    return "union";
   }
   
   @Override
@@ -100,6 +105,6 @@ public class UnionType extends AbstractType {
   
   @Override
   public Object asConstant() {
-    return NULL_VALUE;  // an union is never constant
+    return null;
   }
 }

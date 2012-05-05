@@ -3,7 +3,9 @@ package type;
 import java.math.BigInteger;
 import java.util.Objects;
 
-public class IntType extends AbstractType {
+import com.google.dart.compiler.resolver.ClassElement;
+
+public class IntType extends PrimitiveType {
   private final BigInteger minBound;
   private final BigInteger maxBound;
   
@@ -38,8 +40,18 @@ public class IntType extends AbstractType {
   }
   
   @Override
+  public String getName() {
+    return "int";
+  }
+  
+  @Override
   public String toString() {
-    return "int" + (isNullable()? "?": "") + " ["+infinity('-', minBound)+','+infinity('+', maxBound)+']';
+    return super.toString() + " ["+infinity('-', minBound)+','+infinity('+', maxBound)+']';
+  }
+  
+  @Override
+  ClassElement getLazyElement() {
+    return CoreTypeRepository.getCoreTypeRepository().getIntClassElement();
   }
   
   private static String infinity(char sign, BigInteger value) {
@@ -71,7 +83,7 @@ public class IntType extends AbstractType {
   }
 	
 	@Override
-	public Type asNullable() {
+	public IntType asNullable() {
 	  if (isNullable()) {
 	    return this;
 	  }
@@ -82,7 +94,7 @@ public class IntType extends AbstractType {
 	}
 	
 	@Override
-	public Type asNonNull() {
+	public IntType asNonNull() {
 	  if (!isNullable()) {
 	    return this;
 	  }

@@ -2,7 +2,9 @@ package type;
 
 import java.util.Objects;
 
-public class DoubleType extends AbstractType {
+import com.google.dart.compiler.resolver.ClassElement;
+
+public class DoubleType extends PrimitiveType {
 	private final Double constant;
 
   DoubleType(boolean isNullable, Double constant) {
@@ -29,12 +31,22 @@ public class DoubleType extends AbstractType {
   }
   
   @Override
-  public String toString() {
-    return "double" + (isNullable()? "?": "") + ((constant != null)? constant: "");
+  public String getName() {
+    return "double";
   }
   
   @Override
-  public Type asNullable() {
+  public String toString() {
+    return super.toString() + ((constant != null)? constant: "");
+  }
+  
+  @Override
+  ClassElement getLazyElement() {
+    return CoreTypeRepository.getCoreTypeRepository().getDoubleClassElement();
+  }
+  
+  @Override
+  public DoubleType asNullable() {
     if (isNullable()) {
       return this;
     }
@@ -45,7 +57,7 @@ public class DoubleType extends AbstractType {
   }
   
   @Override
-  public Type asNonNull() {
+  public DoubleType asNonNull() {
     if (!isNullable()) {
       return this;
     }

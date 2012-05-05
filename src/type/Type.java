@@ -1,6 +1,10 @@
 package type;
 
 public interface Type {
+  /**
+   * Returns whenever or not the current type allows null. 
+   * @return true is the current type is nullable, false otherwise. 
+   */
 	boolean isNullable();
 	
 	/**

@@ -2,7 +2,9 @@ package type;
 
 import java.util.Objects;
 
-public class BoolType extends AbstractType {
+import com.google.dart.compiler.resolver.ClassElement;
+
+public class BoolType extends PrimitiveType {
   private final Boolean constant;
   
 	BoolType(boolean nullable, Boolean constant) {
@@ -29,12 +31,22 @@ public class BoolType extends AbstractType {
 	}
 	
 	@Override
-	public String toString() {
-	  return "bool" + (isNullable()? "?": "") + ((constant != null)? constant: "");
+	public String getName() {
+	  return "bool";
 	}
 	
 	@Override
-	public Type asNullable() {
+	public String toString() {
+	  return super.toString() + ((constant != null)? constant: "");
+	}
+	
+	@Override
+	ClassElement getLazyElement() {
+	  return CoreTypeRepository.getCoreTypeRepository().getBoolClassElement();
+	}
+	
+	@Override
+	public BoolType asNullable() {
 	  if (isNullable()) {
 	    return this;
 	  }
@@ -45,7 +57,7 @@ public class BoolType extends AbstractType {
 	}
 	
 	@Override
-	public Type asNonNull() {
+	public BoolType asNonNull() {
 	  if (!isNullable()) {
 	    return this;
 	  }

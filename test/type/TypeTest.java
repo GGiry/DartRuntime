@@ -24,8 +24,8 @@ public class TypeTest {
   
   @Test
   public void nullableStillConst() {
-    Assert.assertEquals(Types.TRUE.asNullable().asConstant(), true);
-    Assert.assertEquals(Types.FALSE.asNullable().asConstant(), false);
+    Assert.assertEquals(Types.TRUE.asNullable().asConstant(), (Boolean)true);
+    Assert.assertEquals(Types.FALSE.asNullable().asConstant(), (Boolean)false);
     Assert.assertEquals(IntType.constant(BigInteger.TEN).asNullable().asConstant(), BigInteger.TEN);
     Assert.assertEquals(DoubleType.constant(42.0).asNullable().asConstant(), 42.0);
     Assert.assertEquals(Types.NULL_TYPE.asNullable().asConstant(), Type.NULL_VALUE);
@@ -33,8 +33,8 @@ public class TypeTest {
   
   @Test
   public void nonNullStillConst() {
-    Assert.assertEquals(Types.TRUE.asNonNull().asConstant(), true);
-    Assert.assertEquals(Types.FALSE.asNonNull().asConstant(), false);
+    Assert.assertEquals(Types.TRUE.asNonNull().asConstant(), (Boolean)true);
+    Assert.assertEquals(Types.FALSE.asNonNull().asConstant(), (Boolean)false);
     Assert.assertEquals(IntType.constant(BigInteger.TEN).asNonNull().asConstant(), BigInteger.TEN);
     Assert.assertEquals(DoubleType.constant(42.0).asNonNull().asConstant(), 42.0);
   }
