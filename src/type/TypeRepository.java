@@ -6,7 +6,7 @@ import com.google.dart.compiler.resolver.ClassElement;
 
 public class TypeRepository {
   private final /*maybenull*/TypeRepository typeRepository;
-  private final HashMap<ClassElement, InterfaceType> map = new HashMap<>();
+  final HashMap<ClassElement, Type> map = new HashMap<>();
   
   public TypeRepository(/*maybenull*/TypeRepository typeRepository) {
     this.typeRepository = typeRepository;

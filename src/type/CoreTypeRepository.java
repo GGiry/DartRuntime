@@ -11,6 +11,14 @@ public class CoreTypeRepository extends TypeRepository {
   private CoreTypeRepository(CoreTypeProvider coreTypeProvider) {
     super(null);
     this.coreTypeProvider = coreTypeProvider;
+    
+    // fill up with primitive type,
+    // this must be done *after* the initialization of
+    // the field coreTypeProvider
+    map.put(getBoolClassElement(), Types.BOOL_TYPE);
+    map.put(getIntClassElement(), Types.INT_TYPE);
+    map.put(getDoubleClassElement(), Types.DOUBLE_TYPE);
+    //TODO maybe add void here ??
   }
   
   private static CoreTypeRepository coreTypeRepository;
