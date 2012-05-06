@@ -1,7 +1,5 @@
 package visitor;
 
-import java.util.List;
-
 import com.google.dart.compiler.ast.ASTVisitor;
 import com.google.dart.compiler.ast.DartArrayAccess;
 import com.google.dart.compiler.ast.DartArrayLiteral;
@@ -84,10 +82,28 @@ import com.google.dart.compiler.ast.DartVariable;
 import com.google.dart.compiler.ast.DartVariableStatement;
 import com.google.dart.compiler.ast.DartWhileStatement;
 
-public class ASTVisitor2<R, P> extends ASTVisitor<R> {
+public class ASTVisitor2<R, P> {
+  private final BridgeASTVisitor<R, P> bridgeASTVisitor;
+  
+  public ASTVisitor2() {
+    bridgeASTVisitor = new BridgeASTVisitor<>(this);
+  }
+  
+  public ASTVisitor<R> asASTVisitor() {
+    return bridgeASTVisitor; 
+  }
+  
+  protected R accept(DartNode node, P parameter) {
+    bridgeASTVisitor.parameter = parameter;
+    try {
+      return node.accept(bridgeASTVisitor);
+    } finally {
+      bridgeASTVisitor.parameter = null;
+    }
+  }
+  
 	public R visitNode(DartNode node, P parameter) {
-		node.visitChildren(this);
-		return null;
+		throw new AssertionError("visit on "+node.getClass().getName()+" not implemented");
 	}
 
 	public R visitDirective(DartDirective node, P parameter) {
@@ -392,14 +408,6 @@ public class ASTVisitor2<R, P> extends ASTVisitor<R> {
 
 	public R visitWhileStatement(DartWhileStatement node, P parameter) {
 		return visitStatement(node, parameter);
-	}
-
-	public void visit(List<? extends DartNode> nodes, P parameter) {
-		if (nodes != null) {
-			for (DartNode node : nodes) {
-				node.accept(this);
-			}
-		}
 	}
 
 	public R visitNamedExpression(DartNamedExpression node, P parameter) {

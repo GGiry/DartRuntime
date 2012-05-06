@@ -37,11 +37,11 @@ public class CoreTypeRepository extends TypeRepository {
     return coreTypeProvider.getDoubleType().getElement();
   }
   
-  public static void createCoreTypeRepository(CoreTypeProvider coreTypeProvider) {
+  public static CoreTypeRepository createCoreTypeRepository(CoreTypeProvider coreTypeProvider) {
     Objects.requireNonNull(coreTypeProvider);
     if (coreTypeRepository != null) {
       throw new IllegalStateException("core type repository already initialized");
     }
-    coreTypeRepository = new CoreTypeRepository(coreTypeProvider);
+    return coreTypeRepository = new CoreTypeRepository(coreTypeProvider);
   }
 }
