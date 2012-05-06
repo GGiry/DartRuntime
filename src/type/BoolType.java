@@ -68,6 +68,11 @@ public class BoolType extends PrimitiveType {
 	}
 	
 	@Override
+  public <R,P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
+	  return visitor.visitBoolType(this, parameter);
+	}
+	
+	@Override
 	public Boolean asConstant() {
 	  return constant;
 	}

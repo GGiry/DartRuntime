@@ -68,6 +68,11 @@ public class DoubleType extends PrimitiveType {
   }
   
   @Override
+  public <R,P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
+    return visitor.visitDoubleType(this, parameter);
+  }
+  
+  @Override
   public Double asConstant() {
     return constant;
   }

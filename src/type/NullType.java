@@ -26,6 +26,11 @@ public class NullType implements Type {
 	}
 	
 	@Override
+  public <R,P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
+    return visitor.visitNullType(this, parameter);
+  }
+	
+	@Override
 	public Object asConstant() {
 	  return NULL_VALUE;
 	}

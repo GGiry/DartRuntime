@@ -105,6 +105,11 @@ public class IntType extends PrimitiveType {
 	}
 	
 	@Override
+  public <R,P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
+    return visitor.visitIntType(this, parameter);
+  }
+	
+	@Override
 	public BigInteger asConstant() {
 	  if (minBound == maxBound) {
 	    return minBound;

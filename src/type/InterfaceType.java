@@ -64,6 +64,11 @@ public class InterfaceType extends OwnerType {
   }
 
   @Override
+  public <R,P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
+    return visitor.visitInterfaceType(this, parameter);
+  }
+  
+  @Override
   public Object asConstant() {
     return null;
   }

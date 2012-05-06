@@ -104,6 +104,11 @@ public class UnionType extends AbstractType {
   }
   
   @Override
+  public <R,P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
+    return visitor.visitUnionType(this, parameter);
+  }
+  
+  @Override
   public Object asConstant() {
     return null;
   }
