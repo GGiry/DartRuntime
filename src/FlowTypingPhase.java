@@ -1,6 +1,5 @@
 import java.util.HashMap;
 
-import type.BoolType;
 import type.CoreTypeRepository;
 import type.DoubleType;
 import type.IntType;
@@ -14,6 +13,7 @@ import com.google.dart.compiler.DartCompilerContext;
 import com.google.dart.compiler.ast.DartBinaryExpression;
 import com.google.dart.compiler.ast.DartBlock;
 import com.google.dart.compiler.ast.DartBooleanLiteral;
+import com.google.dart.compiler.ast.DartClass;
 import com.google.dart.compiler.ast.DartDoubleLiteral;
 import com.google.dart.compiler.ast.DartExprStmt;
 import com.google.dart.compiler.ast.DartFunction;
@@ -23,7 +23,6 @@ import com.google.dart.compiler.ast.DartMethodDefinition;
 import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.ast.DartParameter;
 import com.google.dart.compiler.ast.DartStatement;
-import com.google.dart.compiler.ast.DartStringLiteral;
 import com.google.dart.compiler.ast.DartTypeNode;
 import com.google.dart.compiler.ast.DartUnit;
 import com.google.dart.compiler.ast.DartVariable;
@@ -34,9 +33,6 @@ import com.google.dart.compiler.resolver.VariableElement;
 public class FlowTypingPhase implements DartCompilationPhase {
   @Override
   public DartUnit exec(DartUnit unit, DartCompilerContext context, CoreTypeProvider coreTypeProvider) {
-
-    System.err.println("CoreTypeProvider: " + coreTypeProvider);
-
     // initialize core type repository
     CoreTypeRepository coreTypeRepository = CoreTypeRepository.initCoreTypeRepository(coreTypeProvider);
 
@@ -64,6 +60,12 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     @Override
+    public Type visitClass(DartClass node, FlowEnv parameter) {
+      // TODO
+      return null;
+    }
+
+    @Override
     public Type visitMethodDefinition(DartMethodDefinition node, FlowEnv parameter) {
       accept(node.getFunction(), parameter);
       return null;
@@ -72,15 +74,12 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitFunction(DartFunction node, FlowEnv parameter) {
       FlowEnv env = new FlowEnv(parameter);
-      System.err.println("env: " + env);
+
       for (DartParameter param : node.getParameters()) {
         env.register(param.getElement(), accept(param.getTypeNode(), env));
       }
 
       accept(node.getBody(), env);
-
-      System.out.println("func: " + env);
-
       return null;
     }
 
@@ -163,10 +162,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitTypeNode(DartTypeNode node, FlowEnv parameter) {
-      System.out.println("visitTypeNode: " + node + ", " + node.getTypeArguments());
-      for (DartTypeNode dtn : node.getTypeArguments()) {
-        System.out.println("visitTypeNode: " + dtn);
-      }
+      // TODO
       return null;
     }
 
