@@ -487,8 +487,7 @@ class BridgeASTVisitor<R, P> extends ASTVisitor<R> {
   }
 
   @Override
-  public R visitRedirectConstructorInvocation(
-      DartRedirectConstructorInvocation node) {
+  public R visitRedirectConstructorInvocation(DartRedirectConstructorInvocation node) {
     return visitor2.visitRedirectConstructorInvocation(node, parameter);
   }
 

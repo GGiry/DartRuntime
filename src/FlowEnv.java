@@ -8,12 +8,12 @@ public class FlowEnv {
   private final HashMap<VariableElement, Type> variableTypeMap = new HashMap<>();
   private final FlowEnv parent;
 
-  public FlowEnv(/*maybenull*/FlowEnv parent) {
+  public FlowEnv(/* maybenull */FlowEnv parent) {
     this.parent = parent;
   }
-  
+
   public Type getType(VariableElement variable) {
-    Type type =  variableTypeMap.get(variable);
+    Type type = variableTypeMap.get(variable);
     if (type == null) {
       if (parent != null) {
         return parent.getType(variable);

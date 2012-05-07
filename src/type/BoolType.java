@@ -28,8 +28,7 @@ public class BoolType extends PrimitiveType {
       return false;
     }
     BoolType boolType = (BoolType) obj;
-    return isNullable() == boolType.isNullable()
-        && Objects.equals(constant, boolType.constant);
+    return isNullable() == boolType.isNullable() && Objects.equals(constant, boolType.constant);
   }
 
   @Override
@@ -70,8 +69,7 @@ public class BoolType extends PrimitiveType {
   }
 
   @Override
-  public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor,
-      P parameter) {
+  public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
     return visitor.visitBoolType(this, parameter);
   }
 

@@ -24,13 +24,11 @@ public class UnionType extends AbstractType {
     return new UnionType(unionType.isNullable() || type.isNullable(), types);
   }
 
-  private static UnionType createUnionType(UnionType unionType1,
-      UnionType unionType2) {
+  private static UnionType createUnionType(UnionType unionType1, UnionType unionType2) {
     HashSet<Type> types = new HashSet<>();
     types.addAll(unionType1.types);
     types.addAll(unionType2.types);
-    return new UnionType(unionType1.isNullable() || unionType2.isNullable(),
-        types);
+    return new UnionType(unionType1.isNullable() || unionType2.isNullable(), types);
   }
 
   @Override
@@ -47,8 +45,7 @@ public class UnionType extends AbstractType {
       return false;
     }
     UnionType unionType = (UnionType) obj;
-    return isNullable() == unionType.isNullable()
-        && types.equals(unionType.types);
+    return isNullable() == unionType.isNullable() && types.equals(unionType.types);
   }
 
   @Override
@@ -106,8 +103,7 @@ public class UnionType extends AbstractType {
   }
 
   @Override
-  public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor,
-      P parameter) {
+  public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
     return visitor.visitUnionType(this, parameter);
   }
 

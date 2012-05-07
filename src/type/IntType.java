@@ -26,8 +26,7 @@ public class IntType extends PrimitiveType {
 
   @Override
   public int hashCode() {
-    return (isNullable() ? 1 : 0) ^ Objects.hashCode(minBound)
-        ^ Integer.rotateLeft(Objects.hashCode(maxBound), 16);
+    return (isNullable() ? 1 : 0) ^ Objects.hashCode(minBound) ^ Integer.rotateLeft(Objects.hashCode(maxBound), 16);
   }
 
   @Override
@@ -39,9 +38,7 @@ public class IntType extends PrimitiveType {
       return false;
     }
     IntType intType = (IntType) obj;
-    return isNullable() == intType.isNullable()
-        && Objects.equals(minBound, intType.minBound)
-        && Objects.equals(maxBound, intType.maxBound);
+    return isNullable() == intType.isNullable() && Objects.equals(minBound, intType.minBound) && Objects.equals(maxBound, intType.maxBound);
   }
 
   @Override
@@ -56,8 +53,7 @@ public class IntType extends PrimitiveType {
 
   @Override
   public String toString() {
-    return super.toString() + " [" + infinity('-', minBound) + ','
-        + infinity('+', maxBound) + ']';
+    return super.toString() + " [" + infinity('-', minBound) + ',' + infinity('+', maxBound) + ']';
   }
 
   private static String infinity(char sign, BigInteger value) {
@@ -113,8 +109,7 @@ public class IntType extends PrimitiveType {
   }
 
   @Override
-  public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor,
-      P parameter) {
+  public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
     return visitor.visitIntType(this, parameter);
   }
 

@@ -19,8 +19,7 @@ import com.google.dart.compiler.resolver.CoreTypeProvider;
 
 public class DisplayPhase implements DartCompilationPhase {
   @Override
-  public DartUnit exec(DartUnit unit, DartCompilerContext context,
-      CoreTypeProvider typeProvider) {
+  public DartUnit exec(DartUnit unit, DartCompilerContext context, CoreTypeProvider typeProvider) {
     unit.accept(new DisplayVisitor());
     return unit;
   }
@@ -105,8 +104,7 @@ public class DisplayPhase implements DartCompilationPhase {
 
     @Override
     public Void visitBinaryExpression(DartBinaryExpression node) {
-      System.out.println("Binary exp: " + node.getArg1() + " "
-          + node.getOperator() + " " + node.getArg2());
+      System.out.println("Binary exp: " + node.getArg1() + " " + node.getOperator() + " " + node.getArg2());
       return super.visitBinaryExpression(node);
     }
   }

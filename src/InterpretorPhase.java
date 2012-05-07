@@ -15,8 +15,7 @@ public class InterpretorPhase implements DartCompilationPhase {
   private static HashMap<String, DartExpression> map = new HashMap<>();
 
   @Override
-  public DartUnit exec(DartUnit unit, DartCompilerContext context,
-      CoreTypeProvider typeProvider) {
+  public DartUnit exec(DartUnit unit, DartCompilerContext context, CoreTypeProvider typeProvider) {
     unit.accept(new InterpretorVisitor());
     return unit;
   }
@@ -24,8 +23,7 @@ public class InterpretorPhase implements DartCompilationPhase {
   private class InterpretorVisitor extends ASTVisitor<Void> {
     @Override
     public Void visitBlock(DartBlock node) {
-      HashMap<String, DartExpression> old = (HashMap<String, DartExpression>) map
-          .clone();
+      HashMap<String, DartExpression> old = (HashMap<String, DartExpression>) map.clone();
       try {
         return super.visitBlock(node);
       } finally {

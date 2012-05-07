@@ -2,8 +2,7 @@ package type;
 
 public class TypeVisitor<R, P> {
   protected R visitType(Type type, P parameter) {
-    throw new AssertionError("no visit defined for type "
-        + type.getClass().getName());
+    throw new AssertionError("no visit defined for type " + type.getClass().getName());
   }
 
   public R visitNullType(NullType type, P parameter) {

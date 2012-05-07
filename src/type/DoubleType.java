@@ -32,8 +32,7 @@ public class DoubleType extends PrimitiveType {
       return false;
     }
     DoubleType doubleType = (DoubleType) obj;
-    return isNullable() == doubleType.isNullable()
-        && Objects.equals(constant, doubleType.constant);
+    return isNullable() == doubleType.isNullable() && Objects.equals(constant, doubleType.constant);
   }
 
   @Override
@@ -74,8 +73,7 @@ public class DoubleType extends PrimitiveType {
   }
 
   @Override
-  public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor,
-      P parameter) {
+  public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
     return visitor.visitDoubleType(this, parameter);
   }
 

@@ -103,8 +103,7 @@ public class ASTVisitor2<R, P> {
   }
 
   public R visitNode(DartNode node, P parameter) {
-    throw new AssertionError("visit on " + node.getClass().getName()
-        + " not implemented");
+    throw new AssertionError("visit on " + node.getClass().getName() + " not implemented");
   }
 
   public R visitDirective(DartDirective node, P parameter) {
@@ -175,8 +174,7 @@ public class ASTVisitor2<R, P> {
     return visitGotoStatement(node, parameter);
   }
 
-  public R visitFunctionObjectInvocation(DartFunctionObjectInvocation node,
-      P parameter) {
+  public R visitFunctionObjectInvocation(DartFunctionObjectInvocation node, P parameter) {
     return visitInvocation(node, parameter);
   }
 
@@ -184,13 +182,11 @@ public class ASTVisitor2<R, P> {
     return visitInvocation(node, parameter);
   }
 
-  public R visitUnqualifiedInvocation(DartUnqualifiedInvocation node,
-      P parameter) {
+  public R visitUnqualifiedInvocation(DartUnqualifiedInvocation node, P parameter) {
     return visitInvocation(node, parameter);
   }
 
-  public R visitSuperConstructorInvocation(DartSuperConstructorInvocation node,
-      P parameter) {
+  public R visitSuperConstructorInvocation(DartSuperConstructorInvocation node, P parameter) {
     return visitInvocation(node, parameter);
   }
 
@@ -314,13 +310,11 @@ public class ASTVisitor2<R, P> {
     return visitDeclaration(node, parameter);
   }
 
-  public R visitParameterizedTypeNode(DartParameterizedTypeNode node,
-      P parameter) {
+  public R visitParameterizedTypeNode(DartParameterizedTypeNode node, P parameter) {
     return visitExpression(node, parameter);
   }
 
-  public R visitParenthesizedExpression(DartParenthesizedExpression node,
-      P parameter) {
+  public R visitParenthesizedExpression(DartParenthesizedExpression node, P parameter) {
     return visitExpression(node, parameter);
   }
 
@@ -360,18 +354,15 @@ public class ASTVisitor2<R, P> {
     return visitStatement(node, parameter);
   }
 
-  public R visitSyntheticErrorExpression(DartSyntheticErrorExpression node,
-      P parameter) {
+  public R visitSyntheticErrorExpression(DartSyntheticErrorExpression node, P parameter) {
     return visitExpression(node, parameter);
   }
 
-  public R visitSyntheticErrorIdentifier(DartSyntheticErrorIdentifier node,
-      P parameter) {
+  public R visitSyntheticErrorIdentifier(DartSyntheticErrorIdentifier node, P parameter) {
     return visitIdentifier(node, parameter);
   }
 
-  public R visitSyntheticErrorStatement(DartSyntheticErrorStatement node,
-      P parameter) {
+  public R visitSyntheticErrorStatement(DartSyntheticErrorStatement node, P parameter) {
     return visitStatement(node, parameter);
   }
 
@@ -427,8 +418,7 @@ public class ASTVisitor2<R, P> {
     return visitBlock(node, parameter);
   }
 
-  public R visitRedirectConstructorInvocation(
-      DartRedirectConstructorInvocation node, P parameter) {
+  public R visitRedirectConstructorInvocation(DartRedirectConstructorInvocation node, P parameter) {
     return visitInvocation(node, parameter);
   }
 }

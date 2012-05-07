@@ -17,8 +17,7 @@ public class CoreTypeRepository extends TypeRepository {
   public final static IntType INT_NON_NULL_TYPE = new IntType(false, null, null);
 
   public final static DoubleType DOUBLE_TYPE = new DoubleType(true, null);
-  public final static DoubleType DOUBLE_NON_NULL_TYPE = new DoubleType(false,
-      null);
+  public final static DoubleType DOUBLE_NON_NULL_TYPE = new DoubleType(false, null);
 
   public final static NullType NULL_TYPE = new NullType();
 
@@ -38,12 +37,10 @@ public class CoreTypeRepository extends TypeRepository {
 
   private static CoreTypeRepository CORE_TYPE_REPOSITORY;
 
-  public static CoreTypeRepository initCoreTypeRepository(
-      CoreTypeProvider coreTypeProvider) {
+  public static CoreTypeRepository initCoreTypeRepository(CoreTypeProvider coreTypeProvider) {
     if (CORE_TYPE_REPOSITORY != null) {
       if (CORE_TYPE_REPOSITORY.coreTypeProvider != coreTypeProvider) {
-        throw new IllegalStateException(
-            "a core type repository with a different core provider");
+        throw new IllegalStateException("a core type repository with a different core provider");
       }
       return CORE_TYPE_REPOSITORY;
     }

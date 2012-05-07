@@ -25,8 +25,7 @@ public class Toto {
     File sourceFile = new File("Hello.dart");
 
     CompilerOptions compilerOptions = new CompilerOptions();
-    SystemLibraryManager libraryManager = new SystemLibraryManager(sdkFile,
-        DEFAULT_PLATFORM);
+    SystemLibraryManager libraryManager = new SystemLibraryManager(sdkFile, DEFAULT_PLATFORM);
 
     String[] options = { "--dart-sdk", sdkPath };
     try {
@@ -35,8 +34,7 @@ public class Toto {
       e.printStackTrace();
     }
 
-    CompilerConfiguration config = new DefaultCompilerConfiguration(
-        compilerOptions, libraryManager) {
+    CompilerConfiguration config = new DefaultCompilerConfiguration(compilerOptions, libraryManager) {
       @Override
       public List<DartCompilationPhase> getPhases() {
         List<DartCompilationPhase> phases = new ArrayList<DartCompilationPhase>();
