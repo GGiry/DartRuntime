@@ -1,26 +1,15 @@
 package type;
 
+import static type.CoreTypeRepository.NULL_TYPE;
+
 public class Types {
-  public static final BoolType BOOL_TYPE = new BoolType(true, null);
-  public static final BoolType BOOL_NON_NULL_TYPE = new BoolType(false, null);
-  public static final BoolType TRUE = new BoolType(false, true);
-  public static final BoolType FALSE = new BoolType(false, false);
-  
-  public static final IntType INT_TYPE = new IntType(true, null, null);
-  public static final IntType INT_NON_NULL_TYPE = new IntType(false, null, null);
-  
-  public static final DoubleType DOUBLE_TYPE = new DoubleType(true, null);
-  public static final DoubleType DOUBLE_NON_NULL_TYPE = new DoubleType(false, null);
-  
-  public static final NullType NULL_TYPE = new NullType();
-  
-  public static Type union(Type type1, Type type2) {
-    if (type1 == NULL_TYPE) {
-      return type2.asNullable();
-    }
-    if (type2 == NULL_TYPE) {
-      return type1.asNullable();
-    }
-    return ((OwnerType)type1).merge((OwnerType)type2);
-  }
+	public static Type union(Type type1, Type type2) {
+		if (type1 == NULL_TYPE) {
+			return type2.asNullable();
+		}
+		if (type2 == NULL_TYPE) {
+			return type1.asNullable();
+		}
+		return ((OwnerType) type1).merge((OwnerType) type2);
+	}
 }

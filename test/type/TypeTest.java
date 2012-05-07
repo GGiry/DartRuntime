@@ -6,68 +6,70 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
+import static type.CoreTypeRepository.*;
+
 public class TypeTest {
   @Test
   public void nullableByDefaults() {
-    Assert.assertTrue(Types.BOOL_TYPE.isNullable());
-    Assert.assertTrue(Types.INT_TYPE.isNullable());
-    Assert.assertTrue(Types.DOUBLE_TYPE.isNullable());
-    Assert.assertTrue(Types.NULL_TYPE.isNullable());
+    Assert.assertTrue(BOOL_TYPE.isNullable());
+    Assert.assertTrue(INT_TYPE.isNullable());
+    Assert.assertTrue(DOUBLE_TYPE.isNullable());
+    Assert.assertTrue(NULL_TYPE.isNullable());
   }
   
   @Test
   public void nonNullByDefaults() {
-    Assert.assertFalse(Types.BOOL_NON_NULL_TYPE.isNullable());
-    Assert.assertFalse(Types.INT_NON_NULL_TYPE.isNullable());
-    Assert.assertFalse(Types.DOUBLE_NON_NULL_TYPE.isNullable());
+    Assert.assertFalse(BOOL_NON_NULL_TYPE.isNullable());
+    Assert.assertFalse(INT_NON_NULL_TYPE.isNullable());
+    Assert.assertFalse(DOUBLE_NON_NULL_TYPE.isNullable());
   }
   
   @Test
   public void nullableStillConst() {
-    Assert.assertEquals(Types.TRUE.asNullable().asConstant(), (Boolean)true);
-    Assert.assertEquals(Types.FALSE.asNullable().asConstant(), (Boolean)false);
+    Assert.assertEquals(TRUE.asNullable().asConstant(), (Boolean)true);
+    Assert.assertEquals(FALSE.asNullable().asConstant(), (Boolean)false);
     Assert.assertEquals(IntType.constant(BigInteger.TEN).asNullable().asConstant(), BigInteger.TEN);
     Assert.assertEquals(DoubleType.constant(42.0).asNullable().asConstant(), 42.0);
-    Assert.assertEquals(Types.NULL_TYPE.asNullable().asConstant(), Type.NULL_VALUE);
+    Assert.assertEquals(NULL_TYPE.asNullable().asConstant(), Type.NULL_VALUE);
   }
   
   @Test
   public void nonNullStillConst() {
-    Assert.assertEquals(Types.TRUE.asNonNull().asConstant(), (Boolean)true);
-    Assert.assertEquals(Types.FALSE.asNonNull().asConstant(), (Boolean)false);
+    Assert.assertEquals(TRUE.asNonNull().asConstant(), (Boolean)true);
+    Assert.assertEquals(FALSE.asNonNull().asConstant(), (Boolean)false);
     Assert.assertEquals(IntType.constant(BigInteger.TEN).asNonNull().asConstant(), BigInteger.TEN);
     Assert.assertEquals(DoubleType.constant(42.0).asNonNull().asConstant(), 42.0);
   }
   
   @Test(expected=IllegalStateException.class)
   public void nullAsNonNull() {
-    Types.NULL_TYPE.asNonNull();
+    NULL_TYPE.asNonNull();
   }
   
   @Test
   public void constBoolean() {
-    Assert.assertTrue(Types.TRUE.asConstant());
-    Assert.assertTrue(!Types.TRUE.isNullable());
-    Assert.assertTrue(Types.TRUE.asNullable().isNullable());
-    Assert.assertFalse(Types.FALSE.asConstant());
-    Assert.assertTrue(!Types.FALSE.isNullable());
-    Assert.assertTrue(Types.FALSE.asNullable().isNullable());
+    Assert.assertTrue(TRUE.asConstant());
+    Assert.assertTrue(!TRUE.isNullable());
+    Assert.assertTrue(TRUE.asNullable().isNullable());
+    Assert.assertFalse(FALSE.asConstant());
+    Assert.assertTrue(!FALSE.isNullable());
+    Assert.assertTrue(FALSE.asNullable().isNullable());
   }
   
   @Test
   public void booleanAsNullable() {
-    Assert.assertEquals(Types.BOOL_TYPE, Types.BOOL_TYPE.asNullable());
-    Assert.assertEquals(Types.BOOL_TYPE, Types.BOOL_NON_NULL_TYPE.asNullable());
-    Assert.assertTrue(Types.BOOL_TYPE.asNullable().isNullable());
-    Assert.assertTrue(Types.BOOL_NON_NULL_TYPE.asNullable().isNullable());
+    Assert.assertEquals(BOOL_TYPE, BOOL_TYPE.asNullable());
+    Assert.assertEquals(BOOL_TYPE, BOOL_NON_NULL_TYPE.asNullable());
+    Assert.assertTrue(BOOL_TYPE.asNullable().isNullable());
+    Assert.assertTrue(BOOL_NON_NULL_TYPE.asNullable().isNullable());
   }
   
   @Test
   public void booleanAsNonNull() {
-    Assert.assertEquals(Types.BOOL_NON_NULL_TYPE, Types.BOOL_TYPE.asNonNull());
-    Assert.assertEquals(Types.BOOL_NON_NULL_TYPE, Types.BOOL_NON_NULL_TYPE.asNonNull());
-    Assert.assertFalse(Types.BOOL_TYPE.asNonNull().isNullable());
-    Assert.assertFalse(Types.BOOL_NON_NULL_TYPE.asNonNull().isNullable());
+    Assert.assertEquals(BOOL_NON_NULL_TYPE, BOOL_TYPE.asNonNull());
+    Assert.assertEquals(BOOL_NON_NULL_TYPE, BOOL_NON_NULL_TYPE.asNonNull());
+    Assert.assertFalse(BOOL_TYPE.asNonNull().isNullable());
+    Assert.assertFalse(BOOL_NON_NULL_TYPE.asNonNull().isNullable());
   }
   
   @Test
@@ -79,43 +81,43 @@ public class TypeTest {
   
   @Test
   public void intAsNullable() {
-    Assert.assertEquals(Types.INT_TYPE, Types.INT_TYPE.asNullable());
-    Assert.assertEquals(Types.INT_TYPE, Types.INT_NON_NULL_TYPE.asNullable());
-    Assert.assertTrue(Types.INT_TYPE.asNullable().isNullable());
-    Assert.assertTrue(Types.INT_NON_NULL_TYPE.asNullable().isNullable());
+    Assert.assertEquals(INT_TYPE, INT_TYPE.asNullable());
+    Assert.assertEquals(INT_TYPE, INT_NON_NULL_TYPE.asNullable());
+    Assert.assertTrue(INT_TYPE.asNullable().isNullable());
+    Assert.assertTrue(INT_NON_NULL_TYPE.asNullable().isNullable());
     Assert.assertTrue(IntType.constant(BigInteger.ONE).asNullable().isNullable());
   }
   
   @Test
   public void intAsNonNull() {
-    Assert.assertEquals(Types.INT_NON_NULL_TYPE, Types.INT_TYPE.asNonNull());
-    Assert.assertEquals(Types.INT_NON_NULL_TYPE, Types.INT_NON_NULL_TYPE.asNonNull());
-    Assert.assertFalse(Types.INT_TYPE.asNonNull().isNullable());
-    Assert.assertFalse(Types.INT_NON_NULL_TYPE.asNonNull().isNullable());
+    Assert.assertEquals(INT_NON_NULL_TYPE, INT_TYPE.asNonNull());
+    Assert.assertEquals(INT_NON_NULL_TYPE, INT_NON_NULL_TYPE.asNonNull());
+    Assert.assertFalse(INT_TYPE.asNonNull().isNullable());
+    Assert.assertFalse(INT_NON_NULL_TYPE.asNonNull().isNullable());
     Assert.assertFalse(IntType.constant(BigInteger.ONE).asNonNull().isNullable());
   }
   
   @Test
   public void intBounds() {
-    Assert.assertTrue(Types.INT_TYPE.isMinBoundInfinity());
-    Assert.assertTrue(Types.INT_TYPE.isMaxBoundInfinity());
+    Assert.assertTrue(INT_TYPE.isMinBoundInfinity());
+    Assert.assertTrue(INT_TYPE.isMaxBoundInfinity());
     
-    Assert.assertEquals(BigInteger.ONE, Types.INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ONE).getMinBound());
-    Assert.assertEquals(BigInteger.TEN, Types.INT_TYPE.asTypeLessOrEqualsThan(BigInteger.TEN).getMaxBound());
+    Assert.assertEquals(BigInteger.ONE, INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ONE).getMinBound());
+    Assert.assertEquals(BigInteger.TEN, INT_TYPE.asTypeLessOrEqualsThan(BigInteger.TEN).getMaxBound());
     
-    Assert.assertEquals(BigInteger.ZERO, Types.INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ZERO).
+    Assert.assertEquals(BigInteger.ZERO, INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ZERO).
                                                         asTypeLessOrEqualsThan(BigInteger.ZERO).
                                                         asConstant());
     
-    Assert.assertEquals(BigInteger.TEN, Types.INT_TYPE.asTypeLessOrEqualsThan(BigInteger.TEN).
+    Assert.assertEquals(BigInteger.TEN, INT_TYPE.asTypeLessOrEqualsThan(BigInteger.TEN).
                                                        asTypeGreaterOrEqualsThan(BigInteger.TEN).
                                                        asConstant());
     
-    Assert.assertEquals(BigInteger.ONE, Types.INT_TYPE.asTypeLessOrEqualsThan(BigInteger.TEN).
+    Assert.assertEquals(BigInteger.ONE, INT_TYPE.asTypeLessOrEqualsThan(BigInteger.TEN).
                                                        asTypeLessOrEqualsThan(BigInteger.ONE).
                                                        getMaxBound());
     
-    Assert.assertEquals(BigInteger.ONE, Types.INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ZERO).
+    Assert.assertEquals(BigInteger.ONE, INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ZERO).
                                                        asTypeGreaterOrEqualsThan(BigInteger.ONE).
                                                        getMinBound());
   }
@@ -129,25 +131,25 @@ public class TypeTest {
   
   @Test
   public void doubleAsNullable() {
-    Assert.assertEquals(Types.DOUBLE_TYPE, Types.DOUBLE_TYPE.asNullable());
-    Assert.assertEquals(Types.DOUBLE_TYPE, Types.DOUBLE_NON_NULL_TYPE.asNullable());
-    Assert.assertTrue(Types.DOUBLE_TYPE.asNullable().isNullable());
-    Assert.assertTrue(Types.DOUBLE_NON_NULL_TYPE.asNullable().isNullable());
+    Assert.assertEquals(DOUBLE_TYPE, DOUBLE_TYPE.asNullable());
+    Assert.assertEquals(DOUBLE_TYPE, DOUBLE_NON_NULL_TYPE.asNullable());
+    Assert.assertTrue(DOUBLE_TYPE.asNullable().isNullable());
+    Assert.assertTrue(DOUBLE_NON_NULL_TYPE.asNullable().isNullable());
     Assert.assertTrue(DoubleType.constant(777.0).asNullable().isNullable());
   }
   
   @Test
   public void doubleAsNonNull() {
-    Assert.assertEquals(Types.DOUBLE_NON_NULL_TYPE, Types.DOUBLE_TYPE.asNonNull());
-    Assert.assertEquals(Types.DOUBLE_NON_NULL_TYPE, Types.DOUBLE_NON_NULL_TYPE.asNonNull());
-    Assert.assertFalse(Types.DOUBLE_TYPE.asNonNull().isNullable());
-    Assert.assertFalse(Types.DOUBLE_NON_NULL_TYPE.asNonNull().isNullable());
+    Assert.assertEquals(DOUBLE_NON_NULL_TYPE, DOUBLE_TYPE.asNonNull());
+    Assert.assertEquals(DOUBLE_NON_NULL_TYPE, DOUBLE_NON_NULL_TYPE.asNonNull());
+    Assert.assertFalse(DOUBLE_TYPE.asNonNull().isNullable());
+    Assert.assertFalse(DOUBLE_NON_NULL_TYPE.asNonNull().isNullable());
     Assert.assertFalse(DoubleType.constant(345.0).asNonNull().isNullable());
   }
   
   @Test
   public void nullAsNullable() {
-    Assert.assertEquals(Types.NULL_TYPE, Types.NULL_TYPE.asNullable());
-    Assert.assertTrue(Types.NULL_TYPE.asNullable().isNullable());
+    Assert.assertEquals(NULL_TYPE, NULL_TYPE.asNullable());
+    Assert.assertTrue(NULL_TYPE.asNullable().isNullable());
   }
 }

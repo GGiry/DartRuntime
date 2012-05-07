@@ -5,6 +5,8 @@ import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
 
+import static type.CoreTypeRepository.*;
+
 public class IntType extends PrimitiveType {
   private final BigInteger minBound;
   private final BigInteger maxBound;
@@ -22,7 +24,9 @@ public class IntType extends PrimitiveType {
 	
 	@Override
   public int hashCode() {
-    return (isNullable()?1 : 0) ^ Objects.hashCode(minBound) ^ Objects.hashCode(maxBound); 
+    return (isNullable()?1 : 0) ^ 
+    		       Objects.hashCode(minBound) ^
+    		       Integer.rotateLeft(Objects.hashCode(maxBound), 16); 
   }
   
   @Override
@@ -40,6 +44,11 @@ public class IntType extends PrimitiveType {
   }
   
   @Override
+  ClassElement getLazyElement() {
+  	return CoreTypeRepository.getCoreTypeRepository().getIntClassElement();
+  }
+  
+  @Override
   public String getName() {
     return "int";
   }
@@ -47,11 +56,6 @@ public class IntType extends PrimitiveType {
   @Override
   public String toString() {
     return super.toString() + " ["+infinity('-', minBound)+','+infinity('+', maxBound)+']';
-  }
-  
-  @Override
-  ClassElement getLazyElement() {
-    return CoreTypeRepository.getCoreTypeRepository().getIntClassElement();
   }
   
   private static String infinity(char sign, BigInteger value) {
@@ -88,7 +92,7 @@ public class IntType extends PrimitiveType {
 	    return this;
 	  }
 	  if (minBound == null && maxBound == null) {
-	    return Types.INT_TYPE;
+	    return INT_TYPE;
 	  }
 	  return new IntType(true, minBound, maxBound);
 	}
@@ -99,7 +103,7 @@ public class IntType extends PrimitiveType {
 	    return this;
 	  }
 	  if (minBound == null && maxBound == null) {
-      return Types.INT_NON_NULL_TYPE;
+      return INT_NON_NULL_TYPE;
     }
     return new IntType(false, minBound, maxBound);
 	}

@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
 
+import static type.CoreTypeRepository.*;
+
 public class BoolType extends PrimitiveType {
   private final Boolean constant;
   
@@ -31,6 +33,11 @@ public class BoolType extends PrimitiveType {
 	}
 	
 	@Override
+	ClassElement getLazyElement() {
+	  return CoreTypeRepository.getCoreTypeRepository().getBoolClassElement();
+	}
+	
+	@Override
 	public String getName() {
 	  return "bool";
 	}
@@ -41,11 +48,6 @@ public class BoolType extends PrimitiveType {
 	}
 	
 	@Override
-	ClassElement getLazyElement() {
-	  return CoreTypeRepository.getCoreTypeRepository().getBoolClassElement();
-	}
-	
-	@Override
 	public BoolType asNullable() {
 	  if (isNullable()) {
 	    return this;
@@ -53,7 +55,7 @@ public class BoolType extends PrimitiveType {
 	  if (constant != null) {
 	    return new BoolType(true, constant);
 	  }
-	  return Types.BOOL_TYPE;
+	  return BOOL_TYPE;
 	}
 	
 	@Override
@@ -62,9 +64,9 @@ public class BoolType extends PrimitiveType {
 	    return this;
 	  }
 	  if (constant == null) {
-	    return Types.BOOL_NON_NULL_TYPE;
+	    return BOOL_NON_NULL_TYPE;
 	  }
-	  return (constant)? Types.TRUE: Types.FALSE;
+	  return (constant)? TRUE: FALSE;
 	}
 	
 	@Override

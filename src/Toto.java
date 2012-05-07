@@ -14,6 +14,9 @@ import com.google.dart.compiler.DartCompilationPhase;
 import com.google.dart.compiler.DartCompiler;
 import com.google.dart.compiler.DefaultCompilerConfiguration;
 import com.google.dart.compiler.SystemLibraryManager;
+import com.google.dart.compiler.resolver.CompileTimeConstantAnalyzer;
+import com.google.dart.compiler.resolver.Resolver;
+import com.google.dart.compiler.type.TypeAnalyzer;
 
 public class Toto {
 	public static boolean test2() throws IOException {
@@ -37,10 +40,11 @@ public class Toto {
 			@Override
 			public List<DartCompilationPhase> getPhases() {
 				List<DartCompilationPhase> phases = new ArrayList<DartCompilationPhase>();
+
+				phases.add(new CompileTimeConstantAnalyzer.Phase());
+				phases.add(new Resolver.Phase()); 
 				/*
-				 * phases.add(new CompileTimeConstantAnalyzer.Phase());
-				 * phases.add(new Resolver.Phase()); phases.add(new
-				 * TypeAnalyzer()); //
+				phases.add(new TypeAnalyzer()); 
 				 */
 				/*
 				 * phases.add(new DisplayPhase()); //
@@ -48,9 +52,8 @@ public class Toto {
 				/*
 				 * phases.add(new InterpretorPhase()); //
 				 */
-				// *
+
 				phases.add(new FlowTypingPhase());
-				// */
 				return phases;
 			}
 		};

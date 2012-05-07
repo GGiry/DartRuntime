@@ -5,14 +5,14 @@ import java.util.Objects;
 import com.google.dart.compiler.resolver.ClassElement;
 
 public class InterfaceType extends OwnerType {
-  private final ClassElement element;
+	private final ClassElement element;
   private final TypeRepository typeRepository;
   private InterfaceType dualType;
 
   InterfaceType(boolean nullable, TypeRepository typeRepository, ClassElement element) {
     super(nullable);
     this.typeRepository = typeRepository;
-    this.element = element;
+		this.element = element;
   }
   
   void postInitDualType(InterfaceType dualType) {
@@ -21,7 +21,7 @@ public class InterfaceType extends OwnerType {
   
   @Override
   public int hashCode() {
-    return (isNullable()?1 : 0) ^ Objects.hashCode(element); 
+    return (isNullable()?1 : 0) ^ Objects.hashCode(getElement()); 
   }
   
   @Override
@@ -35,22 +35,22 @@ public class InterfaceType extends OwnerType {
     
     InterfaceType interfaceType = (InterfaceType)obj;
     return isNullable() == interfaceType.isNullable &&
-           element.equals(interfaceType.element);
-  }
-  
-  @Override
-  public String getName() {
-    return element.getName();
-  }
-  
-  @Override
-  TypeRepository getTypeRepository() {
-    return typeRepository;
+    		getElement().equals(interfaceType.getElement());
   }
   
   @Override
   public ClassElement getElement() {
     return element;
+  }
+  
+  @Override
+  public String getName() {
+    return getElement().getName();
+  }
+  
+  @Override
+  TypeRepository getTypeRepository() {
+    return typeRepository;
   }
 
   @Override

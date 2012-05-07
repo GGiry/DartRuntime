@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
 
+import static type.CoreTypeRepository.*;
+
 public class DoubleType extends PrimitiveType {
 	private final Double constant;
 
@@ -11,6 +13,10 @@ public class DoubleType extends PrimitiveType {
 		super(isNullable);
     this.constant = constant;
 	}
+  
+  public static DoubleType constant(double constant) {
+    return new DoubleType(false, constant);
+  }
   
   @Override
   public int hashCode() {
@@ -31,6 +37,11 @@ public class DoubleType extends PrimitiveType {
   }
   
   @Override
+	ClassElement getLazyElement() {
+	  return CoreTypeRepository.getCoreTypeRepository().getDoubleClassElement();
+	}
+  
+  @Override
   public String getName() {
     return "double";
   }
@@ -41,17 +52,12 @@ public class DoubleType extends PrimitiveType {
   }
   
   @Override
-  ClassElement getLazyElement() {
-    return CoreTypeRepository.getCoreTypeRepository().getDoubleClassElement();
-  }
-  
-  @Override
   public DoubleType asNullable() {
     if (isNullable()) {
       return this;
     }
     if (constant == null) {
-      return Types.DOUBLE_TYPE;
+      return DOUBLE_TYPE;
     }
     return new DoubleType(true, constant);
   }
@@ -62,7 +68,7 @@ public class DoubleType extends PrimitiveType {
       return this;
     }
     if (constant == null) {
-      return Types.DOUBLE_NON_NULL_TYPE;
+      return DOUBLE_NON_NULL_TYPE;
     }
     return new DoubleType(false, constant);
   }
@@ -75,9 +81,5 @@ public class DoubleType extends PrimitiveType {
   @Override
   public Double asConstant() {
     return constant;
-  }
-  
-  public static DoubleType constant(double constant) {
-    return new DoubleType(false, constant);
   }
 }
