@@ -10,6 +10,6 @@ public class Types {
     if (type2 == NULL_TYPE) {
       return type1.asNullable();
     }
-    return ((OwnerType) type1).merge((OwnerType) type2);
+    return ((AbstractType) type1).merge((AbstractType) type2);
   }
 }
