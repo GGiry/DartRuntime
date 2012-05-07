@@ -15,4 +15,11 @@ public class FlowEnv {
     System.out.println(variable + ", " + type);
     variableTypeMap.put(variable, type);
   }
+
+  @Override
+  public FlowEnv clone() {
+    FlowEnv flowEnv = new FlowEnv();
+    flowEnv.variableTypeMap.putAll(variableTypeMap);
+    return flowEnv;
+  }
 }
