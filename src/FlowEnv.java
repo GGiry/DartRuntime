@@ -25,4 +25,9 @@ public class FlowEnv {
   public void register(VariableElement variable, Type type) {
     variableTypeMap.put(variable, type);
   }
+  
+  @Override
+  public String toString() {
+    return "" + variableTypeMap + ", " + parent;
+  }
 }

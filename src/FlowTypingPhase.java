@@ -1,6 +1,8 @@
 import java.util.HashMap;
 
+import type.BoolType;
 import type.CoreTypeRepository;
+import type.DoubleType;
 import type.IntType;
 import type.Type;
 import type.TypeRepository;
@@ -11,6 +13,8 @@ import com.google.dart.compiler.DartCompilationPhase;
 import com.google.dart.compiler.DartCompilerContext;
 import com.google.dart.compiler.ast.DartBinaryExpression;
 import com.google.dart.compiler.ast.DartBlock;
+import com.google.dart.compiler.ast.DartBooleanLiteral;
+import com.google.dart.compiler.ast.DartDoubleLiteral;
 import com.google.dart.compiler.ast.DartExprStmt;
 import com.google.dart.compiler.ast.DartFunction;
 import com.google.dart.compiler.ast.DartIdentifier;
@@ -19,11 +23,13 @@ import com.google.dart.compiler.ast.DartMethodDefinition;
 import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.ast.DartParameter;
 import com.google.dart.compiler.ast.DartStatement;
+import com.google.dart.compiler.ast.DartStringLiteral;
 import com.google.dart.compiler.ast.DartTypeNode;
 import com.google.dart.compiler.ast.DartUnit;
 import com.google.dart.compiler.ast.DartVariable;
 import com.google.dart.compiler.ast.DartVariableStatement;
 import com.google.dart.compiler.resolver.CoreTypeProvider;
+import com.google.dart.compiler.resolver.VariableElement;
 
 public class FlowTypingPhase implements DartCompilationPhase {
   @Override
@@ -66,12 +72,14 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitFunction(DartFunction node, FlowEnv parameter) {
       FlowEnv env = new FlowEnv(parameter);
-
+      System.err.println("env: " + env);
       for (DartParameter param : node.getParameters()) {
-        parameter.register(param.getElement(), accept(param.getTypeNode(), parameter));
+        env.register(param.getElement(), accept(param.getTypeNode(), env));
       }
 
       accept(node.getBody(), env);
+
+      System.out.println("func: " + env);
 
       return null;
     }
@@ -105,22 +113,44 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     @Override
-    public Type visitIdentifier(DartIdentifier node, FlowEnv parameter) {
+    public Type visitDoubleLiteral(DartDoubleLiteral node, FlowEnv parameter) {
+      return DoubleType.constant(node.getValue());
+    }
 
-      return null;
+    @Override
+    public Type visitBooleanLiteral(DartBooleanLiteral node, FlowEnv parameter) {
+      if (node.getValue()) {
+        return CoreTypeRepository.TRUE;
+      }
+      return CoreTypeRepository.FALSE;
+    }
+
+    @Override
+    public Type visitIdentifier(DartIdentifier node, FlowEnv parameter) {
+      switch (node.getElement().getKind()) {
+      case VARIABLE:
+        return parameter.getType((VariableElement) node.getElement());
+      default:
+        throw new AssertionError("visitIndentifier must be complete for " + node.getElement().getKind());
+      }
     }
 
     @Override
     public Type visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
-      System.out.println("visitBinaryNode: " + node);
       switch (node.getOperator()) {
       case ASSIGN:
-        System.out.println(Types.union(accept(node.getArg1(), parameter), accept(node.getArg2(), parameter)));
+        switch (node.getArg1().getElement().getKind()) {
+        case VARIABLE:
+          parameter.register((VariableElement) node.getArg1().getElement(), Types.union(accept(node.getArg1(), parameter), accept(node.getArg2(), parameter)));
+          break;
+        default:
+          throw new AssertionError("Binary Expr: " + node.getArg1().getElement().getKind() + " to do");
+        }
 
         break;
 
       default:
-        break;
+        throw new AssertionError("Binary Expr: " + node.getOperator() + " to do");
       }
       return null;
     }
