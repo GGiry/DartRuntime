@@ -84,15 +84,15 @@ import com.google.dart.compiler.ast.DartWhileStatement;
 
 public class ASTVisitor2<R, P> {
   private final BridgeASTVisitor<R, P> bridgeASTVisitor;
-  
+
   public ASTVisitor2() {
     bridgeASTVisitor = new BridgeASTVisitor<>(this);
   }
-  
+
   public ASTVisitor<R> asASTVisitor() {
-    return bridgeASTVisitor; 
+    return bridgeASTVisitor;
   }
-  
+
   protected R accept(DartNode node, P parameter) {
     bridgeASTVisitor.parameter = parameter;
     try {
@@ -101,333 +101,334 @@ public class ASTVisitor2<R, P> {
       bridgeASTVisitor.parameter = null;
     }
   }
-  
-	public R visitNode(DartNode node, P parameter) {
-		throw new AssertionError("visit on "+node.getClass().getName()+" not implemented");
-	}
-
-	public R visitDirective(DartDirective node, P parameter) {
-		return visitNode(node, parameter);
-	}
-
-	public R visitInvocation(DartInvocation node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitExpression(DartExpression node, P parameter) {
-		return visitNode(node, parameter);
-	}
-
-	public R visitStatement(DartStatement node, P parameter) {
-		return visitNode(node, parameter);
-	}
-
-	public R visitLiteral(DartLiteral node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitGotoStatement(DartGotoStatement node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitSwitchMember(DartSwitchMember node, P parameter) {
-		return visitNode(node, parameter);
-	}
-
-	public R visitDeclaration(DartDeclaration<?> node, P parameter) {
-		return visitNode(node, parameter);
-	}
-
-	public R visitClassMember(DartClassMember<?> node, P parameter) {
-		return visitDeclaration(node, parameter);
-	}
-
-	public R visitComment(DartComment node, P parameter) {
-		return visitNode(node, parameter);
-	}
-
-	public R visitArrayAccess(DartArrayAccess node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitArrayLiteral(DartArrayLiteral node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitAssertion(DartAssertion node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitBinaryExpression(DartBinaryExpression node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitBlock(DartBlock node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitBooleanLiteral(DartBooleanLiteral node, P parameter) {
-		return visitLiteral(node, parameter);
-	}
-
-	public R visitBreakStatement(DartBreakStatement node, P parameter) {
-		return visitGotoStatement(node, parameter);
-	}
-
-	public R visitFunctionObjectInvocation(DartFunctionObjectInvocation node,
-			P parameter) {
-		return visitInvocation(node, parameter);
-	}
-
-	public R visitMethodInvocation(DartMethodInvocation node, P parameter) {
-		return visitInvocation(node, parameter);
-	}
-
-	public R visitUnqualifiedInvocation(DartUnqualifiedInvocation node,
-			P parameter) {
-		return visitInvocation(node, parameter);
-	}
-
-	public R visitSuperConstructorInvocation(
-			DartSuperConstructorInvocation node, P parameter) {
-		return visitInvocation(node, parameter);
-	}
-
-	public R visitCase(DartCase node, P parameter) {
-		return visitSwitchMember(node, parameter);
-	}
-
-	public R visitClass(DartClass node, P parameter) {
-		return visitDeclaration(node, parameter);
-	}
-
-	public R visitConditional(DartConditional node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitContinueStatement(DartContinueStatement node, P parameter) {
-		return visitGotoStatement(node, parameter);
-	}
-
-	public R visitDefault(DartDefault node, P parameter) {
-		return visitSwitchMember(node, parameter);
-	}
-
-	public R visitDoubleLiteral(DartDoubleLiteral node, P parameter) {
-		return visitLiteral(node, parameter);
-	}
-
-	public R visitDoWhileStatement(DartDoWhileStatement node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitEmptyStatement(DartEmptyStatement node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitExprStmt(DartExprStmt node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitField(DartField node, P parameter) {
-		return visitClassMember(node, parameter);
-	}
-
-	public R visitFieldDefinition(DartFieldDefinition node, P parameter) {
-		return visitNode(node, parameter);
-	}
-
-	public R visitForInStatement(DartForInStatement node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitForStatement(DartForStatement node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitFunction(DartFunction node, P parameter) {
-		return visitNode(node, parameter);
-	}
-
-	public R visitFunctionExpression(DartFunctionExpression node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitFunctionTypeAlias(DartFunctionTypeAlias node, P parameter) {
-		return visitDeclaration(node, parameter);
-	}
-
-	public R visitIdentifier(DartIdentifier node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitIfStatement(DartIfStatement node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitImportDirective(DartImportDirective node, P parameter) {
-		return visitDirective(node, parameter);
-	}
-
-	public R visitInitializer(DartInitializer node, P parameter) {
-		return visitNode(node, parameter);
-	}
-
-	public R visitIntegerLiteral(DartIntegerLiteral node, P parameter) {
-		return visitLiteral(node, parameter);
-	}
-
-	public R visitLabel(DartLabel node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitLibraryDirective(DartLibraryDirective node, P parameter) {
-		return visitDirective(node, parameter);
-	}
-
-	public R visitMapLiteral(DartMapLiteral node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitMapLiteralEntry(DartMapLiteralEntry node, P parameter) {
-		return visitNode(node, parameter);
-	}
-
-	public R visitMethodDefinition(DartMethodDefinition node, P parameter) {
-		return visitClassMember(node, parameter);
-	}
-
-	public R visitNativeDirective(DartNativeDirective node, P parameter) {
-		return visitDirective(node, parameter);
-	}
-
-	public R visitNewExpression(DartNewExpression node, P parameter) {
-		return visitInvocation(node, parameter);
-	}
-
-	public R visitNullLiteral(DartNullLiteral node, P parameter) {
-		return visitLiteral(node, parameter);
-	}
-
-	public R visitParameter(DartParameter node, P parameter) {
-		return visitDeclaration(node, parameter);
-	}
-
-	public R visitParameterizedTypeNode(DartParameterizedTypeNode node,
-			P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitParenthesizedExpression(DartParenthesizedExpression node,
-			P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitPropertyAccess(DartPropertyAccess node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitTypeNode(DartTypeNode node, P parameter) {
-		return visitNode(node, parameter);
-	}
-
-	public R visitResourceDirective(DartResourceDirective node, P parameter) {
-		return visitDirective(node, parameter);
-	}
-
-	public R visitReturnStatement(DartReturnStatement node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitSourceDirective(DartSourceDirective node, P parameter) {
-		return visitDirective(node, parameter);
-	}
-
-	public R visitStringLiteral(DartStringLiteral node, P parameter) {
-		return visitLiteral(node, parameter);
-	}
-
-	public R visitStringInterpolation(DartStringInterpolation node, P parameter) {
-		return visitLiteral(node, parameter);
-	}
-
-	public R visitSuperExpression(DartSuperExpression node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitSwitchStatement(DartSwitchStatement node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitSyntheticErrorExpression(DartSyntheticErrorExpression node,
-			P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitSyntheticErrorIdentifier(DartSyntheticErrorIdentifier node,
-			P parameter) {
-		return visitIdentifier(node, parameter);
-	}
-
-	public R visitSyntheticErrorStatement(DartSyntheticErrorStatement node,
-			P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitThisExpression(DartThisExpression node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitThrowStatement(DartThrowStatement node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitCatchBlock(DartCatchBlock node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitTryStatement(DartTryStatement node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitUnaryExpression(DartUnaryExpression node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitUnit(DartUnit node, P parameter) {
-		return visitNode(node, parameter);
-	}
-
-	public R visitVariable(DartVariable node, P parameter) {
-		return visitDeclaration(node, parameter);
-	}
-
-	public R visitVariableStatement(DartVariableStatement node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitWhileStatement(DartWhileStatement node, P parameter) {
-		return visitStatement(node, parameter);
-	}
-
-	public R visitNamedExpression(DartNamedExpression node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitTypeExpression(DartTypeExpression node, P parameter) {
-		return visitExpression(node, parameter);
-	}
-
-	public R visitTypeParameter(DartTypeParameter node, P parameter) {
-		return visitDeclaration(node, parameter);
-	}
-
-	public R visitNativeBlock(DartNativeBlock node, P parameter) {
-		return visitBlock(node, parameter);
-	}
-
-	public R visitRedirectConstructorInvocation(
-			DartRedirectConstructorInvocation node, P parameter) {
-		return visitInvocation(node, parameter);
-	}
+
+  public R visitNode(DartNode node, P parameter) {
+    throw new AssertionError("visit on " + node.getClass().getName()
+        + " not implemented");
+  }
+
+  public R visitDirective(DartDirective node, P parameter) {
+    return visitNode(node, parameter);
+  }
+
+  public R visitInvocation(DartInvocation node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitExpression(DartExpression node, P parameter) {
+    return visitNode(node, parameter);
+  }
+
+  public R visitStatement(DartStatement node, P parameter) {
+    return visitNode(node, parameter);
+  }
+
+  public R visitLiteral(DartLiteral node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitGotoStatement(DartGotoStatement node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitSwitchMember(DartSwitchMember node, P parameter) {
+    return visitNode(node, parameter);
+  }
+
+  public R visitDeclaration(DartDeclaration<?> node, P parameter) {
+    return visitNode(node, parameter);
+  }
+
+  public R visitClassMember(DartClassMember<?> node, P parameter) {
+    return visitDeclaration(node, parameter);
+  }
+
+  public R visitComment(DartComment node, P parameter) {
+    return visitNode(node, parameter);
+  }
+
+  public R visitArrayAccess(DartArrayAccess node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitArrayLiteral(DartArrayLiteral node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitAssertion(DartAssertion node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitBinaryExpression(DartBinaryExpression node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitBlock(DartBlock node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitBooleanLiteral(DartBooleanLiteral node, P parameter) {
+    return visitLiteral(node, parameter);
+  }
+
+  public R visitBreakStatement(DartBreakStatement node, P parameter) {
+    return visitGotoStatement(node, parameter);
+  }
+
+  public R visitFunctionObjectInvocation(DartFunctionObjectInvocation node,
+      P parameter) {
+    return visitInvocation(node, parameter);
+  }
+
+  public R visitMethodInvocation(DartMethodInvocation node, P parameter) {
+    return visitInvocation(node, parameter);
+  }
+
+  public R visitUnqualifiedInvocation(DartUnqualifiedInvocation node,
+      P parameter) {
+    return visitInvocation(node, parameter);
+  }
+
+  public R visitSuperConstructorInvocation(DartSuperConstructorInvocation node,
+      P parameter) {
+    return visitInvocation(node, parameter);
+  }
+
+  public R visitCase(DartCase node, P parameter) {
+    return visitSwitchMember(node, parameter);
+  }
+
+  public R visitClass(DartClass node, P parameter) {
+    return visitDeclaration(node, parameter);
+  }
+
+  public R visitConditional(DartConditional node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitContinueStatement(DartContinueStatement node, P parameter) {
+    return visitGotoStatement(node, parameter);
+  }
+
+  public R visitDefault(DartDefault node, P parameter) {
+    return visitSwitchMember(node, parameter);
+  }
+
+  public R visitDoubleLiteral(DartDoubleLiteral node, P parameter) {
+    return visitLiteral(node, parameter);
+  }
+
+  public R visitDoWhileStatement(DartDoWhileStatement node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitEmptyStatement(DartEmptyStatement node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitExprStmt(DartExprStmt node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitField(DartField node, P parameter) {
+    return visitClassMember(node, parameter);
+  }
+
+  public R visitFieldDefinition(DartFieldDefinition node, P parameter) {
+    return visitNode(node, parameter);
+  }
+
+  public R visitForInStatement(DartForInStatement node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitForStatement(DartForStatement node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitFunction(DartFunction node, P parameter) {
+    return visitNode(node, parameter);
+  }
+
+  public R visitFunctionExpression(DartFunctionExpression node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitFunctionTypeAlias(DartFunctionTypeAlias node, P parameter) {
+    return visitDeclaration(node, parameter);
+  }
+
+  public R visitIdentifier(DartIdentifier node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitIfStatement(DartIfStatement node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitImportDirective(DartImportDirective node, P parameter) {
+    return visitDirective(node, parameter);
+  }
+
+  public R visitInitializer(DartInitializer node, P parameter) {
+    return visitNode(node, parameter);
+  }
+
+  public R visitIntegerLiteral(DartIntegerLiteral node, P parameter) {
+    return visitLiteral(node, parameter);
+  }
+
+  public R visitLabel(DartLabel node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitLibraryDirective(DartLibraryDirective node, P parameter) {
+    return visitDirective(node, parameter);
+  }
+
+  public R visitMapLiteral(DartMapLiteral node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitMapLiteralEntry(DartMapLiteralEntry node, P parameter) {
+    return visitNode(node, parameter);
+  }
+
+  public R visitMethodDefinition(DartMethodDefinition node, P parameter) {
+    return visitClassMember(node, parameter);
+  }
+
+  public R visitNativeDirective(DartNativeDirective node, P parameter) {
+    return visitDirective(node, parameter);
+  }
+
+  public R visitNewExpression(DartNewExpression node, P parameter) {
+    return visitInvocation(node, parameter);
+  }
+
+  public R visitNullLiteral(DartNullLiteral node, P parameter) {
+    return visitLiteral(node, parameter);
+  }
+
+  public R visitParameter(DartParameter node, P parameter) {
+    return visitDeclaration(node, parameter);
+  }
+
+  public R visitParameterizedTypeNode(DartParameterizedTypeNode node,
+      P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitParenthesizedExpression(DartParenthesizedExpression node,
+      P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitPropertyAccess(DartPropertyAccess node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitTypeNode(DartTypeNode node, P parameter) {
+    return visitNode(node, parameter);
+  }
+
+  public R visitResourceDirective(DartResourceDirective node, P parameter) {
+    return visitDirective(node, parameter);
+  }
+
+  public R visitReturnStatement(DartReturnStatement node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitSourceDirective(DartSourceDirective node, P parameter) {
+    return visitDirective(node, parameter);
+  }
+
+  public R visitStringLiteral(DartStringLiteral node, P parameter) {
+    return visitLiteral(node, parameter);
+  }
+
+  public R visitStringInterpolation(DartStringInterpolation node, P parameter) {
+    return visitLiteral(node, parameter);
+  }
+
+  public R visitSuperExpression(DartSuperExpression node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitSwitchStatement(DartSwitchStatement node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitSyntheticErrorExpression(DartSyntheticErrorExpression node,
+      P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitSyntheticErrorIdentifier(DartSyntheticErrorIdentifier node,
+      P parameter) {
+    return visitIdentifier(node, parameter);
+  }
+
+  public R visitSyntheticErrorStatement(DartSyntheticErrorStatement node,
+      P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitThisExpression(DartThisExpression node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitThrowStatement(DartThrowStatement node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitCatchBlock(DartCatchBlock node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitTryStatement(DartTryStatement node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitUnaryExpression(DartUnaryExpression node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitUnit(DartUnit node, P parameter) {
+    return visitNode(node, parameter);
+  }
+
+  public R visitVariable(DartVariable node, P parameter) {
+    return visitDeclaration(node, parameter);
+  }
+
+  public R visitVariableStatement(DartVariableStatement node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitWhileStatement(DartWhileStatement node, P parameter) {
+    return visitStatement(node, parameter);
+  }
+
+  public R visitNamedExpression(DartNamedExpression node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitTypeExpression(DartTypeExpression node, P parameter) {
+    return visitExpression(node, parameter);
+  }
+
+  public R visitTypeParameter(DartTypeParameter node, P parameter) {
+    return visitDeclaration(node, parameter);
+  }
+
+  public R visitNativeBlock(DartNativeBlock node, P parameter) {
+    return visitBlock(node, parameter);
+  }
+
+  public R visitRedirectConstructorInvocation(
+      DartRedirectConstructorInvocation node, P parameter) {
+    return visitInvocation(node, parameter);
+  }
 }

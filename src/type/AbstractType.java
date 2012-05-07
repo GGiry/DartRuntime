@@ -11,12 +11,12 @@ abstract class AbstractType implements Type {
   public boolean isNullable() {
     return isNullable;
   }
-  
+
   public abstract String getName();
-  
+
   @Override
   public String toString() {
-    return getName() + (isNullable()? "?": "");
+    return getName() + (isNullable() ? "?" : "");
   }
 
   Type merge(AbstractType type) {

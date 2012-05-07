@@ -90,7 +90,7 @@ class BridgeASTVisitor<R, P> extends ASTVisitor<R> {
   }
 
   P parameter;
-  
+
   @Override
   public R visitNode(DartNode node) {
     return visitor2.visitNode(node, parameter);
@@ -491,6 +491,5 @@ class BridgeASTVisitor<R, P> extends ASTVisitor<R> {
       DartRedirectConstructorInvocation node) {
     return visitor2.visitRedirectConstructorInvocation(node, parameter);
   }
-  
-  
+
 }

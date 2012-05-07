@@ -7,22 +7,22 @@ import com.google.dart.compiler.resolver.ClassElement;
 import static type.CoreTypeRepository.*;
 
 public class DoubleType extends PrimitiveType {
-	private final Double constant;
+  private final Double constant;
 
   DoubleType(boolean isNullable, Double constant) {
-		super(isNullable);
+    super(isNullable);
     this.constant = constant;
-	}
-  
+  }
+
   public static DoubleType constant(double constant) {
     return new DoubleType(false, constant);
   }
-  
+
   @Override
   public int hashCode() {
-    return (isNullable()?1 : 0) ^ Objects.hashCode(constant); 
+    return (isNullable() ? 1 : 0) ^ Objects.hashCode(constant);
   }
-  
+
   @Override
   public boolean equals(Object obj) {
     if (this == obj) {
@@ -31,26 +31,26 @@ public class DoubleType extends PrimitiveType {
     if (!(obj instanceof DoubleType)) {
       return false;
     }
-    DoubleType doubleType = (DoubleType)obj;
-    return isNullable() == doubleType.isNullable() &&
-           Objects.equals(constant, doubleType.constant);
+    DoubleType doubleType = (DoubleType) obj;
+    return isNullable() == doubleType.isNullable()
+        && Objects.equals(constant, doubleType.constant);
   }
-  
+
   @Override
-	ClassElement getLazyElement() {
-	  return CoreTypeRepository.getCoreTypeRepository().getDoubleClassElement();
-	}
-  
+  ClassElement getLazyElement() {
+    return CoreTypeRepository.getCoreTypeRepository().getDoubleClassElement();
+  }
+
   @Override
   public String getName() {
     return "double";
   }
-  
+
   @Override
   public String toString() {
-    return super.toString() + ((constant != null)? constant: "");
+    return super.toString() + ((constant != null) ? constant : "");
   }
-  
+
   @Override
   public DoubleType asNullable() {
     if (isNullable()) {
@@ -61,7 +61,7 @@ public class DoubleType extends PrimitiveType {
     }
     return new DoubleType(true, constant);
   }
-  
+
   @Override
   public DoubleType asNonNull() {
     if (!isNullable()) {
@@ -72,12 +72,13 @@ public class DoubleType extends PrimitiveType {
     }
     return new DoubleType(false, constant);
   }
-  
+
   @Override
-  public <R,P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
+  public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor,
+      P parameter) {
     return visitor.visitDoubleType(this, parameter);
   }
-  
+
   @Override
   public Double asConstant() {
     return constant;

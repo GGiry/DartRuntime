@@ -19,49 +19,49 @@ import com.google.dart.compiler.resolver.Resolver;
 import com.google.dart.compiler.type.TypeAnalyzer;
 
 public class Toto {
-	public static boolean test2() throws IOException {
-		String sdkPath = "../../dart-sdk/";
-		File sdkFile = new File(sdkPath);
-		File sourceFile = new File("Hello.dart");
+  public static boolean test2() throws IOException {
+    String sdkPath = "../../dart-sdk/";
+    File sdkFile = new File(sdkPath);
+    File sourceFile = new File("Hello.dart");
 
-		CompilerOptions compilerOptions = new CompilerOptions();
-		SystemLibraryManager libraryManager = new SystemLibraryManager(sdkFile,
-				DEFAULT_PLATFORM);
+    CompilerOptions compilerOptions = new CompilerOptions();
+    SystemLibraryManager libraryManager = new SystemLibraryManager(sdkFile,
+        DEFAULT_PLATFORM);
 
-		String[] options = { "--dart-sdk", sdkPath };
-		try {
-			CommandLineOptions.parse(options, compilerOptions);
-		} catch (CmdLineException e) {
-			e.printStackTrace();
-		}
+    String[] options = { "--dart-sdk", sdkPath };
+    try {
+      CommandLineOptions.parse(options, compilerOptions);
+    } catch (CmdLineException e) {
+      e.printStackTrace();
+    }
 
-		CompilerConfiguration config = new DefaultCompilerConfiguration(
-				compilerOptions, libraryManager) {
-			@Override
-			public List<DartCompilationPhase> getPhases() {
-				List<DartCompilationPhase> phases = new ArrayList<DartCompilationPhase>();
+    CompilerConfiguration config = new DefaultCompilerConfiguration(
+        compilerOptions, libraryManager) {
+      @Override
+      public List<DartCompilationPhase> getPhases() {
+        List<DartCompilationPhase> phases = new ArrayList<DartCompilationPhase>();
 
-				phases.add(new CompileTimeConstantAnalyzer.Phase());
-				phases.add(new Resolver.Phase()); 
-				/*
-				phases.add(new TypeAnalyzer()); 
-				 */
-				/*
-				 * phases.add(new DisplayPhase()); //
-				 */
-				/*
-				 * phases.add(new InterpretorPhase()); //
-				 */
+        phases.add(new CompileTimeConstantAnalyzer.Phase());
+        phases.add(new Resolver.Phase());
+        /*
+         * phases.add(new TypeAnalyzer());
+         */
+        /*
+         * phases.add(new DisplayPhase()); //
+         */
+        /*
+         * phases.add(new InterpretorPhase()); //
+         */
 
-				phases.add(new FlowTypingPhase());
-				return phases;
-			}
-		};
+        phases.add(new FlowTypingPhase());
+        return phases;
+      }
+    };
 
-		return DartCompiler.compilerMain(sourceFile, config);
-	}
+    return DartCompiler.compilerMain(sourceFile, config);
+  }
 
-	public static void main(String[] args) throws IOException {
-		test2();
-	}
+  public static void main(String[] args) throws IOException {
+    test2();
+  }
 }
