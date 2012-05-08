@@ -81,4 +81,24 @@ public class DoubleType extends PrimitiveType {
   public Double asConstant() {
     return constant;
   }
+  
+  @Override
+  Type merge(AbstractType type) {
+    if (type == DOUBLE_TYPE) {
+      return DOUBLE_TYPE;
+    }
+    if (type == DOUBLE_NON_NULL_TYPE) {
+      return (isNullable())? DOUBLE_TYPE: DOUBLE_NON_NULL_TYPE;
+    }
+    if (!(type instanceof DoubleType)) {
+      return super.merge(type);
+    }
+    if (this == DOUBLE_TYPE) {
+      return DOUBLE_TYPE;
+    }
+    if (this == DOUBLE_NON_NULL_TYPE) {
+      return (isNullable())? DOUBLE_TYPE: DOUBLE_NON_NULL_TYPE;
+    }
+    return super.merge(type);
+  }
 }

@@ -22,7 +22,7 @@ abstract class AbstractType implements Type {
   Type merge(AbstractType type) {
     Object constant = asConstant();
     if (constant != null && constant.equals(type.asConstant())) {
-      return this;
+      return (type.isNullable)?asNullable(): this;
     }
     if (type instanceof UnionType) {
       return ((UnionType) type).merge(this);

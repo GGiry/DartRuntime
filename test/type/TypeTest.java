@@ -2,8 +2,7 @@ package type;
 
 import java.math.BigInteger;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 
 import static type.CoreTypeRepository.*;
@@ -26,19 +25,19 @@ public class TypeTest {
 
   @Test
   public void nullableStillConst() {
-    Assert.assertEquals(TRUE.asNullable().asConstant(), (Boolean) true);
-    Assert.assertEquals(FALSE.asNullable().asConstant(), (Boolean) false);
+    Assert.assertEquals(TRUE.asNullable().asConstant(), true);
+    Assert.assertEquals(FALSE.asNullable().asConstant(), false);
     Assert.assertEquals(IntType.constant(BigInteger.TEN).asNullable().asConstant(), BigInteger.TEN);
-    Assert.assertEquals(DoubleType.constant(42.0).asNullable().asConstant(), 42.0);
+    Assert.assertEquals(DoubleType.constant(42.0).asNullable().asConstant(), (Double)42.0);
     Assert.assertEquals(NULL_TYPE.asNullable().asConstant(), Type.NULL_VALUE);
   }
 
   @Test
   public void nonNullStillConst() {
-    Assert.assertEquals(TRUE.asNonNull().asConstant(), (Boolean) true);
-    Assert.assertEquals(FALSE.asNonNull().asConstant(), (Boolean) false);
+    Assert.assertEquals(TRUE.asNonNull().asConstant(), true);
+    Assert.assertEquals(FALSE.asNonNull().asConstant(), false);
     Assert.assertEquals(IntType.constant(BigInteger.TEN).asNonNull().asConstant(), BigInteger.TEN);
-    Assert.assertEquals(DoubleType.constant(42.0).asNonNull().asConstant(), 42.0);
+    Assert.assertEquals(DoubleType.constant(42.0).asNonNull().asConstant(), (Double)42.0);
   }
 
   @Test(expected = IllegalStateException.class)
@@ -116,8 +115,8 @@ public class TypeTest {
 
   @Test
   public void consDouble() {
-    Assert.assertEquals(0.0, DoubleType.constant(0.0).asConstant());
-    Assert.assertEquals(42.0, DoubleType.constant(42.0).asConstant());
+    Assert.assertEquals((Double)0.0, DoubleType.constant(0.0).asConstant());
+    Assert.assertEquals((Double)42.0, DoubleType.constant(42.0).asConstant());
     Assert.assertTrue(DoubleType.constant(Double.NaN).asConstant().isNaN());
   }
 

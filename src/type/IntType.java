@@ -120,6 +120,45 @@ public class IntType extends PrimitiveType {
     }
     return null;
   }
+  
+  @Override
+  Type merge(AbstractType type) {
+    if (type == INT_TYPE) {
+      return INT_TYPE;  
+    }
+    if (type == INT_NON_NULL_TYPE) {
+      return (isNullable)? INT_TYPE: INT_NON_NULL_TYPE;  
+    }
+    if (!(type instanceof IntType)) {
+      return super.merge(type);
+    }
+    if (this == INT_TYPE) {
+      return INT_TYPE;
+    }
+    if (this == INT_NON_NULL_TYPE) {
+      return (type.isNullable)? INT_TYPE: INT_NON_NULL_TYPE;
+    }
+    
+    // test inclusion
+    IntType intType = (IntType) type;
+    if (maxBound != null && intType.minBound != null && maxBound.compareTo(intType.minBound) <0) {
+       // no intersection
+      return UnionType.createUnionType(this, intType);
+    }
+    if (minBound != null && intType.maxBound != null && intType.maxBound.compareTo(minBound) <0) {
+      // no intersection
+      return UnionType.createUnionType(intType, this);
+    }
+    BigInteger min = (minBound == null || intType.minBound == null)? null:
+        minBound.compareTo(intType.minBound) < 0? minBound: intType.minBound;
+    BigInteger max = (maxBound == null || intType.maxBound == null)? null:
+      maxBound.compareTo(intType.maxBound) > 0? maxBound: intType.maxBound;
+    boolean nullable = isNullable || intType.isNullable;
+    if (min == null && max == null) {
+      return (isNullable)? INT_TYPE: INT_NON_NULL_TYPE;
+    }
+    return new IntType(nullable, min, max);
+  }
 
   //
   // int[min, max] x = ...
