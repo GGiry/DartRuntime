@@ -2,10 +2,14 @@ package type;
 
 import static type.CoreTypeRepository.NULL_TYPE;
 
+import java.util.Objects;
+
 import com.google.dart.compiler.resolver.ClassElement;
 
 public class Types {
   public static Type union(Type type1, Type type2) {
+    Objects.requireNonNull(type1);
+    Objects.requireNonNull(type2);
     if (type1 == NULL_TYPE) {
       return type2.asNullable();
     }
