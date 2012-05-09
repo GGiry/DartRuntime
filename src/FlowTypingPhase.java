@@ -16,15 +16,23 @@ import com.google.dart.compiler.ast.DartBooleanLiteral;
 import com.google.dart.compiler.ast.DartClass;
 import com.google.dart.compiler.ast.DartDoubleLiteral;
 import com.google.dart.compiler.ast.DartExprStmt;
+import com.google.dart.compiler.ast.DartField;
+import com.google.dart.compiler.ast.DartFieldDefinition;
 import com.google.dart.compiler.ast.DartFunction;
 import com.google.dart.compiler.ast.DartIdentifier;
+import com.google.dart.compiler.ast.DartIfStatement;
 import com.google.dart.compiler.ast.DartIntegerLiteral;
 import com.google.dart.compiler.ast.DartMethodDefinition;
+import com.google.dart.compiler.ast.DartMethodInvocation;
+import com.google.dart.compiler.ast.DartNewExpression;
 import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.ast.DartParameter;
+import com.google.dart.compiler.ast.DartReturnStatement;
 import com.google.dart.compiler.ast.DartStatement;
+import com.google.dart.compiler.ast.DartThrowStatement;
 import com.google.dart.compiler.ast.DartTypeNode;
 import com.google.dart.compiler.ast.DartUnit;
+import com.google.dart.compiler.ast.DartUnqualifiedInvocation;
 import com.google.dart.compiler.ast.DartVariable;
 import com.google.dart.compiler.ast.DartVariableStatement;
 import com.google.dart.compiler.resolver.CoreTypeProvider;
@@ -50,6 +58,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     protected Type accept(DartNode node, FlowEnv flowEnv) {
+      if (node == null) {
+        return null;
+      }
       Type type = super.accept(node, flowEnv);
       if (type == null) {
         return null;
@@ -61,13 +72,65 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitClass(DartClass node, FlowEnv parameter) {
-      // TODO
+      FlowEnv env = new FlowEnv(parameter);
+
+      for (DartNode member : node.getMembers()) {
+        if (member != null) {
+          accept(member, env);
+        }
+      }
       return null;
+    }
+
+    @Override
+    public Type visitFieldDefinition(DartFieldDefinition node, FlowEnv parameter) {
+      for (DartField field : node.getFields()) {
+        accept(field, parameter);
+      }
+
+      return null;
+    }
+
+    @Override
+    public Type visitField(DartField node, FlowEnv parameter) {
+      // TODO Do we need to have field type in the FlowEnv ?
+      return Types.bridge(node.getValue() == null, typeRepository, node.getType());
     }
 
     @Override
     public Type visitMethodDefinition(DartMethodDefinition node, FlowEnv parameter) {
       accept(node.getFunction(), parameter);
+      return null;
+    }
+
+    @Override
+    public Type visitReturnStatement(DartReturnStatement node, FlowEnv parameter) {
+      accept(node.getValue(), parameter);
+      return null;
+    }
+
+    @Override
+    public Type visitNewExpression(DartNewExpression node, FlowEnv parameter) {
+      accept(node.getConstructor(), parameter);
+      return null;
+    }
+
+    @Override
+    public Type visitMethodInvocation(DartMethodInvocation node, FlowEnv parameter) {
+      // TODO nothing to do?
+      System.out.println("method Invoke: " + node.getType() + " " + node);
+      return null;
+    }
+
+    @Override
+    public Type visitUnqualifiedInvocation(DartUnqualifiedInvocation node, FlowEnv parameter) {
+      // TODO nothing to do?
+      return null;
+    }
+
+    @Override
+    public Type visitThrowStatement(DartThrowStatement node, FlowEnv parameter) {
+      // TODO nothing to do?
       return null;
     }
 
@@ -79,7 +142,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
         env.register(param.getElement(), accept(param.getTypeNode(), env));
       }
 
-      accept(node.getBody(), env);
+      DartBlock body = node.getBody();
+      if (body != null) {
+        accept(body, env);
+      }
+
+      System.out.println(env);
+
       return null;
     }
 
@@ -128,7 +197,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
     public Type visitIdentifier(DartIdentifier node, FlowEnv parameter) {
       switch (node.getElement().getKind()) {
       case VARIABLE:
+      case PARAMETER:
         return parameter.getType((VariableElement) node.getElement());
+      case FIELD:
+        return Types.bridge(true, typeRepository, node.getType());
       default:
         throw new AssertionError("visitIndentifier must be complete for " + node.getElement().getKind());
       }
@@ -140,34 +212,49 @@ public class FlowTypingPhase implements DartCompilationPhase {
       case ASSIGN:
         switch (node.getArg1().getElement().getKind()) {
         case VARIABLE:
+        case PARAMETER:
           parameter.register((VariableElement) node.getArg1().getElement(), Types.union(accept(node.getArg1(), parameter), accept(node.getArg2(), parameter)));
           break;
         default:
-          throw new AssertionError("Binary Expr: " + node.getArg1().getElement().getKind() + " to do");
+          throw new AssertionError("Binary Expr: " + node.getArg1().getElement().getKind() + " not implemented");
         }
 
         break;
 
+      case SUB:
+        return Types.union(accept(node.getArg1(), parameter), accept(node.getArg2(), parameter));
+
+      case EQ_STRICT:
+        break;
+
       default:
-        throw new AssertionError("Binary Expr: " + node.getOperator() + " to do");
+        throw new AssertionError("Binary Expr: " + node.getOperator() + " not implemented");
       }
       return null;
     }
 
     @Override
     public Type visitExprStmt(DartExprStmt node, FlowEnv parameter) {
-      accept(node.getExpression(), parameter);
-      return null;
+      return accept(node.getExpression(), parameter);
     }
 
     @Override
     public Type visitTypeNode(DartTypeNode node, FlowEnv parameter) {
       // TODO
+
+      return null;
+    }
+
+    @Override
+    public Type visitIfStatement(DartIfStatement node, FlowEnv parameter) {
+      accept(node.getThenStatement(), parameter);
+      accept(node.getElseStatement(), parameter);
       return null;
     }
 
     @Override
     public Type visitUnit(DartUnit node, FlowEnv unused) {
+      System.out.println("Unit:" + node.getSourceName());
       for (DartNode child : node.getTopLevelNodes()) {
         accept(child, null);
       }
