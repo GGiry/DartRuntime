@@ -141,11 +141,11 @@ public class IntType extends PrimitiveType {
     
     // test inclusion
     IntType intType = (IntType) type;
-    if (maxBound != null && intType.minBound != null && maxBound.compareTo(intType.minBound) <0) {
+    if (maxBound != null && intType.minBound != null && maxBound.compareTo(intType.minBound) < 0) {
        // no intersection
       return UnionType.createUnionType(this, intType);
     }
-    if (minBound != null && intType.maxBound != null && intType.maxBound.compareTo(minBound) <0) {
+    if (minBound != null && intType.maxBound != null && intType.maxBound.compareTo(minBound) < 0) {
       // no intersection
       return UnionType.createUnionType(intType, this);
     }
