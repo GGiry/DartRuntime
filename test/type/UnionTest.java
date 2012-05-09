@@ -42,6 +42,16 @@ public class UnionTest {
   }
   
   @Test
+  public void intCloseBoundsInclusion() {
+    IntType ten = IntType.constant(BigInteger.TEN);
+    IntType eleven = IntType.constant(BigInteger.valueOf(11));
+    IntType range = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.TEN).
+        asTypeLessOrEqualsThan(BigInteger.valueOf(11));
+    Assert.assertEquals(range, Types.union(ten, eleven));
+    Assert.assertEquals(range, Types.union(eleven, ten));
+  }
+  
+  @Test
   public void doubleUnion() {
     Assert.assertEquals(DOUBLE_TYPE, Types.union(DOUBLE_TYPE, DOUBLE_TYPE));
     Assert.assertEquals(DOUBLE_TYPE, Types.union(DOUBLE_TYPE, DOUBLE_NON_NULL_TYPE));
