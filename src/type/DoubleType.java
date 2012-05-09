@@ -83,7 +83,7 @@ public class DoubleType extends PrimitiveType {
   }
   
   @Override
-  Type merge(AbstractType type) {
+  AbstractType merge(AbstractType type) {
     if (type == DOUBLE_TYPE) {
       return DOUBLE_TYPE;
     }

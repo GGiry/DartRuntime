@@ -34,7 +34,7 @@ public class InterfaceType extends OwnerType {
     }
 
     InterfaceType interfaceType = (InterfaceType) obj;
-    return isNullable() == interfaceType.isNullable && getElement().equals(interfaceType.getElement());
+    return isNullable() == interfaceType.isNullable() && getElement().equals(interfaceType.getElement());
   }
 
   @Override
@@ -54,12 +54,12 @@ public class InterfaceType extends OwnerType {
 
   @Override
   public InterfaceType asNullable() {
-    return (isNullable) ? this : dualType;
+    return (isNullable()) ? this : dualType;
   }
 
   @Override
   public InterfaceType asNonNull() {
-    return (!isNullable) ? this : dualType;
+    return (!isNullable()) ? this : dualType;
   }
 
   @Override

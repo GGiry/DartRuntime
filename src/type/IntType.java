@@ -122,12 +122,12 @@ public class IntType extends PrimitiveType {
   }
 
   @Override
-  Type merge(AbstractType type) {
+  AbstractType merge(AbstractType type) {
     if (type == INT_TYPE) {
       return INT_TYPE;
     }
     if (type == INT_NON_NULL_TYPE) {
-      return (isNullable) ? INT_TYPE : INT_NON_NULL_TYPE;
+      return (isNullable())? INT_TYPE: INT_NON_NULL_TYPE;  
     }
     if (!(type instanceof IntType)) {
       return super.merge(type);
@@ -136,7 +136,7 @@ public class IntType extends PrimitiveType {
       return INT_TYPE;
     }
     if (this == INT_NON_NULL_TYPE) {
-      return (type.isNullable) ? INT_TYPE : INT_NON_NULL_TYPE;
+      return (type.isNullable())? INT_TYPE: INT_NON_NULL_TYPE;
     }
 
     // test inclusion
@@ -156,9 +156,9 @@ public class IntType extends PrimitiveType {
       minBound.compareTo(intType.minBound) < 0 ? minBound : intType.minBound;
     BigInteger max = (maxBound == null || intType.maxBound == null) ? null : 
       maxBound.compareTo(intType.maxBound) > 0 ? maxBound : intType.maxBound;
-    boolean nullable = isNullable || intType.isNullable;
+    boolean nullable = isNullable() || intType.isNullable();
     if (min == null && max == null) {
-      return (isNullable) ? INT_TYPE : INT_NON_NULL_TYPE;
+      return (isNullable())? INT_TYPE: INT_NON_NULL_TYPE;
     }
     return new IntType(nullable, min, max);
   }
