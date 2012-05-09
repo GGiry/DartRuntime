@@ -87,12 +87,12 @@ public class BoolType extends PrimitiveType {
   }
   
   @Override
-  Type merge(AbstractType type) {
+  AbstractType merge(AbstractType type) {
     if (type == BOOL_TYPE) {
       return BOOL_TYPE;
     }
     if (type == BOOL_NON_NULL_TYPE) {
-      return (isNullable)? BOOL_TYPE: BOOL_NON_NULL_TYPE;
+      return (isNullable())? BOOL_TYPE: BOOL_NON_NULL_TYPE;
     }
     if (!(type instanceof BoolType)) {
       return super.merge(type);
@@ -101,11 +101,11 @@ public class BoolType extends PrimitiveType {
       return BOOL_TYPE;
     }
     if (this == BOOL_NON_NULL_TYPE) {
-      return (type.isNullable)? BOOL_TYPE: BOOL_NON_NULL_TYPE;
+      return (type.isNullable())? BOOL_TYPE: BOOL_NON_NULL_TYPE;
     }
     BoolType boolType = (BoolType)type;
     assert constant != null && boolType.constant != null;
-    if (isNullable() || boolType.isNullable) {
+    if (isNullable() || boolType.isNullable()) {
       if (constant.equals(boolType.constant)) {
         return asNullable();
       }

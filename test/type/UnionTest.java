@@ -82,4 +82,18 @@ public class UnionTest {
     Assert.assertEquals(TRUE.asNullable(), Types.union(TRUE, TRUE.asNullable()));
     Assert.assertEquals(FALSE.asNullable(), Types.union(FALSE, FALSE.asNullable()));
   }
+  
+  @Test
+  public void unionMerge() {
+    AbstractType type1 = INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ZERO);
+    AbstractType type2 = INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.TEN);
+    Assert.assertEquals(UnionType.createUnionType(type1, DoubleType.constant(56.2)),
+        Types.union(type1, Types.union(DoubleType.constant(56.2), type2)));
+    Assert.assertEquals(UnionType.createUnionType(type1, DoubleType.constant(56.2)),
+        Types.union(type1, Types.union(type2, DoubleType.constant(56.2))));
+    Assert.assertEquals(UnionType.createUnionType(type1, DoubleType.constant(56.2)),
+        Types.union(Types.union(DoubleType.constant(56.2), type2), type1));
+    Assert.assertEquals(UnionType.createUnionType(type1, DoubleType.constant(56.2)),
+        Types.union(Types.union(type2, DoubleType.constant(56.2)), type1));
+  }
 }

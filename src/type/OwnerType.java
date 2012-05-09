@@ -36,7 +36,7 @@ abstract class OwnerType extends AbstractType implements Type {
     if (superType != null) {
       return superType;
     }
-    return superType = (InterfaceType) getTypeRepository().findType(isNullable, getElement().getSupertype().getElement());
+    return superType = (InterfaceType) getTypeRepository().findType(isNullable(), getElement().getSupertype().getElement());
   }
 
   /**
@@ -51,7 +51,7 @@ abstract class OwnerType extends AbstractType implements Type {
 
     ArrayList<InterfaceType> interfaces = new ArrayList<>();
     for (com.google.dart.compiler.type.InterfaceType interfaze : getElement().getInterfaces()) {
-      interfaces.add((InterfaceType) getTypeRepository().findType(isNullable, interfaze.getElement()));
+      interfaces.add((InterfaceType) getTypeRepository().findType(isNullable(), interfaze.getElement()));
     }
     return this.interfaces = interfaces;
   }

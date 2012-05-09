@@ -1,7 +1,7 @@
 package type;
 
 abstract class AbstractType implements Type {
-  protected final boolean isNullable;
+  private final boolean isNullable;
 
   AbstractType(boolean isNullable) {
     this.isNullable = isNullable;
@@ -18,8 +18,14 @@ abstract class AbstractType implements Type {
   public String toString() {
     return getName() + (isNullable() ? "?" : "");
   }
+  
+  @Override
+  public abstract AbstractType asNullable();
+  
+  @Override
+  public abstract AbstractType asNonNull();
 
-  Type merge(AbstractType type) {
+  AbstractType merge(AbstractType type) {
     Object constant = asConstant();
     if (constant != null && constant.equals(type.asConstant())) {
       return (type.isNullable)?asNullable(): this;
