@@ -51,7 +51,7 @@ public class BoolType extends PrimitiveType {
 
   @Override
   public String toString() {
-    return super.toString() + " " + ((constant != null) ? constant : "");
+    return super.toString() + ' ' + ((constant != null) ? constant : "");
   }
 
   @Override
