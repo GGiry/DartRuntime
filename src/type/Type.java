@@ -37,12 +37,15 @@ public interface Type {
    * Returns the constant value or null if the type is not constant. The value
    * {@link NullType#NULL_VALUE} is used to represent the constant value
    * {@code null}.
+   * The value {@link VoidType#VOID_VALUE} is used to represent the constant value {@code void}.
    * 
    * @return the constant value or null if the type is not constant.
    * 
    * @see #NULL_VALUE
+   * @see #VOID_VALUE
    */
   Object asConstant();
 
   public static final Object NULL_VALUE = new Object();
+  public static final Object VOID_VALUE = new Object();
 }

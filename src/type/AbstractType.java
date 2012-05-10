@@ -18,17 +18,17 @@ abstract class AbstractType implements Type {
   public String toString() {
     return getName() + (isNullable() ? "?" : "");
   }
-  
+
   @Override
   public abstract AbstractType asNullable();
-  
+
   @Override
   public abstract AbstractType asNonNull();
 
   AbstractType merge(AbstractType type) {
     Object constant = asConstant();
     if (constant != null && constant.equals(type.asConstant())) {
-      return (type.isNullable)?asNullable(): this;
+      return (type.isNullable) ? asNullable() : this;
     }
     if (type instanceof UnionType) {
       return ((UnionType) type).merge(this);
