@@ -33,6 +33,9 @@ public class TypeVisitor<R, P> {
     return visitType(type, parameter);
   }
   
+  public R visitDynamicType(DynamicType type, P parameter) {
+    return visitType(type, parameter);
+  }
   
   public R visitVoidType(VoidType type, P parameter) {
     return visitType(type, parameter);

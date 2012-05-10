@@ -63,6 +63,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     private Type asType(boolean nullable, com.google.dart.compiler.type.Type type) {
+      // TODO doesn't work with none primitive type.
       return typeRepository.findType(nullable, (ClassElement) type.getElement());
     }
 
@@ -279,6 +280,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitTypeNode(DartTypeNode node, FlowEnv parameter) {
+      System.out.println(node);
       for (DartTypeNode typeNode : node.getTypeArguments()) {
         System.out.println("visitTypeNode: loop");
         accept(typeNode, parameter);

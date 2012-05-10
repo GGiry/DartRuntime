@@ -1,10 +1,11 @@
 package type;
 
+import static type.CoreTypeRepository.DOUBLE_NON_NULL_TYPE;
+import static type.CoreTypeRepository.DOUBLE_TYPE;
+
 import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
-
-import static type.CoreTypeRepository.*;
 
 public class DoubleType extends PrimitiveType {
   private final Double constant;
@@ -81,14 +82,14 @@ public class DoubleType extends PrimitiveType {
   public Double asConstant() {
     return constant;
   }
-  
+
   @Override
   AbstractType merge(AbstractType type) {
     if (type == DOUBLE_TYPE) {
       return DOUBLE_TYPE;
     }
     if (type == DOUBLE_NON_NULL_TYPE) {
-      return (isNullable())? DOUBLE_TYPE: DOUBLE_NON_NULL_TYPE;
+      return (isNullable()) ? DOUBLE_TYPE : DOUBLE_NON_NULL_TYPE;
     }
     if (!(type instanceof DoubleType)) {
       return super.merge(type);
@@ -97,7 +98,7 @@ public class DoubleType extends PrimitiveType {
       return DOUBLE_TYPE;
     }
     if (this == DOUBLE_NON_NULL_TYPE) {
-      return (isNullable())? DOUBLE_TYPE: DOUBLE_NON_NULL_TYPE;
+      return (isNullable()) ? DOUBLE_TYPE : DOUBLE_NON_NULL_TYPE;
     }
     return super.merge(type);
   }

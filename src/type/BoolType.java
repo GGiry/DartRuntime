@@ -18,9 +18,9 @@ public class BoolType extends PrimitiveType {
   }
 
   public static BoolType constant(boolean constant) {
-    return (constant)? TRUE: FALSE; 
+    return (constant) ? TRUE : FALSE;
   }
-  
+
   @Override
   public int hashCode() {
     return (isNullable() ? 1 : 0) ^ Objects.hashCode(constant);
@@ -35,8 +35,7 @@ public class BoolType extends PrimitiveType {
       return false;
     }
     BoolType boolType = (BoolType) obj;
-    return isNullable() == boolType.isNullable() &&
-           Objects.equals(constant, boolType.constant);
+    return isNullable() == boolType.isNullable() && Objects.equals(constant, boolType.constant);
   }
 
   @Override
@@ -85,14 +84,14 @@ public class BoolType extends PrimitiveType {
   public Boolean asConstant() {
     return constant;
   }
-  
+
   @Override
   AbstractType merge(AbstractType type) {
     if (type == BOOL_TYPE) {
       return BOOL_TYPE;
     }
     if (type == BOOL_NON_NULL_TYPE) {
-      return (isNullable())? BOOL_TYPE: BOOL_NON_NULL_TYPE;
+      return (isNullable()) ? BOOL_TYPE : BOOL_NON_NULL_TYPE;
     }
     if (!(type instanceof BoolType)) {
       return super.merge(type);
@@ -101,9 +100,9 @@ public class BoolType extends PrimitiveType {
       return BOOL_TYPE;
     }
     if (this == BOOL_NON_NULL_TYPE) {
-      return (type.isNullable())? BOOL_TYPE: BOOL_NON_NULL_TYPE;
+      return (type.isNullable()) ? BOOL_TYPE : BOOL_NON_NULL_TYPE;
     }
-    BoolType boolType = (BoolType)type;
+    BoolType boolType = (BoolType) type;
     assert constant != null && boolType.constant != null;
     if (isNullable() || boolType.isNullable()) {
       if (constant.equals(boolType.constant)) {
