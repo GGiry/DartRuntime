@@ -40,4 +40,8 @@ public class TypeVisitor<R, P> {
   public R visitVoidType(VoidType type, P parameter) {
     return visitType(type, parameter);
   }
+  
+  public R visitFunctionType(FunctionType type, P parameter) {
+    return visitType(type, parameter);
+  }
 }

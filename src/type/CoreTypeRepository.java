@@ -21,11 +21,18 @@ public class CoreTypeRepository extends TypeRepository {
 
   public final static StringType STRING_TYPE = new StringType(true, null);
   public final static StringType STRING_NON_NULL_TYPE = new StringType(false, null);
-  
+
   public final static VoidType VOID_TYPE = new VoidType(true);
   public final static VoidType VOID_NON_NULL_TYPE = new VoidType(false);
-  
+
+  public final static DynamicType DYNAMIC_TYPE = new DynamicType();
+
+  public final static FunctionType FUNCTION_TYPE = new FunctionType(true);
+  public final static FunctionType FUNCTION_NON_NULL_TYPE = new FunctionType(false);
+
   public final static NullType NULL_TYPE = new NullType();
+
+  public static final InterfaceType INTERFACE_TYPE = new InterfaceType(true, null, null);
 
   private CoreTypeRepository(CoreTypeProvider coreTypeProvider) {
     super(null);
@@ -73,6 +80,7 @@ public class CoreTypeRepository extends TypeRepository {
   }
 
   ClassElement getStringClassElement() {
+    coreTypeProvider.getDynamicType().getElement();
     return coreTypeProvider.getStringType().getElement();
   }
 }

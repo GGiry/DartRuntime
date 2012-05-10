@@ -57,20 +57,34 @@ public class FlowTypingPhase implements DartCompilationPhase {
     FTVisitor(CoreTypeRepository coreTypeRepository) {
       this.typeRepository = new TypeRepository(coreTypeRepository);
     }
-    
+
     FTVisitor(TypeRepository typeRepository) {
       this.typeRepository = typeRepository;
     }
 
     private Type asType(boolean nullable, com.google.dart.compiler.type.Type type) {
-      // TODO doesn't work with none primitive type.
-      return typeRepository.findType(nullable, (ClassElement) type.getElement());
+      switch (type.getKind()) {
+      case VOID:
+        return CoreTypeRepository.VOID_TYPE;
+      case DYNAMIC:
+        return CoreTypeRepository.DYNAMIC_TYPE;
+      case FUNCTION:
+      case FUNCTION_ALIAS:
+        return CoreTypeRepository.FUNCTION_TYPE;
+      case VARIABLE:
+        return typeRepository.findType(nullable, (ClassElement) type.getElement());
+      case INTERFACE:
+        return CoreTypeRepository.INTERFACE_TYPE;
+      case NONE:
+      default:
+        throw new AssertionError("asType: " + type.getKind() + " must be implemented");
+      }
     }
 
     public static void flowTyping(DartNode node, CoreTypeRepository coreTypeRepository) {
       node.accept(new FTVisitor(coreTypeRepository).asASTVisitor());
     }
-    
+
     public static void flowTyping(DartNode node, TypeRepository typeRepository) {
       node.accept(new FTVisitor(typeRepository).asASTVisitor());
     }
@@ -280,23 +294,19 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitTypeNode(DartTypeNode node, FlowEnv parameter) {
-      System.out.println(node);
       for (DartTypeNode typeNode : node.getTypeArguments()) {
-        System.out.println("visitTypeNode: loop");
         accept(typeNode, parameter);
       }
 
       return asType(true, node.getType());
     }
 
-    /*
-    @Override
-    public Type visitIfStatement(DartIfStatement node, FlowEnv parameter) {
-      accept(node.getThenStatement(), parameter);
-      accept(node.getElseStatement(), parameter);
-      return null;
-    }
-     */
+    // @Override
+    // public Type visitIfStatement(DartIfStatement node, FlowEnv parameter) {
+    // accept(node.getThenStatement(), parameter);
+    // accept(node.getElseStatement(), parameter);
+    // return null;
+    // }
 
     @Override
     public Type visitUnit(DartUnit node, FlowEnv unused) {
