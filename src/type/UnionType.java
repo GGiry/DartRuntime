@@ -42,12 +42,7 @@ public class UnionType extends AbstractType {
 
   @Override
   public String toString() {
-    return super.toString() + types;
-  }
-
-  @Override
-  public String getName() {
-    return "union";
+    return "union" + super.toString() + types;
   }
 
   @Override

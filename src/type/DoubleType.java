@@ -42,13 +42,8 @@ public class DoubleType extends PrimitiveType {
   }
 
   @Override
-  public String getName() {
-    return "double";
-  }
-
-  @Override
   public String toString() {
-    return super.toString() + ' ' + ((constant != null) ? constant : "");
+    return "double" + super.toString() + ' ' + ((constant != null) ? constant : "");
   }
 
   @Override

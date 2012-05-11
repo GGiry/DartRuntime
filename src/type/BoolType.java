@@ -44,13 +44,8 @@ public class BoolType extends PrimitiveType {
   }
 
   @Override
-  public String getName() {
-    return "bool";
-  }
-
-  @Override
   public String toString() {
-    return super.toString() + ' ' + ((constant != null) ? constant : "");
+    return "bool" + super.toString() + ' ' + ((constant != null) ? constant : "");
   }
 
   @Override

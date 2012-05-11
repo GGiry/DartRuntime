@@ -48,13 +48,8 @@ public class IntType extends PrimitiveType {
   }
 
   @Override
-  public String getName() {
-    return "int";
-  }
-
-  @Override
   public String toString() {
-    return super.toString() + " [" + infinity('-', minBound) + ',' + infinity('+', maxBound) + ']';
+    return "int" + super.toString() + " [" + infinity('-', minBound) + ',' + infinity('+', maxBound) + ']';
   }
 
   private static String infinity(char sign, BigInteger value) {

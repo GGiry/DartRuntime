@@ -1,12 +1,15 @@
 package type;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import com.google.dart.compiler.resolver.ClassElement;
 
 public class TypeRepository {
   private final/* maybenull */TypeRepository typeRepository;
   final HashMap<ClassElement, Type> map = new HashMap<>();
+  private final HashMap<FunctionType, FunctionType> functionMap = new HashMap<>();
 
   public TypeRepository(/* maybenull */TypeRepository typeRepository) {
     this.typeRepository = typeRepository;
@@ -14,11 +17,14 @@ public class TypeRepository {
 
   public Type findType(boolean nullable, ClassElement element) {
     if (typeRepository != null) {
-      Type type = typeRepository.findType(nullable, element);
-      if (type != null) {
-        return (nullable) ? type : type.asNonNull();
-      }
+      return typeRepository.findType(nullable, element);
     }
+    
+    Type type = map.get(element);
+    if (type != null) {
+      return (nullable) ? type : type.asNonNull();
+    }
+    
     InterfaceType nullableType = createInterfaceType(element);
     return (nullable) ? nullableType : nullableType.asNonNull();
   }
@@ -32,16 +38,25 @@ public class TypeRepository {
     return nullableType;
   }
 
-  public Type findFunction(com.google.dart.compiler.type.FunctionType type) {
+  public FunctionType findFunction(boolean nullable, Type returnType, List<Type> parameterTypes, Map<String , Type> namedParameterTypes) {
+    FunctionType key = new FunctionType(true, returnType, parameterTypes, namedParameterTypes);
+    return findFunction(nullable, key);
+  }
+  
+  private FunctionType findFunction(boolean nullable, FunctionType key) {
     if (typeRepository != null) {
-      Type functionType = typeRepository.findFunction(type);
-      if (type != null) {
+      FunctionType functionType = typeRepository.findFunction(nullable, key);
+      if (functionType != null) {
         return functionType;
       }
     }
 
-    Type functionType = new FunctionType(type.getReturnType(), type.getParameterTypes(), type.getNamedParameterTypes());
-    map.put(type.getElement(), functionType);
-    return functionType;
+    FunctionType functionType = functionMap.get(key);
+    if (functionType != null) {
+      return (nullable)? functionType: functionType.asNonNull();
+    }
+    
+    functionMap.put(key, key);
+    return key;
   }
 }

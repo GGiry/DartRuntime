@@ -1,8 +1,14 @@
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import type.BoolType;
 import type.CoreTypeRepository;
 import type.DoubleType;
+import type.FunctionType;
 import type.IntType;
 import type.Type;
 import type.TypeRepository;
@@ -41,7 +47,6 @@ import com.google.dart.compiler.resolver.CoreTypeProvider;
 import com.google.dart.compiler.resolver.Element;
 import com.google.dart.compiler.resolver.VariableElement;
 import com.google.dart.compiler.type.FunctionAliasType;
-import com.google.dart.compiler.type.FunctionType;
 
 public class FlowTypingPhase implements DartCompilationPhase {
   @Override
@@ -78,14 +83,37 @@ public class FlowTypingPhase implements DartCompilationPhase {
         return typeRepository.findType(nullable, (ClassElement) type.getElement());
       case FUNCTION:
         System.err.println("FUNCTION:");
-        return typeRepository.findFunction((FunctionType) type);
+        return asFunctionType(nullable, (com.google.dart.compiler.type.FunctionType) type);
       case FUNCTION_ALIAS:
         System.err.println("FUNCTION_ALIAS:");
-        return typeRepository.findFunction(((FunctionAliasType) type).getElement().getFunctionType());
+        return asFunctionType(nullable, ((FunctionAliasType) type).getElement().getFunctionType());
       case NONE:
       default:
         throw new AssertionError("asType: " + type.getKind() + " must be implemented");
       }
+    }
+    
+    private FunctionType asFunctionType(boolean nullable, com.google.dart.compiler.type.FunctionType functionType) {
+      return typeRepository.findFunction(nullable,
+          asType(false, functionType.getReturnType()),
+              asTypeList(functionType.getParameterTypes()),
+              asTypeMap(functionType.getNamedParameterTypes()));
+    }
+    
+    private List<Type> asTypeList(List<com.google.dart.compiler.type.Type> types) {
+      ArrayList<Type> typeList = new ArrayList<>(types.size());
+      for(com.google.dart.compiler.type.Type type: types) {
+        typeList.add(asType(false, type));
+      }
+      return typeList;
+    }
+    
+    private Map<String, Type> asTypeMap(Map<String, com.google.dart.compiler.type.Type> types) {
+      LinkedHashMap<String, Type> typeMap = new LinkedHashMap<>(types.size());
+      for(Entry<String, com.google.dart.compiler.type.Type> entry: types.entrySet()) {
+        typeMap.put(entry.getKey(), asType(false, entry.getValue()));
+      }
+      return typeMap;
     }
 
     public static Type flowTyping(DartNode node, CoreTypeRepository coreTypeRepository) {

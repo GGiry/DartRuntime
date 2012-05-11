@@ -36,15 +36,15 @@ public class InterfaceType extends OwnerType {
     InterfaceType interfaceType = (InterfaceType) obj;
     return isNullable() == interfaceType.isNullable() && getElement().equals(interfaceType.getElement());
   }
-
+  
   @Override
   public ClassElement getElement() {
     return element;
   }
-
+  
   @Override
-  public String getName() {
-    return getElement().getName();
+  public String toString() {
+    return getElement().getName() + super.toString();
   }
 
   @Override
