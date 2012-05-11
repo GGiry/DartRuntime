@@ -1,9 +1,24 @@
 package type;
 
-public class VoidType extends AbstractType {
+public class VoidType implements Type {
 
-  VoidType(boolean isNullable) {
-    super(isNullable);
+  VoidType() {
+    // enforce singleton
+  }
+
+  @Override
+  public boolean isNullable() {
+    throw new IllegalStateException("void type");
+  }
+
+  @Override
+  public AbstractType asNullable() {
+    throw new IllegalStateException("void type");
+  }
+
+  @Override
+  public AbstractType asNonNull() {
+    throw new IllegalStateException("void type");
   }
 
   @Override
@@ -12,22 +27,7 @@ public class VoidType extends AbstractType {
   }
 
   @Override
-  public String getName() {
-    return "void";
-  }
-
-  @Override
   public Object asConstant() {
-    return VOID_VALUE;
-  }
-
-  @Override
-  public AbstractType asNullable() {
-    return new VoidType(true);
-  }
-
-  @Override
-  public AbstractType asNonNull() {
-    return new VoidType(false);
+    throw new IllegalStateException("void type");
   }
 }

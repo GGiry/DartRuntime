@@ -38,7 +38,10 @@ import com.google.dart.compiler.ast.DartVariable;
 import com.google.dart.compiler.ast.DartVariableStatement;
 import com.google.dart.compiler.resolver.ClassElement;
 import com.google.dart.compiler.resolver.CoreTypeProvider;
+import com.google.dart.compiler.resolver.Element;
 import com.google.dart.compiler.resolver.VariableElement;
+import com.google.dart.compiler.type.FunctionAliasType;
+import com.google.dart.compiler.type.FunctionType;
 
 public class FlowTypingPhase implements DartCompilationPhase {
   @Override
@@ -68,13 +71,14 @@ public class FlowTypingPhase implements DartCompilationPhase {
         return CoreTypeRepository.VOID_TYPE;
       case DYNAMIC:
         return CoreTypeRepository.DYNAMIC_TYPE;
-      case FUNCTION:
-      case FUNCTION_ALIAS:
-        return CoreTypeRepository.FUNCTION_TYPE;
       case VARIABLE:
         return typeRepository.findType(nullable, (ClassElement) type.getElement());
       case INTERFACE:
-        return CoreTypeRepository.INTERFACE_TYPE;
+        return typeRepository.findType(nullable, (ClassElement) type.getElement());
+      case FUNCTION:
+        return typeRepository.findFunction(((FunctionAliasType) type).getElement().getFunctionType());
+      case FUNCTION_ALIAS:
+        return typeRepository.findFunction((FunctionType) type);
       case NONE:
       default:
         throw new AssertionError("asType: " + type.getKind() + " must be implemented");
@@ -257,21 +261,24 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
+      DartExpression arg1 = node.getArg1();
+      DartExpression arg2 = node.getArg2();
       switch (node.getOperator()) {
       case ASSIGN:
-        switch (node.getArg1().getElement().getKind()) {
+        Element arg1Element = arg1.getElement();
+        switch (arg1Element.getKind()) {
         case VARIABLE:
         case PARAMETER:
-          parameter.register((VariableElement) node.getArg1().getElement(), Types.union(accept(node.getArg1(), parameter), accept(node.getArg2(), parameter)));
+          parameter.register((VariableElement) arg1Element, Types.union(accept(arg1, parameter), accept(arg2, parameter)));
           break;
         default:
-          throw new AssertionError("Binary Expr: " + node.getArg1().getElement().getKind() + " not implemented");
+          throw new AssertionError("Binary Expr: " + arg1Element.getKind() + " not implemented");
         }
 
         break;
 
       case SUB:
-        return Types.union(accept(node.getArg1(), parameter), accept(node.getArg2(), parameter));
+        return Types.union(accept(arg1, parameter), accept(arg2, parameter));
 
       case EQ_STRICT:
         break;
@@ -297,7 +304,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
       for (DartTypeNode typeNode : node.getTypeArguments()) {
         accept(typeNode, parameter);
       }
-
       return asType(true, node.getType());
     }
 

@@ -1,11 +1,12 @@
 package type;
 
+import static type.CoreTypeRepository.INT_NON_NULL_TYPE;
+import static type.CoreTypeRepository.INT_TYPE;
+
 import java.math.BigInteger;
 import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
-
-import static type.CoreTypeRepository.*;
 
 public class IntType extends PrimitiveType {
   private final BigInteger minBound;
@@ -127,7 +128,7 @@ public class IntType extends PrimitiveType {
       return INT_TYPE;
     }
     if (type == INT_NON_NULL_TYPE) {
-      return (isNullable())? INT_TYPE: INT_NON_NULL_TYPE;  
+      return (isNullable()) ? INT_TYPE : INT_NON_NULL_TYPE;
     }
     if (!(type instanceof IntType)) {
       return super.merge(type);
@@ -136,7 +137,7 @@ public class IntType extends PrimitiveType {
       return INT_TYPE;
     }
     if (this == INT_NON_NULL_TYPE) {
-      return (type.isNullable())? INT_TYPE: INT_NON_NULL_TYPE;
+      return (type.isNullable()) ? INT_TYPE : INT_NON_NULL_TYPE;
     }
 
     // test inclusion
@@ -152,13 +153,11 @@ public class IntType extends PrimitiveType {
       return UnionType.createUnionType(intType, this);
     }
 
-    BigInteger min = (minBound == null || intType.minBound == null) ? null : 
-      minBound.compareTo(intType.minBound) < 0 ? minBound : intType.minBound;
-    BigInteger max = (maxBound == null || intType.maxBound == null) ? null : 
-      maxBound.compareTo(intType.maxBound) > 0 ? maxBound : intType.maxBound;
+    BigInteger min = (minBound == null || intType.minBound == null) ? null : minBound.compareTo(intType.minBound) < 0 ? minBound : intType.minBound;
+    BigInteger max = (maxBound == null || intType.maxBound == null) ? null : maxBound.compareTo(intType.maxBound) > 0 ? maxBound : intType.maxBound;
     boolean nullable = isNullable() || intType.isNullable();
     if (min == null && max == null) {
-      return (isNullable())? INT_TYPE: INT_NON_NULL_TYPE;
+      return (isNullable()) ? INT_TYPE : INT_NON_NULL_TYPE;
     }
     return new IntType(nullable, min, max);
   }

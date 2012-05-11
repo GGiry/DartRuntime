@@ -21,10 +21,6 @@ public class TypeVisitor<R, P> {
     return visitType(type, parameter);
   }
 
-  public R visitStringType(StringType type, P parameter) {
-    return visitType(type, parameter);
-  }
-
   public R visitInterfaceType(InterfaceType type, P parameter) {
     return visitType(type, parameter);
   }

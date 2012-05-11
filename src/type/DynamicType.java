@@ -1,21 +1,12 @@
 package type;
 
+import static type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
+import static type.CoreTypeRepository.DYNAMIC_TYPE;
 
 public class DynamicType extends AbstractType {
 
-  public DynamicType() {
-    super(false);
-  }
-  
-  @Override
-  public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
-    visitor.visitDynamicType(this, parameter);
-    return null;
-  }
-
-  @Override
-  public Object asConstant() {
-    return null;
+  public DynamicType(boolean nullable) {
+    super(nullable);
   }
 
   @Override
@@ -25,11 +16,27 @@ public class DynamicType extends AbstractType {
 
   @Override
   public AbstractType asNullable() {
-    throw new IllegalStateException("dynamic type");
+    if (isNullable()) {
+      return this;
+    }
+    return DYNAMIC_TYPE;
   }
 
   @Override
   public AbstractType asNonNull() {
-    return this;
+    if (!isNullable()) {
+      return this;
+    }
+    return DYNAMIC_NON_NULL_TYPE;
+  }
+
+  @Override
+  public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
+    return visitor.visitDynamicType(this, parameter);
+  }
+
+  @Override
+  public Object asConstant() {
+    return null;
   }
 }

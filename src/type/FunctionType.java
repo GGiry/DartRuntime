@@ -1,9 +1,47 @@
 package type;
 
-public class FunctionType extends AbstractType {
+import java.util.List;
+import java.util.Map;
 
-  FunctionType(boolean isNullable) {
-    super(isNullable);
+public class FunctionType implements Type {
+  private final com.google.dart.compiler.type.Type returnType;
+  private final List<com.google.dart.compiler.type.Type> parameterTypes;
+  private final Map<String, com.google.dart.compiler.type.Type> namedParameterTypes;
+
+  FunctionType(com.google.dart.compiler.type.Type returnType, List<com.google.dart.compiler.type.Type> parameterTypes,
+      Map<String, com.google.dart.compiler.type.Type> namedParameterTypes) {
+    this.returnType = returnType;
+    this.parameterTypes = parameterTypes;
+    this.namedParameterTypes = namedParameterTypes;
+  }
+
+  public com.google.dart.compiler.type.Type getReturnType() {
+    return returnType;
+  }
+
+  public List<com.google.dart.compiler.type.Type> getParameterTypes() {
+    return parameterTypes;
+  }
+
+  public Map<String, com.google.dart.compiler.type.Type> getNamedParameterTypes() {
+    return namedParameterTypes;
+  }
+
+  @Override
+  public boolean isNullable() {
+    return false;
+  }
+
+  @Override
+  public AbstractType asNullable() {
+    // TODO
+    return null;
+  }
+
+  @Override
+  public AbstractType asNonNull() {
+    // TODO
+    return null;
   }
 
   @Override
@@ -14,26 +52,5 @@ public class FunctionType extends AbstractType {
   @Override
   public Object asConstant() {
     return null;
-  }
-
-  @Override
-  public String getName() {
-    return "function";
-  }
-
-  @Override
-  public AbstractType asNullable() {
-    if (isNullable()) {
-      return this;
-    }
-    return new FunctionType(false);
-  }
-
-  @Override
-  public AbstractType asNonNull() {
-    if (!isNullable()) {
-      return this;
-    }
-    return new FunctionType(true);
   }
 }

@@ -19,20 +19,17 @@ public class CoreTypeRepository extends TypeRepository {
   public final static DoubleType DOUBLE_TYPE = new DoubleType(true, null);
   public final static DoubleType DOUBLE_NON_NULL_TYPE = new DoubleType(false, null);
 
-  public final static StringType STRING_TYPE = new StringType(true, null);
-  public final static StringType STRING_NON_NULL_TYPE = new StringType(false, null);
+  public final static VoidType VOID_TYPE = new VoidType();
 
-  public final static VoidType VOID_TYPE = new VoidType(true);
-  public final static VoidType VOID_NON_NULL_TYPE = new VoidType(false);
+  public final static DynamicType DYNAMIC_TYPE = new DynamicType(true);
+  public final static DynamicType DYNAMIC_NON_NULL_TYPE = new DynamicType(false);
 
-  public final static DynamicType DYNAMIC_TYPE = new DynamicType();
+  public final static NullType NULL_TYPE = new NullType();  
+  
+  private final InterfaceType stringType;
+  private final InterfaceType functionType;
 
-  public final static FunctionType FUNCTION_TYPE = new FunctionType(true);
-  public final static FunctionType FUNCTION_NON_NULL_TYPE = new FunctionType(false);
-
-  public final static NullType NULL_TYPE = new NullType();
-
-  public static final InterfaceType INTERFACE_TYPE = new InterfaceType(true, null, null);
+  //public static final InterfaceType INTERFACE_TYPE = new InterfaceType(true, null, null);
 
   private CoreTypeRepository(CoreTypeProvider coreTypeProvider) {
     super(null);
@@ -45,8 +42,10 @@ public class CoreTypeRepository extends TypeRepository {
     map.put(getBoolClassElement(), BOOL_TYPE);
     map.put(getIntClassElement(), INT_TYPE);
     map.put(getDoubleClassElement(), DOUBLE_TYPE);
-    map.put(getStringClassElement(), STRING_TYPE);
     // TODO maybe add void here ??
+    
+    stringType = createInterfaceType(coreTypeProvider.getStringType().getElement());
+    functionType = createInterfaceType(coreTypeProvider.getFunctionType().getElement());
   }
 
   private static CoreTypeRepository CORE_TYPE_REPOSITORY;
@@ -66,7 +65,18 @@ public class CoreTypeRepository extends TypeRepository {
     Objects.requireNonNull(CORE_TYPE_REPOSITORY);
     return CORE_TYPE_REPOSITORY;
   }
+  
+  
+  public InterfaceType getStringType() {
+    return stringType;
+  }
+  public InterfaceType getFunctionType() {
+    return functionType;
+  }
 
+  
+  // class elements of lazy evaluated primitive types
+  
   ClassElement getBoolClassElement() {
     return coreTypeProvider.getBoolType().getElement();
   }
@@ -77,10 +87,5 @@ public class CoreTypeRepository extends TypeRepository {
 
   ClassElement getDoubleClassElement() {
     return coreTypeProvider.getDoubleType().getElement();
-  }
-
-  ClassElement getStringClassElement() {
-    coreTypeProvider.getDynamicType().getElement();
-    return coreTypeProvider.getStringType().getElement();
   }
 }

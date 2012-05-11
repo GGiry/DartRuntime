@@ -27,6 +27,7 @@ abstract class AbstractType implements Type {
 
   AbstractType merge(AbstractType type) {
     Object constant = asConstant();
+    
     if (constant != null && constant.equals(type.asConstant())) {
       return (type.isNullable) ? asNullable() : this;
     }
