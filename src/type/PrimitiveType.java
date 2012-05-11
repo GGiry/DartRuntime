@@ -2,7 +2,7 @@ package type;
 
 import com.google.dart.compiler.resolver.ClassElement;
 
-abstract class PrimitiveType extends OwnerType {
+abstract class PrimitiveType extends ElementType {
   private ClassElement element; // lazy found
 
   PrimitiveType(boolean isNullable) {

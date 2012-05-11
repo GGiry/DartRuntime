@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
 
-public class InterfaceType extends OwnerType {
+public class InterfaceType extends ElementType {
   private final ClassElement element;
   private final TypeRepository typeRepository;
   private InterfaceType dualType;

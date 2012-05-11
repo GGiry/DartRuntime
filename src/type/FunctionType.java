@@ -1,14 +1,16 @@
 package type;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
-public class FunctionType extends AbstractType {
+public class FunctionType extends AbstractType implements OwnerType {
   private final Type returnType;
   private final List<Type> parameterTypes;
   private final Map<String, Type> namedParameterTypes;
+  private FunctionType dualType;
 
   FunctionType(boolean nullable, Type returnType, List<Type> parameterTypes, Map<String, Type> namedParameterTypes) {
     super(nullable);
@@ -17,9 +19,14 @@ public class FunctionType extends AbstractType {
     this.namedParameterTypes = Objects.requireNonNull(namedParameterTypes);
   }
   
+  void postInitDualType(FunctionType dualType) {
+    this.dualType = dualType;
+  }
+  
   @Override
   public int hashCode() {
-    return returnType.hashCode() ^
+    return (isNullable() ? 1 : 0) ^
+        returnType.hashCode() ^
         Integer.rotateLeft(parameterTypes.hashCode(), 8) ^
         Integer.rotateLeft(namedParameterTypes.hashCode(), 24);
   }
@@ -75,20 +82,25 @@ public class FunctionType extends AbstractType {
     builder.append(") -> ").append(returnType);
     return builder.toString();
   }
-
+  
   @Override
-  public boolean isNullable() {
-    throw new IllegalStateException("function type");
+  public InterfaceType getSuperType() {
+    return null;
+  }
+  
+  @Override
+  public List<InterfaceType> getInterfaces() {
+    return Collections.singletonList(CoreTypeRepository.getCoreTypeRepository().getFunctionType());
   }
 
   @Override
   public FunctionType asNullable() {
-    throw new IllegalStateException("function type");
+    return (isNullable()) ? this : dualType;
   }
 
   @Override
   public FunctionType asNonNull() {
-    throw new IllegalStateException("function type");
+    return (!isNullable()) ? this : dualType;
   }
 
   @Override
@@ -98,6 +110,6 @@ public class FunctionType extends AbstractType {
 
   @Override
   public Object asConstant() {
-    throw new IllegalStateException("function type");
+    return null;
   }
 }

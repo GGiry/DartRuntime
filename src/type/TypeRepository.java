@@ -57,6 +57,9 @@ public class TypeRepository {
     }
     
     functionMap.put(key, key);
+    FunctionType dualType = new FunctionType(false, key.getReturnType(), key.getParameterTypes(), key.getNamedParameterTypes());
+    key.postInitDualType(dualType);
+    dualType.postInitDualType(key);
     return key;
   }
 }
