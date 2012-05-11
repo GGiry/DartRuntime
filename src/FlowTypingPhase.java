@@ -176,7 +176,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitUnqualifiedInvocation(DartUnqualifiedInvocation node, FlowEnv parameter) {
       flowTyping(node.getTarget().getElement().getNode(), typeRepository);
-      node.get
       return accept(node.getTarget(), parameter);
       //return asType(false, node.getTarget().getType());
     }
