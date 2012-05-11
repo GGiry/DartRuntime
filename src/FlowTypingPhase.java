@@ -72,25 +72,28 @@ public class FlowTypingPhase implements DartCompilationPhase {
       case DYNAMIC:
         return CoreTypeRepository.DYNAMIC_TYPE;
       case VARIABLE:
-        return typeRepository.findType(nullable, (ClassElement) type.getElement());
+        // return typeRepository.findType(nullable, (ClassElement)
+        // type.getElement());
       case INTERFACE:
         return typeRepository.findType(nullable, (ClassElement) type.getElement());
       case FUNCTION:
-        return typeRepository.findFunction(((FunctionAliasType) type).getElement().getFunctionType());
-      case FUNCTION_ALIAS:
+        System.err.println("FUNCTION:");
         return typeRepository.findFunction((FunctionType) type);
+      case FUNCTION_ALIAS:
+        System.err.println("FUNCTION_ALIAS:");
+        return typeRepository.findFunction(((FunctionAliasType) type).getElement().getFunctionType());
       case NONE:
       default:
         throw new AssertionError("asType: " + type.getKind() + " must be implemented");
       }
     }
 
-    public static void flowTyping(DartNode node, CoreTypeRepository coreTypeRepository) {
-      node.accept(new FTVisitor(coreTypeRepository).asASTVisitor());
+    public static Type flowTyping(DartNode node, CoreTypeRepository coreTypeRepository) {
+      return node.accept(new FTVisitor(coreTypeRepository).asASTVisitor());
     }
 
-    public static void flowTyping(DartNode node, TypeRepository typeRepository) {
-      node.accept(new FTVisitor(typeRepository).asASTVisitor());
+    public static Type flowTyping(DartNode node, TypeRepository typeRepository) {
+      return node.accept(new FTVisitor(typeRepository).asASTVisitor());
     }
 
     @Override
@@ -166,18 +169,20 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitMethodInvocation(DartMethodInvocation node, FlowEnv parameter) {
       flowTyping(node.getTarget(), typeRepository);
-      return null;
+      return accept(node.getTarget(), parameter);
+      //return asType(false, node.getType());
     }
 
     @Override
     public Type visitUnqualifiedInvocation(DartUnqualifiedInvocation node, FlowEnv parameter) {
       flowTyping(node.getTarget().getElement().getNode(), typeRepository);
-      return null;
+      return accept(node.getTarget(), parameter);
+      //return asType(false, node.getTarget().getType());
     }
 
     @Override
     public Type visitThrowStatement(DartThrowStatement node, FlowEnv parameter) {
-      // TODO nothing to do?
+      // TODO
       return null;
     }
 
@@ -197,7 +202,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         accept(body, env);
       }
 
-      System.out.println(env);
+      System.out.println(node.getParent() + ", " + env);
 
       return null;
     }
@@ -253,7 +258,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
       case FIELD:
         return asType(true, node.getElement().getType());
       case CLASS:
+        // not sure if this work...
         return accept(node.getElement().getNode(), parameter);
+      case METHOD:
+        return asType(false, node.getElement().getType());
       default:
         throw new AssertionError("visitIndentifier must be complete for " + node.getElement().getKind());
       }

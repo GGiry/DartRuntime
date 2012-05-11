@@ -26,22 +26,25 @@ public class FunctionType implements Type {
   public Map<String, com.google.dart.compiler.type.Type> getNamedParameterTypes() {
     return namedParameterTypes;
   }
+  
+  @Override
+  public String toString() {
+    return "function";
+  }
 
   @Override
   public boolean isNullable() {
-    return false;
+    throw new IllegalStateException("function type");
   }
 
   @Override
   public AbstractType asNullable() {
-    // TODO
-    return null;
+    throw new IllegalStateException("function type");
   }
 
   @Override
   public AbstractType asNonNull() {
-    // TODO
-    return null;
+    throw new IllegalStateException("function type");
   }
 
   @Override
@@ -51,6 +54,6 @@ public class FunctionType implements Type {
 
   @Override
   public Object asConstant() {
-    return null;
+    throw new IllegalStateException("function type");
   }
 }

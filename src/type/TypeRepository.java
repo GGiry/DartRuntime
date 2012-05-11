@@ -19,10 +19,10 @@ public class TypeRepository {
         return (nullable) ? type : type.asNonNull();
       }
     }
-    InterfaceType  nullableType = createInterfaceType(element);
-    return (nullable)? nullableType: nullableType.asNonNull();
+    InterfaceType nullableType = createInterfaceType(element);
+    return (nullable) ? nullableType : nullableType.asNonNull();
   }
-  
+
   InterfaceType createInterfaceType(ClassElement element) {
     InterfaceType nullableType = new InterfaceType(true, this, element);
     InterfaceType nonNullType = new InterfaceType(false, this, element);
@@ -39,9 +39,7 @@ public class TypeRepository {
         return functionType;
       }
     }
-    
-    System.err.println(type.getElement().getName());
-    
+
     Type functionType = new FunctionType(type.getReturnType(), type.getParameterTypes(), type.getNamedParameterTypes());
     map.put(type.getElement(), functionType);
     return functionType;
