@@ -1,21 +1,28 @@
 import java.util.HashMap;
 import java.util.Objects;
 
+import type.CoreTypeRepository;
 import type.Type;
 
 import com.google.dart.compiler.resolver.VariableElement;
 
 public class FlowEnv {
   private final /* maybenull */FlowEnv parent;
+  private final Type thisType;
   private final Type returnType;
   private final Type expectedType;
   private final HashMap<VariableElement, Type> variableTypeMap;
 
-  private FlowEnv(/* maybenull */FlowEnv parent, Type returnType, Type expectedType, HashMap<VariableElement, Type> variableTypeMap) {
+  private FlowEnv(/* maybenull */FlowEnv parent, /* maybenull */Type thisType, Type returnType, Type expectedType, HashMap<VariableElement, Type> variableTypeMap) {
     this.parent = parent;
+    this.thisType = thisType;
     this.returnType = Objects.requireNonNull(returnType);
     this.expectedType = Objects.requireNonNull(expectedType);;
     this.variableTypeMap = variableTypeMap;
+  }
+  
+  public FlowEnv(Type thisType) {
+    this(null, thisType, CoreTypeRepository.VOID_TYPE, CoreTypeRepository.VOID_TYPE, null);
   }
   
   /**
@@ -24,7 +31,7 @@ public class FlowEnv {
    * @param expectedType
    */
   public FlowEnv(/* maybenull */FlowEnv parent, Type returnType, Type expectedType) {
-    this(parent, returnType, expectedType, new HashMap<VariableElement, Type>());
+    this(parent, parent.thisType, returnType, expectedType, new HashMap<VariableElement, Type>());
   }
   
   /**
@@ -57,6 +64,14 @@ public class FlowEnv {
   }
   
   /**
+   * Returns the type of '{@code this}'.
+   * @return the type of '{@code this}' or null if it doesn't exist.  
+   */
+  public Type getThisType() {
+    return thisType;
+  }
+  
+  /**
    * Returns the declared return type of the current function/method.
    * @return the declared return type of the current function/method.
    */
@@ -74,7 +89,7 @@ public class FlowEnv {
     if (expectedType.equals(this.expectedType)) {  // implicit null check
       return this;
     }
-    return new FlowEnv(parent, returnType, expectedType, variableTypeMap);
+    return new FlowEnv(parent, thisType, returnType, expectedType, variableTypeMap);
   }
   
   /**

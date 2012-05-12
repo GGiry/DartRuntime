@@ -37,18 +37,21 @@ import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.ast.DartParameter;
 import com.google.dart.compiler.ast.DartReturnStatement;
 import com.google.dart.compiler.ast.DartStatement;
+import com.google.dart.compiler.ast.DartThisExpression;
 import com.google.dart.compiler.ast.DartThrowStatement;
 import com.google.dart.compiler.ast.DartTypeNode;
 import com.google.dart.compiler.ast.DartUnit;
 import com.google.dart.compiler.ast.DartUnqualifiedInvocation;
 import com.google.dart.compiler.ast.DartVariable;
 import com.google.dart.compiler.ast.DartVariableStatement;
+import com.google.dart.compiler.ast.Modifiers;
 import com.google.dart.compiler.parser.Token;
 import com.google.dart.compiler.resolver.ClassElement;
 import com.google.dart.compiler.resolver.CoreTypeProvider;
 import com.google.dart.compiler.resolver.Element;
 import com.google.dart.compiler.resolver.FieldElement;
 import com.google.dart.compiler.resolver.MethodElement;
+import com.google.dart.compiler.resolver.MethodNodeElement;
 import com.google.dart.compiler.resolver.NodeElement;
 import com.google.dart.compiler.resolver.VariableElement;
 import com.google.dart.compiler.type.FunctionAliasType;
@@ -194,28 +197,36 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitMethodDefinition(DartMethodDefinition node, FlowEnv unused) {
-      // We should perhaps store the type of 'this' in the flow env
+      // We should allow to propagate the type of 'this' in the flow env
       // to be more precise, but currently we don't specialize method call,
       // but only function call
       
+      Type thisType = null;
+      Modifiers modifiers = node.getModifiers();
+      MethodNodeElement element = node.getElement();
+      if (!modifiers.isStatic() && !modifiers.isFactory() && element instanceof ClassElement) {
+        thisType = typeRepository.findType(false, (ClassElement)element.getEnclosingElement());
+      }
+      
+      FlowEnv flowEnv = new FlowEnv(thisType);
       DartFunction function = node.getFunction();
       if (function != null) {
-        accept(function, null);
+        accept(function, flowEnv);
       }
       return null;
     }
     
     @Override
-    public Type visitFunction(DartFunction node, FlowEnv unused) {
+    public Type visitFunction(DartFunction node, FlowEnv flowEnv) {
       DartTypeNode returnTypeNode = node.getReturnTypeNode();
       Type returnType = (returnTypeNode == null)? DYNAMIC_TYPE: accept(returnTypeNode, null);
       
-      FlowEnv env = new FlowEnv(null, returnType, VOID_TYPE);
-      for (DartParameter param : node.getParameters()) {
-        DartTypeNode typeNode = param.getTypeNode();
-        if (typeNode != null) {
-          env.register(param.getElement(), accept(typeNode, env));
-        }
+      // propagate thisType or null
+      FlowEnv env = new FlowEnv(flowEnv, returnType, VOID_TYPE);
+      for (DartParameter parameter : node.getParameters()) {
+        DartTypeNode typeNode = parameter.getTypeNode();
+        Type parameterType = (typeNode == null)? DYNAMIC_TYPE: accept(typeNode, null);
+        env.register(parameter.getElement(), parameterType);
       }
 
       DartBlock body = node.getBody();
@@ -224,7 +235,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
 
       System.out.println(node.getParent() + ", " + env);
-
       return null;
     }
 
@@ -309,6 +319,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
       default:
         throw new UnsupportedOperationException();
       }
+    }
+    
+    @Override
+    public Type visitThisExpression(DartThisExpression node, FlowEnv flowEnv) {
+      return flowEnv.getThisType();
     }
 
     @Override
