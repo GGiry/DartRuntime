@@ -320,9 +320,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       Token operator = node.getOperator();
       
       // is it an assignment ?
-      if (operator.compareTo(Token.ASSIGN) >=0 &&
-          operator.compareTo(Token.ASSIGN_TRUNC) <= 0) {
-
+      if (operator.isAssignmentOperator()) {
         switch (operator) {
         case ASSIGN:
           Element element1 = arg1.getElement();
@@ -330,6 +328,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
           case VARIABLE:
           case PARAMETER:
             parameter.register((VariableElement) element1, type2);
+            return type2;
+          case FIELD:
             return type2;
           default:
             throw new AssertionError("Binary Expr: " + element1.getKind() + " not implemented");
