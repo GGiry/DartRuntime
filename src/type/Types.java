@@ -45,4 +45,20 @@ public class Types {
     }
     return false;
   }
+
+  public static Type getReturnType(Type type) {
+    return type.accept(RETURN_TYPE_VISITOR, null);
+  }// where
+  private static final TypeVisitor<Type, Void> RETURN_TYPE_VISITOR = 
+      new TypeVisitor<Type, Void>() {
+        @Override
+        public Type visitDynamicType(DynamicType type, Void unused) {
+          return type;
+        }
+        
+        @Override
+        public Type visitFunctionType(FunctionType type, Void parameter) {
+          return type.getReturnType();
+        }
+      };
 }

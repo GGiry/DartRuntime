@@ -45,6 +45,9 @@ import com.google.dart.compiler.ast.DartVariableStatement;
 import com.google.dart.compiler.resolver.ClassElement;
 import com.google.dart.compiler.resolver.CoreTypeProvider;
 import com.google.dart.compiler.resolver.Element;
+import com.google.dart.compiler.resolver.FieldElement;
+import com.google.dart.compiler.resolver.MethodElement;
+import com.google.dart.compiler.resolver.NodeElement;
 import com.google.dart.compiler.resolver.VariableElement;
 import com.google.dart.compiler.type.FunctionAliasType;
 
@@ -54,7 +57,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
     // initialize core type repository
     CoreTypeRepository coreTypeRepository = CoreTypeRepository.initCoreTypeRepository(coreTypeProvider);
 
-    FTVisitor.flowTyping(unit, coreTypeRepository);
+    TypeRepository typeRepository = new TypeRepository(coreTypeRepository);
+    new FTVisitor(typeRepository).flowTyping(unit);
     return unit;
   }
 
@@ -62,12 +66,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
     private final TypeRepository typeRepository;
     private final HashMap<DartNode, Type> typeMap = new HashMap<>();
 
-    FTVisitor(CoreTypeRepository coreTypeRepository) {
-      this.typeRepository = new TypeRepository(coreTypeRepository);
-    }
-
     FTVisitor(TypeRepository typeRepository) {
       this.typeRepository = typeRepository;
+    }
+    
+    // entry point
+    public Type flowTyping(DartNode node) {
+      return accept(node, null);
     }
 
     private Type asType(boolean nullable, com.google.dart.compiler.type.Type type) {
@@ -114,14 +119,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
         typeMap.put(entry.getKey(), asType(false, entry.getValue()));
       }
       return typeMap;
-    }
-
-    public static Type flowTyping(DartNode node, CoreTypeRepository coreTypeRepository) {
-      return node.accept(new FTVisitor(coreTypeRepository).asASTVisitor());
-    }
-
-    public static Type flowTyping(DartNode node, TypeRepository typeRepository) {
-      return node.accept(new FTVisitor(typeRepository).asASTVisitor());
     }
 
     @Override
@@ -196,16 +193,65 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitMethodInvocation(DartMethodInvocation node, FlowEnv parameter) {
-      flowTyping(node.getTarget(), typeRepository);
-      return accept(node.getTarget(), parameter);
-      //return asType(false, node.getType());
+      ArrayList<Type> argumentTypes = new ArrayList<>();
+      for(DartExpression argument: node.getArguments()) {
+        argumentTypes.add(accept(argument, parameter));
+      }
+      
+      NodeElement element = node.getElement();
+      switch (node.getTarget().getElement().getKind()) {
+      case CLASS:   // static field or method
+      case SUPER:   // super field or method
+      case LIBRARY: // library call
+        
+        switch(element.getKind()) {
+        case FIELD:     // field access
+          return Types.getReturnType(asType(true, ((FieldElement)element).getType()));
+        
+        case METHOD: {  // statically resolved method call
+          /* emulate a call FIXME
+          FlowEnv newFlowEnv = new FlowEnv(null);
+          for(Type argumentType: argumentTypes) {
+            newFlowEnv.register(variable, argumentType);
+          }
+          return new FTVisitor(typeRepository).accept(((MethodNodeElement)element).getNode(), newFlowEnv);
+          */
+          return asType(true, ((MethodElement)element).getReturnType());
+        }
+        
+        default:
+          throw new UnsupportedOperationException();
+        }
+        
+      default:  // polymorphic method call  
+        Type receiverType = accept(node.getTarget(), parameter);
+        
+        // FIXME
+        // because method call can be dynamic, fallback to the declared return type
+        return asType(true, ((MethodElement)element).getReturnType());
+      }
     }
 
     @Override
     public Type visitUnqualifiedInvocation(DartUnqualifiedInvocation node, FlowEnv parameter) {
-      flowTyping(node.getTarget().getElement().getNode(), typeRepository);
-      return accept(node.getTarget(), parameter);
-      //return asType(false, node.getTarget().getType());
+      for(DartExpression argument: node.getArguments()) {
+        accept(argument, parameter);
+      }
+      
+      // weird, element is set on target ?
+      NodeElement element = node.getTarget().getElement();
+      switch(element.getKind()) {
+      case METHOD: // polymorphic method call on 'this'
+        return asType(true, ((MethodElement)element).getReturnType());
+        
+      case FIELD:  // function call
+      case PARAMETER:
+      case VARIABLE:
+        return Types.getReturnType(asType(true, element.getType()));
+      
+      default:  //FUNCTION_OBJECT ??
+        throw new UnsupportedOperationException();
+      }
     }
 
     @Override
