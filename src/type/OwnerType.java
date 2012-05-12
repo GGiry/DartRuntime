@@ -3,7 +3,7 @@ package type;
 import java.util.List;
 
 /**
- * Common interface for all types that have a super class and interfaces.
+ * Common abstract class for all types that have a super class and interfaces.
  * 
  */
 public abstract class OwnerType extends AbstractType {
