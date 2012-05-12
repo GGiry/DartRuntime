@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
-public class FunctionType extends AbstractType implements OwnerType {
+public class FunctionType extends OwnerType {
   private final Type returnType;
   private final List<Type> parameterTypes;
   private final Map<String, Type> namedParameterTypes;

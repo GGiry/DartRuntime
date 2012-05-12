@@ -8,7 +8,7 @@ import com.google.dart.compiler.resolver.ClassElement;
 /**
  * Base class for all type that own members.
  */
-abstract class ElementType extends AbstractType implements OwnerType {
+abstract class ElementType extends OwnerType {
   private Object superType = NOT_INITIALIZED; // lazy allocated
   private ArrayList<InterfaceType> interfaces; // lazy allocated
 
