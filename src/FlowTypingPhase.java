@@ -107,7 +107,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     
     private FunctionType asFunctionType(boolean nullable, com.google.dart.compiler.type.FunctionType functionType) {
       return typeRepository.findFunction(nullable,
-          asType(false, functionType.getReturnType()),
+          asType(true, functionType.getReturnType()),
               asTypeList(functionType.getParameterTypes()),
               asTypeMap(functionType.getNamedParameterTypes()));
     }
@@ -115,7 +115,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     private List<Type> asTypeList(List<com.google.dart.compiler.type.Type> types) {
       ArrayList<Type> typeList = new ArrayList<>(types.size());
       for(com.google.dart.compiler.type.Type type: types) {
-        typeList.add(asType(false, type));
+        typeList.add(asType(true, type));
       }
       return typeList;
     }
@@ -224,8 +224,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       // propagate thisType or null
       FlowEnv env = new FlowEnv(flowEnv, returnType, VOID_TYPE);
       for (DartParameter parameter : node.getParameters()) {
-        DartTypeNode typeNode = parameter.getTypeNode();
-        Type parameterType = (typeNode == null)? DYNAMIC_TYPE: accept(typeNode, null);
+        Type parameterType = accept(parameter, null);
         env.register(parameter.getElement(), parameterType);
       }
 
@@ -236,6 +235,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       System.out.println(node.getParent() + ", " + env);
       return null;
+    }
+    
+    @Override
+    public Type visitParameter(DartParameter node, FlowEnv unused) {
+      return asType(true, node.getElement().getType());
     }
 
     @Override

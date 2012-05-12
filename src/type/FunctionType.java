@@ -79,7 +79,8 @@ public class FunctionType extends OwnerType {
         builder.setLength(builder.length() - 2);
       }
     }
-    builder.append(") -> ").append(returnType);
+    builder.append(')').append(super.toString())
+        .append(" -> ").append(returnType);
     return builder.toString();
   }
   
