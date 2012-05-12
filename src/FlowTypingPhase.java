@@ -1,4 +1,3 @@
-import java.rmi.activation.UnknownObjectException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -25,7 +24,6 @@ import com.google.dart.compiler.ast.DartClass;
 import com.google.dart.compiler.ast.DartDoubleLiteral;
 import com.google.dart.compiler.ast.DartExprStmt;
 import com.google.dart.compiler.ast.DartExpression;
-import com.google.dart.compiler.ast.DartField;
 import com.google.dart.compiler.ast.DartFieldDefinition;
 import com.google.dart.compiler.ast.DartFunction;
 import com.google.dart.compiler.ast.DartIdentifier;
@@ -139,6 +137,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
       return type;
     }
 
+    // Don't implement the visitor of DartTypeNode, it should be never visited.
+    // The type of the corresponding Element should be used instead
+    @Override
+    public Type visitTypeNode(DartTypeNode node, FlowEnv unused) {
+      throw new AssertionError("this method should never be called"); 
+    }
+    
     @Override
     public Type visitUnit(DartUnit node, FlowEnv unused) {
       System.out.println("Unit:" + node.getSourceName());
@@ -146,18 +151,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
         accept(child, null);
       }
       return null;
-    }
-    
-    @Override
-    public Type visitTypeNode(DartTypeNode node, FlowEnv unused) {
-      //FIXME, not sure it's a good idea to visit type node,
-      // knowing we already have the type of the elements
-      for (DartTypeNode typeNode : node.getTypeArguments()) {
-        accept(typeNode, null);
-      }
-      
-      //FIXME currently the type system doesn't support type arguments
-      return asType(true, node.getType());
     }
     
     @Override
@@ -172,27 +165,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitFieldDefinition(DartFieldDefinition node, FlowEnv unused) {
-      DartTypeNode typeNode = node.getTypeNode();
-
-      if (typeNode != null) {
-        return accept(typeNode, null);
-      }
-
-      for (DartField field : node.getFields()) {
-        accept(field, null);
-      }
-
+      // do nothing, at least for now,
+      // field as already been resolved by Dart compiler resolver
       return null;
-    }
-
-    @Override
-    public Type visitField(DartField node, FlowEnv unused) {
-      // a field may always be null
-      
-      // revisit this if final fields can be initialized like in Java
-      // the other solution is to force to crawle constructors to lookup
-      // if final fields can be non null 
-      return asType(true, node.getType());
     }
 
     @Override
@@ -218,8 +193,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
     
     @Override
     public Type visitFunction(DartFunction node, FlowEnv flowEnv) {
-      DartTypeNode returnTypeNode = node.getReturnTypeNode();
-      Type returnType = (returnTypeNode == null)? DYNAMIC_TYPE: accept(returnTypeNode, null);
+      // function element is not initialized, we use the parent element here
+      Element element = node.getParent().getElement();
+      Type returnType = ((FunctionType)asType(false, element.getType())).getReturnType();
       
       // propagate thisType or null
       FlowEnv env = new FlowEnv(flowEnv, returnType, VOID_TYPE);
@@ -270,10 +246,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
     
     @Override
     public Type visitVariableStatement(DartVariableStatement node, FlowEnv flowEnv) {
-      DartTypeNode typeNode = node.getTypeNode();
-      Type declaredType = (typeNode == null)? DYNAMIC_TYPE: accept(typeNode, null);
-      
-      flowEnv = flowEnv.expectedType(declaredType);
       for (DartVariable variable : node.getVariables()) {
         accept(variable, flowEnv);
       }
@@ -283,11 +255,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitVariable(DartVariable node, FlowEnv flowEnv) {
       DartExpression value = node.getValue();
-      if (value == null) {
-        return flowEnv.getExpectedType();
+      if (value == null) {   // variable not initialized
+        return NULL_TYPE;
       }
-      Type type = accept(value, flowEnv);
-      flowEnv.register(node.getElement(), type);
+      VariableElement element = node.getElement();
+      Type declaredType = asType(true, element.getType());
+      Type type = accept(value, flowEnv.expectedType(declaredType));
+      flowEnv.register(element, type);
       return null;
     }
     
