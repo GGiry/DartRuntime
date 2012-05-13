@@ -137,7 +137,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       return type;
     }
 
-    // Don't implement the visitor of DartTypeNode, it should be never visited.
+    // Don't implement the DartTypeNode's visitor, it should be never visited.
     // The type of the corresponding Element should be used instead
     @Override
     public Type visitTypeNode(DartTypeNode node, FlowEnv unused) {
@@ -215,11 +215,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
     
     @Override
     public Type visitParameter(DartParameter node, FlowEnv unused) {
+      // use the declared type of the parameter
       return asType(true, node.getElement().getType());
     }
 
     @Override
     public Type visitBlock(DartBlock node, FlowEnv flowEnv) {
+      // each instruction should be compatible with void
       for (DartStatement statement : node.getStatements()) {
         accept(statement, flowEnv.expectedType(VOID_TYPE));
       }
@@ -233,6 +235,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
     public Type visitReturnStatement(DartReturnStatement node, FlowEnv flowEnv) {
       DartExpression value = node.getValue();
       if (value != null) {
+        // return should return a value compatible with
+        // the function declared return type
         accept(value, flowEnv.expectedType(flowEnv.getReturnType()));
       }
       return null;
@@ -255,9 +259,12 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitVariable(DartVariable node, FlowEnv flowEnv) {
       DartExpression value = node.getValue();
-      if (value == null) {   // variable not initialized
+      if (value == null) {
+        // variable is not initialized, in Dart variables are initialized
+        // with null by default
         return NULL_TYPE;
       }
+      // the type is the type of the initialization expression
       VariableElement element = node.getElement();
       Type declaredType = asType(true, element.getType());
       Type type = accept(value, flowEnv.expectedType(declaredType));
@@ -269,6 +276,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     public Type visitExprStmt(DartExprStmt node, FlowEnv flowEnv) {
       DartExpression expression = node.getExpression();
       if (expression != null) {
+        // statement expression expression should return void
         return accept(expression, flowEnv.expectedType(VOID_TYPE));
       }
       return null;
@@ -293,6 +301,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       case FIELD:
         return asType(true, node.getElement().getType());  
       case METHOD:
+        // reference a method by name
         return asType(false, node.getElement().getType());
       default:
         throw new UnsupportedOperationException();
@@ -301,6 +310,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     
     @Override
     public Type visitThisExpression(DartThisExpression node, FlowEnv flowEnv) {
+      // the type of this is stored in the flow env
       return flowEnv.getThisType();
     }
 
@@ -312,39 +322,102 @@ public class FlowTypingPhase implements DartCompilationPhase {
       Type type2 = accept(arg2, parameter);
       Token operator = node.getOperator();
       
-      // is it an assignment ?
-      if (operator.isAssignmentOperator()) {
-        switch (operator) {
-        case ASSIGN:
-          Element element1 = arg1.getElement();
-          switch (element1.getKind()) {
-          case VARIABLE:
-          case PARAMETER:
-            parameter.register((VariableElement) element1, type2);
-            return type2;
-          case FIELD:
-            return type2;
-          default:
-            throw new AssertionError("Binary Expr: " + element1.getKind() + " not implemented");
-          }
-
-        default:
-        }
-        throw new UnsupportedOperationException();
+      if (!operator.isAssignmentOperator()) {
+        return visitBinaryOp(node, operator, arg1, type1, arg2, type2, parameter);
       }
-
-      // it's an operation
-      switch (operator) {      
-      case SUB:
-        //FIXME integer range are not substracted
-        return Types.union(type1, type2);
-
+      
+      // if it's an assignment, rewrite it as a binary operator
+      Type resultType;
+      if (operator == Token.ASSIGN) {
+        resultType = type2;
+      } else {
+        Token binaryOp = operator.asBinaryOperator();
+        // workaround issue https://code.google.com/p/dart/issues/detail?id=3033
+        if (operator == Token.ASSIGN_MOD) {
+          binaryOp = Token.MOD;
+        } else if (operator == Token.ASSIGN_TRUNC) {
+          binaryOp = Token.TRUNC;
+        }
+        resultType = visitBinaryOp(node, binaryOp, arg1, type1, arg2, type2, parameter);
+      }
+      
+      Element element1 = arg1.getElement();
+      switch (element1.getKind()) {
+      case VARIABLE:
+      case PARAMETER:
+        parameter.register((VariableElement) element1, resultType);
+        return resultType;
+      case FIELD:
+        return resultType;
+      default:
+        throw new AssertionError("Assignment Expr: " + element1.getKind() + " not implemented");
+      }
+    }
+    
+    private Type visitBinaryOp(DartBinaryExpression node, Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
+      switch (operator) {
       case EQ_STRICT:
         return BOOL_NON_NULL_TYPE;
-
+        
+      
+      case ADD:
+      case SUB:
+        operandIsNonNull(arg1, flowEnv);
+        if (type1 instanceof IntType && type2 instanceof IntType) {
+          operandIsNonNull(arg2, flowEnv);
+          IntType itype1 = (IntType) type1;
+          IntType itype2 = (IntType) type1;
+          switch(operator) {
+          case ADD:
+            return itype1.add(itype2);
+          case SUB:
+            return itype1.sub(itype2);
+          }
+        }
+        if (type1 instanceof DoubleType || type2 instanceof DoubleType) {
+          operandIsNonNull(arg2, flowEnv);
+          DoubleType dtype1, dtype2;
+          if (type1 instanceof IntType) {
+            dtype1 = ((IntType)type1).asDouble();
+            dtype2 = (DoubleType)type2;
+          } else
+            if (type2 instanceof IntType) {
+              dtype1 = (DoubleType)type1;
+              dtype2 = ((IntType)type2).asDouble();
+            } else {
+              dtype1 = (DoubleType)type1;
+              dtype2 = (DoubleType)type2;
+            }
+          switch(operator) {
+          case ADD:
+            return dtype1.add(dtype2);
+          case SUB:
+            return dtype1.sub(dtype2);
+          }
+        }
+        
+        // it's not a primitive operation, so it's a method call
+        break;
+        
       default:
         throw new AssertionError("Binary Expr: " + operator + " not implemented");
       }
+      
+      // a method call that can be polymorphic
+      return asType(true, node.getElement().getFunctionType().getReturnType());
+    }
+    
+    private static void operandIsNonNull(DartExpression expr, FlowEnv flowEnv) {
+      if (!(expr instanceof DartIdentifier)) {
+        return;
+      }
+      Element element = expr.getElement();
+      if (!(element instanceof VariableElement)) {
+        return;
+      }
+      VariableElement variable = (VariableElement) element;
+      Type type = flowEnv.getType(variable);
+      flowEnv.register(variable, type.asNonNull());
     }
 
     @Override

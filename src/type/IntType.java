@@ -1,6 +1,6 @@
 package type;
 
-import static type.CoreTypeRepository.INT_NON_NULL_TYPE;
+import static type.CoreTypeRepository.*;
 import static type.CoreTypeRepository.INT_TYPE;
 
 import java.math.BigInteger;
@@ -156,6 +156,14 @@ public class IntType extends PrimitiveType {
     }
     return new IntType(nullable, min, max);
   }
+  
+  public DoubleType asDouble() {
+    if (minBound != null && minBound == maxBound) {
+      DoubleType type = DoubleType.constant(minBound.doubleValue());
+      return (isNullable())? type.asNullable(): type;
+    }
+    return (isNullable())? DOUBLE_TYPE: DOUBLE_NON_NULL_TYPE;
+  }
 
   //
   // int[min, max] x = ...
@@ -200,4 +208,39 @@ public class IntType extends PrimitiveType {
   public/* maybenull */IntType asTypeGreaterThan(BigInteger value) {
     return asTypeGreaterOrEqualsThan(value.subtract(BigInteger.ONE));
   }
+  
+  public IntType add(IntType type) {
+    BigInteger minBound = (this.minBound == null | type.minBound == null)? null:
+      this.minBound.add(type.minBound);
+    BigInteger maxBound = (this.maxBound == null | type.maxBound == null)? null:
+      this.maxBound.add(type.maxBound);
+    if (minBound == null && maxBound == null) {
+      return INT_NON_NULL_TYPE;
+    }
+    return new IntType(false, minBound, maxBound);
+  }
+  
+  public IntType sub(IntType type) {
+    BigInteger minBound = (this.minBound == null | type.minBound == null)? null:
+      this.minBound.subtract(type.minBound);
+    BigInteger maxBound = (this.maxBound == null | type.maxBound == null)? null:
+      this.maxBound.subtract(type.maxBound);
+    if (minBound == null && maxBound == null) {
+      return INT_NON_NULL_TYPE;
+    }
+    return new IntType(false, minBound, maxBound);
+  }
+  
+  /*
+  public IntType mul(IntType type) {
+    BigInteger minBound = (this.minBound == null | type.minBound == null)? null:
+      this.minBound.multiply(type.minBound);
+    BigInteger maxBound = (this.maxBound == null | type.maxBound == null)? null:
+      this.maxBound.multiply(type.maxBound);
+    if (minBound == null && maxBound == null) {
+      return INT_NON_NULL_TYPE;
+    }
+    return new IntType(false, minBound, maxBound);
+  }*/
+  
 }

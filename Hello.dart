@@ -7,12 +7,14 @@ class Hello {
 
   void main() {
     var a = length;
+    var b = 7;
     {
-      a = 15.2;
-      var b = false;
+      var c = 15.4;
+      c += a;
+      var d = false;
     }
 
-    a = 11;
+    b += 11;
     
     print(a);
     

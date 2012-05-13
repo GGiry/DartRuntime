@@ -2,7 +2,10 @@ package type;
 
 import static type.CoreTypeRepository.DOUBLE_NON_NULL_TYPE;
 import static type.CoreTypeRepository.DOUBLE_TYPE;
+import static type.CoreTypeRepository.INT_NON_NULL_TYPE;
 
+import java.lang.invoke.ConstantCallSite;
+import java.math.BigInteger;
 import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
@@ -96,5 +99,19 @@ public class DoubleType extends PrimitiveType {
       return (isNullable()) ? DOUBLE_TYPE : DOUBLE_NON_NULL_TYPE;
     }
     return super.merge(type);
+  }
+  
+  public DoubleType add(DoubleType type) {
+    if (constant != null && type.constant != null) {
+      return constant(constant + type.constant);
+    }
+    return DOUBLE_NON_NULL_TYPE;
+  }
+  
+  public DoubleType sub(DoubleType type) {
+    if (constant != null && type.constant != null) {
+      return constant(constant - type.constant);
+    }
+    return DOUBLE_NON_NULL_TYPE;
   }
 }
