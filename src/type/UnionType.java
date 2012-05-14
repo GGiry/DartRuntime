@@ -6,18 +6,18 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 
-public class UnionType extends AbstractType {
+public class UnionType extends NullableType {
   // each component type should be non nullable and not a union type
-  private final HashSet<AbstractType> types;
+  private final HashSet<NullableType> types;
 
-  private UnionType(boolean nullable, HashSet<AbstractType> types) {
+  private UnionType(boolean nullable, HashSet<NullableType> types) {
     super(nullable);
     this.types = types;
   }
 
-  static UnionType createUnionType(AbstractType type1, AbstractType type2) {
+  static UnionType createUnionType(NullableType type1, NullableType type2) {
     boolean nullable = type1.isNullable() || type2.isNullable();
-    HashSet<AbstractType> types = new HashSet<>();
+    HashSet<NullableType> types = new HashSet<>();
     types.add(type1.asNonNull());
     types.add(type2.asNonNull());
     return new UnionType(nullable, types);
@@ -62,7 +62,7 @@ public class UnionType extends AbstractType {
   }
 
   @Override
-  AbstractType merge(AbstractType type) {
+  NullableType merge(NullableType type) {
     if (type instanceof UnionType) {
       UnionType unionType = (UnionType) type;
       
@@ -82,11 +82,11 @@ public class UnionType extends AbstractType {
    * @param collection must have at least one element and each element must be non null.
    * @return the new union or one type if it can be reduced to one element
    */
-  private static AbstractType reduce(UnionType unionType, boolean nullable, Collection<AbstractType> collection) {
+  private static NullableType reduce(UnionType unionType, boolean nullable, Collection<NullableType> collection) {
     // first filter out abstract type from collection that already exists in the union
-    HashSet<AbstractType> unionSet = unionType.types;
-    ArrayList<AbstractType> candidates = new ArrayList<>(collection.size());
-    for(AbstractType type: collection) {
+    HashSet<NullableType> unionSet = unionType.types;
+    ArrayList<NullableType> candidates = new ArrayList<>(collection.size());
+    for(NullableType type: collection) {
       assert !type.isNullable();
       assert !(type instanceof UnionType);
       
@@ -103,15 +103,15 @@ public class UnionType extends AbstractType {
     // compute nullability
     nullable |= unionType.isNullable();
     
-    HashSet<AbstractType> newUnionSet = new HashSet<>(unionSet);
-    Iterator<AbstractType> candidateIt = candidates.iterator();
-    AbstractType candidate = candidateIt.next();
+    HashSet<NullableType> newUnionSet = new HashSet<>(unionSet);
+    Iterator<NullableType> candidateIt = candidates.iterator();
+    NullableType candidate = candidateIt.next();
     
     loop: for(;;) {
-      Iterator<AbstractType> it = newUnionSet.iterator();
+      Iterator<NullableType> it = newUnionSet.iterator();
       while(it.hasNext()) {
-        AbstractType type = it.next();
-        AbstractType merge = candidate.merge(type);
+        NullableType type = it.next();
+        NullableType merge = candidate.merge(type);
         
         // if merge is not a UnionType,
         // then types were successfully merged
@@ -130,7 +130,7 @@ public class UnionType extends AbstractType {
       }
       
       if (newUnionSet.size() == 1) {
-        AbstractType singleton = newUnionSet.iterator().next();
+        NullableType singleton = newUnionSet.iterator().next();
         return (nullable)? singleton.asNullable(): singleton;
       }
       return new UnionType(nullable, newUnionSet);

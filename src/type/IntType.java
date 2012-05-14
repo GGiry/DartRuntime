@@ -118,7 +118,7 @@ public class IntType extends PrimitiveType {
   }
 
   @Override
-  AbstractType merge(AbstractType type) {
+  NullableType merge(NullableType type) {
     if (type == INT_TYPE) {
       return INT_TYPE;
     }

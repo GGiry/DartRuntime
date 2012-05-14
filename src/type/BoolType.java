@@ -81,7 +81,7 @@ public class BoolType extends PrimitiveType {
   }
 
   @Override
-  AbstractType merge(AbstractType type) {
+  NullableType merge(NullableType type) {
     if (type == BOOL_TYPE) {
       return BOOL_TYPE;
     }

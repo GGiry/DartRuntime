@@ -25,7 +25,7 @@ public class Types {
     if (type2 == NULL_TYPE) {
       return type1.asNullable();
     }
-    return ((AbstractType) type1).merge((AbstractType) type2);
+    return ((NullableType) type1).merge((NullableType) type2);
   }
 
   static boolean isAssignable(OwnerType type1, OwnerType type2) {

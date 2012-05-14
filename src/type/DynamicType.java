@@ -3,7 +3,7 @@ package type;
 import static type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
 import static type.CoreTypeRepository.DYNAMIC_TYPE;
 
-public class DynamicType extends AbstractType {
+public class DynamicType extends NullableType {
 
   public DynamicType(boolean nullable) {
     super(nullable);
@@ -15,7 +15,7 @@ public class DynamicType extends AbstractType {
   }
 
   @Override
-  public AbstractType asNullable() {
+  public NullableType asNullable() {
     if (isNullable()) {
       return this;
     }
@@ -23,7 +23,7 @@ public class DynamicType extends AbstractType {
   }
 
   @Override
-  public AbstractType asNonNull() {
+  public NullableType asNonNull() {
     if (!isNullable()) {
       return this;
     }

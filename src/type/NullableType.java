@@ -1,9 +1,9 @@
 package type;
 
-abstract class AbstractType implements Type {
+abstract class NullableType implements Type {
   private final boolean isNullable;
 
-  AbstractType(boolean isNullable) {
+  NullableType(boolean isNullable) {
     this.isNullable = isNullable;
   }
 
@@ -18,12 +18,12 @@ abstract class AbstractType implements Type {
   }
 
   @Override
-  public abstract AbstractType asNullable();
+  public abstract NullableType asNullable();
 
   @Override
-  public abstract AbstractType asNonNull();
+  public abstract NullableType asNonNull();
 
-  AbstractType merge(AbstractType type) {
+  NullableType merge(NullableType type) {
     Object constant = asConstant();
     
     if (constant != null && constant.equals(type.asConstant())) {

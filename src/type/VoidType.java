@@ -12,12 +12,12 @@ public class VoidType implements Type {
   }
 
   @Override
-  public AbstractType asNullable() {
+  public NullableType asNullable() {
     throw new IllegalStateException("void type");
   }
 
   @Override
-  public AbstractType asNonNull() {
+  public NullableType asNonNull() {
     throw new IllegalStateException("void type");
   }
 

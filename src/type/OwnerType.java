@@ -6,7 +6,7 @@ import java.util.List;
  * Common abstract class for all types that have a super class and interfaces.
  * 
  */
-public abstract class OwnerType extends AbstractType {
+public abstract class OwnerType extends NullableType {
   OwnerType(boolean nullable) {
     super(nullable);
   }
@@ -26,7 +26,7 @@ public abstract class OwnerType extends AbstractType {
   public abstract List<InterfaceType> getInterfaces();
   
   @Override
-  AbstractType merge(AbstractType type) {
+  NullableType merge(NullableType type) {
     if (!(type instanceof OwnerType)) {
       return super.merge(type);
     }
