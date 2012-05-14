@@ -482,8 +482,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
         accept(argument, flowEnv);
       }
 
-      System.out.println(node);
-      
       // weird, element is set on target ?
       NodeElement element = node.getTarget().getElement();
       // FIXME element is NULL.
@@ -555,8 +553,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
 
       for (InterfaceType interfaceType : interfaces) {
-        // TODO if the field is not in the qualifier but in one of his super
-        // interfaces
+        // TODO if the field is not in the qualifier but in one of his super interfaces
       }
 
       throw new NullPointerException();
