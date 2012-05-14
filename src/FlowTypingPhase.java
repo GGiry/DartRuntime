@@ -1,3 +1,5 @@
+import static type.CoreTypeRepository.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -54,8 +56,6 @@ import com.google.dart.compiler.resolver.NodeElement;
 import com.google.dart.compiler.resolver.VariableElement;
 import com.google.dart.compiler.type.FunctionAliasType;
 
-import static type.CoreTypeRepository.*;
-
 public class FlowTypingPhase implements DartCompilationPhase {
   @Override
   public DartUnit exec(DartUnit unit, DartCompilerContext context, CoreTypeProvider coreTypeProvider) {
@@ -92,9 +92,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
       case INTERFACE:
         return typeRepository.findType(nullable, (ClassElement) type.getElement());
       case FUNCTION:
+        // TODO test display, to remove.
         System.err.println("FUNCTION:");
         return asFunctionType(nullable, (com.google.dart.compiler.type.FunctionType) type);
       case FUNCTION_ALIAS:
+        // TODO test display, to remove.
         System.err.println("FUNCTION_ALIAS:");
         return asFunctionType(nullable, ((FunctionAliasType) type).getElement().getFunctionType());
       case NONE:
@@ -146,6 +148,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     
     @Override
     public Type visitUnit(DartUnit node, FlowEnv unused) {
+      // TODO test display, to remove.
       System.out.println("Unit:" + node.getSourceName());
       for (DartNode child : node.getTopLevelNodes()) {
         accept(child, null);
@@ -209,6 +212,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         accept(body, env);
       }
 
+   // TODO test display, to remove.
       System.out.println(node.getParent() + ", " + env);
       return null;
     }
@@ -477,6 +481,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
       for(DartExpression argument: node.getArguments()) {
         accept(argument, flowEnv);
       }
+      
+      // TODO test display, to remove.
+      System.err.println("Unq :" + node.getElement() + ", " + node.getTarget().getElement());
       
       // weird, element is set on target ?
       NodeElement element = node.getTarget().getElement();
