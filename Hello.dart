@@ -1,24 +1,16 @@
 // test comment
 
 class Hello {
-
-  int length = 10;
-  int _size;
-
-  void main() {
-    var a = length;
-    {
-      a = 15.2;
-      var b = false;
-    }
-
-    a = 11;
-    
-    print(a);
-    
+  void hello() {
+    print("Hello, Dart!");
   }
   
-  void set size(int newSize) {
-    _size = newSize;
+  int id(int a) {
+    return a;
+  }
+
+  void main() {
+    hello();
+    var a = id(1);
   }
 }
