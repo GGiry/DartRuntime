@@ -10,8 +10,8 @@ public class DynamicType extends AbstractType {
   }
 
   @Override
-  public String getName() {
-    return "dynamic";
+  public String toString() {
+    return "dynamic" + super.toString();
   }
 
   @Override

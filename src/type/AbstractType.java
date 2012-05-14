@@ -12,11 +12,9 @@ abstract class AbstractType implements Type {
     return isNullable;
   }
 
-  public abstract String getName();
-
   @Override
   public String toString() {
-    return getName() + (isNullable() ? "?" : "");
+    return (isNullable() ? "?" : "");
   }
 
   @Override

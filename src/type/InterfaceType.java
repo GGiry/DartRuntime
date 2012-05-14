@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
 
-public class InterfaceType extends OwnerType {
+public class InterfaceType extends ElementType {
   private final ClassElement element;
   private final TypeRepository typeRepository;
   private InterfaceType dualType;
@@ -36,15 +36,15 @@ public class InterfaceType extends OwnerType {
     InterfaceType interfaceType = (InterfaceType) obj;
     return isNullable() == interfaceType.isNullable() && getElement().equals(interfaceType.getElement());
   }
-
+  
   @Override
   public ClassElement getElement() {
     return element;
   }
-
+  
   @Override
-  public String getName() {
-    return getElement().getName();
+  public String toString() {
+    return getElement().getName() + super.toString();
   }
 
   @Override

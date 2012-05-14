@@ -1,58 +1,42 @@
 package type;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import com.google.dart.compiler.resolver.ClassElement;
-
 /**
- * Base class for all type that own members.
+ * Common abstract class for all types that have a super class and interfaces.
+ * 
  */
-abstract class OwnerType extends AbstractType implements Type {
-  private InterfaceType superType; // lazy allocated
-  private ArrayList<InterfaceType> interfaces; // lazy allocated
-
-  OwnerType(boolean isNullable) {
-    super(isNullable);
+public abstract class OwnerType extends AbstractType {
+  OwnerType(boolean nullable) {
+    super(nullable);
   }
-
-  abstract TypeRepository getTypeRepository();
-
-  /**
-   * Returns the corresponding Dart compiler resolved element. A owner type has
-   * only one corresponding class element but one class element can correspond
-   * to many types.
-   * 
-   * @return the corresponding Dart compiler resolved element.
-   */
-  public abstract ClassElement getElement();
-
+  
   /**
    * Returns the super type of the current type.
    * 
    * @return the super type of the current type or null otherwise.
    */
-  public InterfaceType getSuperType() {
-    if (superType != null) {
-      return superType;
-    }
-    return superType = (InterfaceType) getTypeRepository().findType(isNullable(), getElement().getSupertype().getElement());
-  }
+  public abstract InterfaceType getSuperType();
 
   /**
-   * Returns the super interfaces of the current type.
+   * Returns the interfaces of the current type.
    * 
-   * @return the super interfaces of the current type or null otherwise.
+   * @return the interfaces of the current type or an empty list.
    */
-  public List<InterfaceType> getInterfaces() {
-    if (interfaces != null) {
-      return interfaces;
+  public abstract List<InterfaceType> getInterfaces();
+  
+  @Override
+  AbstractType merge(AbstractType type) {
+    if (!(type instanceof OwnerType)) {
+      return super.merge(type);
     }
-
-    ArrayList<InterfaceType> interfaces = new ArrayList<>();
-    for (com.google.dart.compiler.type.InterfaceType interfaze : getElement().getInterfaces()) {
-      interfaces.add((InterfaceType) getTypeRepository().findType(isNullable(), interfaze.getElement()));
+    OwnerType ownerType = (OwnerType) type;
+    if (Types.isAssignable(this, ownerType)) {
+      return type;
     }
-    return this.interfaces = interfaces;
+    if (Types.isAssignable(ownerType, this)) {
+      return this;
+    }
+    return super.merge(type);
   }
 }
