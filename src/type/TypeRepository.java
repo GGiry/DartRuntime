@@ -19,12 +19,12 @@ public class TypeRepository {
     if (typeRepository != null) {
       return typeRepository.findType(nullable, element);
     }
-    
+
     Type type = map.get(element);
     if (type != null) {
       return (nullable) ? type : type.asNonNull();
     }
-    
+
     InterfaceType nullableType = createInterfaceType(element);
     return (nullable) ? nullableType : nullableType.asNonNull();
   }
@@ -38,11 +38,11 @@ public class TypeRepository {
     return nullableType;
   }
 
-  public FunctionType findFunction(boolean nullable, Type returnType, List<Type> parameterTypes, Map<String , Type> namedParameterTypes) {
+  public FunctionType findFunction(boolean nullable, Type returnType, List<Type> parameterTypes, Map<String, Type> namedParameterTypes) {
     FunctionType key = new FunctionType(true, returnType, parameterTypes, namedParameterTypes);
     return findFunction(nullable, key);
   }
-  
+
   private FunctionType findFunction(boolean nullable, FunctionType key) {
     if (typeRepository != null) {
       FunctionType functionType = typeRepository.findFunction(nullable, key);
@@ -53,9 +53,9 @@ public class TypeRepository {
 
     FunctionType functionType = functionMap.get(key);
     if (functionType != null) {
-      return (nullable)? functionType: functionType.asNonNull();
+      return (nullable) ? functionType : functionType.asNonNull();
     }
-    
+
     functionMap.put(key, key);
     FunctionType dualType = new FunctionType(false, key.getReturnType(), key.getParameterTypes(), key.getNamedParameterTypes());
     key.postInitDualType(dualType);

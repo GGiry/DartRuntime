@@ -288,6 +288,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       Type declaredType = asType(true, element.getType());
       Type type = accept(value, flowEnv.expectedType(declaredType));
       flowEnv.register(element, type);
+      System.out.println("register: " + element + ", " + type); 
       return null;
     }
 
@@ -312,6 +313,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitIdentifier(DartIdentifier node, FlowEnv flowEnv) {
+      System.out.println(node);
+      System.out.println(node.getElement());
       switch (node.getElement().getKind()) {
       case VARIABLE:
       case PARAMETER:
@@ -334,6 +337,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
+      System.out.println(node);
       DartExpression arg1 = node.getArg1();
       DartExpression arg2 = node.getArg2();
       Type type1 = accept(arg1, parameter);
@@ -441,11 +445,31 @@ public class FlowTypingPhase implements DartCompilationPhase {
         argumentTypes.add(accept(argument, flowEnv));
       }
 
-      NodeElement element = node.getElement();
+      NodeElement nodeElement = node.getElement();
       // FIXME element can be NULL.
-      if (element == null) {
+      if (nodeElement == null) {
+        // We need to look for the
         System.out.println("Method Invocation: Element null: " + node);
-        return DYNAMIC_TYPE;
+
+        System.out.println(node);
+        System.out.println(node.getElement());
+        System.out.println(node.getTarget());
+        System.out.println(node.getTarget().getElement());
+        System.out.println(typeMap.get(node));
+        
+
+        // FIXME asType return dynamic type, it's an error : the type seem to be not registered at allocation (visitNew...)
+        
+        OwnerType type = (OwnerType) asType(false, node.getTarget().getElement().getType());
+        // FIXME doesn't work with constructors like :
+        // A a = new A();
+        // A b = a.foo();
+        // where foo is a named constructor in class A.
+        Element element = type.lookupMember(node.getFunctionNameString());
+        node.setElement(element);
+
+        // TODO not sure if it's true or not.
+        return asType(true, element.getType());
       }
 
       switch (node.getTarget().getElement().getKind()) {
@@ -453,9 +477,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
       case SUPER: // super field or method
       case LIBRARY: // library call
 
-        switch (element.getKind()) {
+        switch (nodeElement.getKind()) {
         case FIELD: // field access
-          return Types.getReturnType(asType(true, ((FieldElement) element).getType()));
+          return Types.getReturnType(asType(true, ((FieldElement) nodeElement).getType()));
 
         case METHOD: { // statically resolved method call
           /*
@@ -466,7 +490,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
            * typeRepository).accept(((MethodNodeElement)element).getNode(),
            * newFlowEnv);
            */
-          return asType(true, ((MethodElement) element).getReturnType());
+          return asType(true, ((MethodElement) nodeElement).getReturnType());
         }
 
         default:
@@ -479,7 +503,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         // FIXME
         // because method call can be dynamic, fallback to the declared return
         // type
-        return asType(true, ((MethodElement) element).getReturnType());
+        return asType(true, ((MethodElement) nodeElement).getReturnType());
       }
     }
 
@@ -545,7 +569,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
       if (qualifierType instanceof DynamicType) { // qualifier == this
         qualifierType = parameter.getThisType();
       }
-
 
       OwnerType asOwnerType = (OwnerType) qualifierType;
       Element element = asOwnerType.lookupMember(node.getPropertyName());

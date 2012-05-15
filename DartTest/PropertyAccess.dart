@@ -11,7 +11,7 @@ class PropertyAccess {
   } 
   
   int id(int a) {
-    return a;
+    return coef + a;
   }
   
   int sum(int a, int b) {
@@ -19,9 +19,9 @@ class PropertyAccess {
   }
   
   void main() {
-    PropertyAccess pa = new PropertyAccess();
-    PropertyAccess pb = new PropertyAccess.foo(10);
-    PropertyAccess pc = pa.foo(5);
+    var pa = new PropertyAccess();
+    var pb = new PropertyAccess.foo(10);
+    var pc = new PropertyAccess.foo(5);
     
   
     var x = 2;
@@ -32,5 +32,6 @@ class PropertyAccess {
     var c = pa.sum(x, y);
     var d = pa.coef;
     var e = pb.coef;
+    var f = pa.id(1);
   }
 }
