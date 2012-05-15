@@ -18,10 +18,9 @@ import com.google.dart.compiler.resolver.CompileTimeConstantAnalyzer;
 import com.google.dart.compiler.resolver.Resolver;
 
 public class Toto {
-  public static boolean test2() throws IOException {
+  public static boolean test2(File sourceFile) throws IOException {
     String sdkPath = "../../dart-sdk/";
     File sdkFile = new File(sdkPath);
-    File sourceFile = new File("Hello.dart");
 
     CompilerOptions compilerOptions = new CompilerOptions();
     SystemLibraryManager libraryManager = new SystemLibraryManager(sdkFile, DEFAULT_PLATFORM);
@@ -59,6 +58,15 @@ public class Toto {
   }
 
   public static void main(String[] args) throws IOException {
-    test2();
+
+    String[] paths = { 
+        "DartTest/PropertyAccess.dart",
+    // "Hello.dart"
+    };
+
+    for (String path : paths) {
+      File sourceFile = new File(path);
+      test2(sourceFile);
+    }
   }
 }

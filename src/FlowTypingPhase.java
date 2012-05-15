@@ -1,4 +1,6 @@
 import static type.CoreTypeRepository.*;
+import static type.CoreTypeRepository.NULL_TYPE;
+import static type.CoreTypeRepository.VOID_TYPE;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,9 +12,10 @@ import java.util.Map.Entry;
 import type.BoolType;
 import type.CoreTypeRepository;
 import type.DoubleType;
+import type.DynamicType;
 import type.FunctionType;
 import type.IntType;
-import type.InterfaceType;
+import type.OwnerType;
 import type.Type;
 import type.TypeRepository;
 import type.Types;
@@ -57,7 +60,6 @@ import com.google.dart.compiler.resolver.MethodNodeElement;
 import com.google.dart.compiler.resolver.NodeElement;
 import com.google.dart.compiler.resolver.VariableElement;
 import com.google.dart.compiler.type.FunctionAliasType;
-import com.google.dart.compiler.type.TypeKind;
 
 public class FlowTypingPhase implements DartCompilationPhase {
   @Override
@@ -227,7 +229,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
 
       // TODO test display, to remove.
-      // System.out.println(env);
+      System.out.println(env);
       return null;
     }
 
@@ -440,6 +442,12 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
 
       NodeElement element = node.getElement();
+      // FIXME element can be NULL.
+      if (element == null) {
+        System.out.println("Method Invocation: Element null: " + node);
+        return DYNAMIC_TYPE;
+      }
+
       switch (node.getTarget().getElement().getKind()) {
       case CLASS: // static field or method
       case SUPER: // super field or method
@@ -468,7 +476,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
       default: // polymorphic method call
         Type receiverType = accept(node.getTarget(), flowEnv);
         operandIsNonNull(node.getTarget(), flowEnv);
-
         // FIXME
         // because method call can be dynamic, fallback to the declared return
         // type
@@ -481,10 +488,15 @@ public class FlowTypingPhase implements DartCompilationPhase {
       for (DartExpression argument : node.getArguments()) {
         accept(argument, flowEnv);
       }
-      System.out.println(node);
+
       // weird, element is set on target ?
       NodeElement element = node.getTarget().getElement();
-      // FIXME element is NULL.
+      // FIXME element can be NULL.
+      if (element == null) {
+        System.out.println("Unqualified Invocation: Element null: " + node);
+        return DYNAMIC_TYPE;
+      }
+
       // Because of invoke, the parser doesn't set the value of element.
       switch (element.getKind()) {
       case METHOD: // polymorphic method call on 'this'
@@ -515,15 +527,35 @@ public class FlowTypingPhase implements DartCompilationPhase {
       return BoolType.constant(node.getValue());
     }
 
-    
-   
     // ----
-//    @Override
-//    public Type visitPropertyAccess(DartPropertyAccess node, FlowEnv parameter) {
-//      NodeElement element = node.getElement();
-//      if (element != null) {
-//        return element;
-//      }
-//    }
+    @Override
+    public Type visitPropertyAccess(DartPropertyAccess node, FlowEnv parameter) {
+      NodeElement nodeElement = node.getElement();
+      if (nodeElement != null) {
+        Type type = asType(true, node.getType());
+        if (type instanceof FunctionType) { // function type
+          type = type.asNonNull();
+        }
+
+        return type;
+      }
+      DartNode qualifier = node.getQualifier();
+      Type qualifierType = asType(true, qualifier.getType());
+
+      if (qualifierType instanceof DynamicType) { // qualifier == this
+        qualifierType = parameter.getThisType();
+      }
+
+
+      OwnerType asOwnerType = (OwnerType) qualifierType;
+      Element element = asOwnerType.lookupMember(node.getPropertyName());
+      // TypeAnalyzer set some elements.
+      node.setElement(element);
+      Type type = asType(true, element.getType());
+      if (type instanceof FunctionType) {
+        type = type.asNonNull();
+      }
+      return type;
+    }
   }
 }
