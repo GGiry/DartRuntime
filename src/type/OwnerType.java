@@ -2,6 +2,8 @@ package type;
 
 import java.util.List;
 
+import com.google.dart.compiler.resolver.Element;
+
 /**
  * Common abstract class for all types that have a super class and interfaces.
  * 
@@ -24,6 +26,33 @@ public abstract class OwnerType extends NullableType {
    * @return the interfaces of the current type or an empty list.
    */
   public abstract List<InterfaceType> getInterfaces();
+  
+  
+  public abstract Element localLookupMember(String name);
+  
+  
+  public Element lookupMember(String name) {
+    Element element = localLookupMember(name);
+    if (element != null) {
+      return element;
+    }
+    
+    InterfaceType superType = getSuperType();
+    if (superType != null) {
+      element = superType.lookupMember(name);
+      if (element != null) {
+        return element;
+      }
+    }
+    
+    for(InterfaceType interfaze: getInterfaces()) {
+      element = interfaze.lookupMember(name);
+      if (element != null) {
+        return element;
+      }
+    }
+    return null;
+  }
   
   @Override
   NullableType merge(NullableType type) {

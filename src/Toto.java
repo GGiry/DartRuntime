@@ -44,10 +44,10 @@ public class Toto {
          * phases.add(new TypeAnalyzer());
          */
         /*
-         * phases.add(new DisplayPhase()); //
+         * phases.add(new DisplayPhase());
          */
         /*
-         * phases.add(new InterpretorPhase()); //
+         * phases.add(new InterpretorPhase());
          */
 
         phases.add(new FlowTypingPhase());

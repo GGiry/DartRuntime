@@ -88,4 +88,8 @@ public class CoreTypeRepository extends TypeRepository {
   ClassElement getDoubleClassElement() {
     return coreTypeProvider.getDoubleType().getElement();
   }
+  
+  ClassElement getFunctionClassElement() {
+    return coreTypeProvider.getFunctionType().getElement();
+  }
 }

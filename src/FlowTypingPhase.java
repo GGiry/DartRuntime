@@ -481,7 +481,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       for (DartExpression argument : node.getArguments()) {
         accept(argument, flowEnv);
       }
-
+      System.out.println(node);
       // weird, element is set on target ?
       NodeElement element = node.getTarget().getElement();
       // FIXME element is NULL.
@@ -515,48 +515,15 @@ public class FlowTypingPhase implements DartCompilationPhase {
       return BoolType.constant(node.getValue());
     }
 
+    
+   
     // ----
-
-    @Override
-    public Type visitPropertyAccess(DartPropertyAccess node, FlowEnv parameter) {
-      InterfaceType qualifierType = (InterfaceType) accept(node.getQualifier(), parameter);
-
-      List<InterfaceType> interfaces = qualifierType.getInterfaces();
-      interfaces.add(qualifierType.getSuperType());
-
-      if (interfaces.size() == 0) { // Type of node is NULL, VOID or DYNAMIC
-        if (node.getType().getKind() == TypeKind.DYNAMIC) {
-          return DYNAMIC_TYPE;
-        } else {
-          throw new IllegalStateException("Node is " + node.getType().getKind());
-        }
-      }
-
-      for (Element element : qualifierType.getElement().getMembers()) {
-        if (element.getName().equals(node.getPropertyName())) {
-          // ugly but seems to be the right way...
-          switch (element.getKind()) {
-          case DYNAMIC:
-            return DYNAMIC_TYPE;
-          case CONSTRUCTOR:
-            // Type error
-            throw new IllegalStateException();
-          case METHOD:
-            return asType(true, element.getType());
-          case FIELD:
-            // TODO handle field with getter and setters
-            return asType(true, element.getType());
-          default:
-            throw new UnsupportedOperationException("Property Access: " + element.getKind());
-          }
-        }
-      }
-
-      for (InterfaceType interfaceType : interfaces) {
-        // TODO if the field is not in the qualifier but in one of his super interfaces
-      }
-
-      throw new NullPointerException();
-    }
+//    @Override
+//    public Type visitPropertyAccess(DartPropertyAccess node, FlowEnv parameter) {
+//      NodeElement element = node.getElement();
+//      if (element != null) {
+//        return element;
+//      }
+//    }
   }
 }

@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
+import com.google.dart.compiler.resolver.Element;
+
 public class FunctionType extends OwnerType {
   private final Type returnType;
   private final List<Type> parameterTypes;
@@ -92,6 +94,11 @@ public class FunctionType extends OwnerType {
   @Override
   public List<InterfaceType> getInterfaces() {
     return Collections.singletonList(CoreTypeRepository.getCoreTypeRepository().getFunctionType());
+  }
+  
+  @Override
+  public Element localLookupMember(String name) {
+    return CoreTypeRepository.getCoreTypeRepository().getFunctionClassElement().lookupLocalElement(name);
   }
 
   @Override

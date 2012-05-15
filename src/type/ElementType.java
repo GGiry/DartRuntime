@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.dart.compiler.resolver.ClassElement;
+import com.google.dart.compiler.resolver.Element;
 
 /**
  * Base class for all type that own members.
@@ -55,5 +56,10 @@ abstract class ElementType extends OwnerType {
       interfaces.add((InterfaceType) getTypeRepository().findType(isNullable(), interfaze.getElement()));
     }
     return this.interfaces = interfaces;
+  }
+  
+  @Override
+  public Element localLookupMember(String name) {
+    return getElement().lookupLocalElement(name);
   }
 }
