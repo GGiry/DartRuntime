@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 
+import static type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
+
 public class UnionType extends NullableType {
   // each component type should be non nullable and not a union type
   private final HashSet<NullableType> types;
@@ -145,5 +147,25 @@ public class UnionType extends NullableType {
   @Override
   public Object asConstant() {
     return null;
+  }
+  
+  @Override
+  public Type map(TypeMapper typeMapper) {
+    Type resultType = null;
+    for(Type type: types) {
+      Type mappedType = typeMapper.transform(type);
+      if (mappedType == null) {
+        continue;
+      }
+      if (resultType == null) {
+        resultType = mappedType;
+        continue;
+      }
+      resultType = Types.union(resultType, mappedType);
+    }
+    if (resultType != null) {
+      return resultType;
+    }
+    return DYNAMIC_NON_NULL_TYPE;
   }
 }

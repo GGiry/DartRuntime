@@ -45,4 +45,17 @@ public interface Type {
   Object asConstant();
 
   public static final Object NULL_VALUE = new Object();
+  
+  /**
+   * Transforms the current type to a new type by applying the mapping
+   * specified by the {@link TypeMapper}.
+   * If the specified transformation returns {@code null}, then
+   * the return type should be the non null dynamic type.
+   * 
+   * @param typeMapper calculate the transformation from one type to another.
+   * @return the new type (never null).
+   * 
+   * @see UnionType#map(TypeMapper)
+   */
+  Type map(TypeMapper typeMapper);
 }
