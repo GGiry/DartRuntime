@@ -34,4 +34,9 @@ public class NullType implements Type {
   public Object asConstant() {
     return NULL_VALUE;
   }
+  
+  @Override
+  public Type map(TypeMapper typeMapper) {
+    return typeMapper.transform(this);
+  }
 }

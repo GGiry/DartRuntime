@@ -35,4 +35,8 @@ abstract class NullableType implements Type {
     return UnionType.createUnionType(this, type);
   }
 
+  @Override
+  public Type map(TypeMapper typeMapper) {
+    return typeMapper.transform(this);
+  }
 }

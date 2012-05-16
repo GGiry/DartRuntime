@@ -146,4 +146,19 @@ public class UnionType extends NullableType {
   public Object asConstant() {
     return null;
   }
+  
+  @Override
+  public Type map(TypeMapper typeMapper) {
+    Type resultType = null;
+    for(Type type: types) {
+      Type mappedType = typeMapper.transform(type);
+      if (resultType == null) {
+        resultType = mappedType;
+        continue;
+      }
+      resultType = Types.union(resultType, mappedType);
+    }
+    assert resultType != null;
+    return resultType;
+  }
 }

@@ -35,4 +35,9 @@ public class VoidType implements Type {
   public Object asConstant() {
     throw new IllegalStateException("void type");
   }
+  
+  @Override
+  public Type map(TypeMapper typeMapper) {
+    return typeMapper.transform(this);
+  }
 }
