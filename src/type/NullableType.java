@@ -1,5 +1,7 @@
 package type;
 
+import static type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
+
 abstract class NullableType implements Type {
   private final boolean isNullable;
 
@@ -37,6 +39,7 @@ abstract class NullableType implements Type {
 
   @Override
   public Type map(TypeMapper typeMapper) {
-    return typeMapper.transform(this);
+    Type resultType = typeMapper.transform(this);
+    return (resultType == null)? DYNAMIC_NON_NULL_TYPE: resultType;
   }
 }

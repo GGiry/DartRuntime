@@ -1,5 +1,7 @@
 package type;
 
+import static type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
+
 public class NullType implements Type {
   NullType() {
     // enforce singleton
@@ -37,6 +39,7 @@ public class NullType implements Type {
   
   @Override
   public Type map(TypeMapper typeMapper) {
-    return typeMapper.transform(this);
+    Type resultType = typeMapper.transform(this);
+    return (resultType == null)? DYNAMIC_NON_NULL_TYPE: resultType;
   }
 }

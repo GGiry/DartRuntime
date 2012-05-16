@@ -2,7 +2,17 @@ package type;
 
 /**
  * Transform a type to another type.
+ * 
+ * @see Type#map(TypeMapper)
  */
 public interface TypeMapper {
-  public Type transform(Type type);
+  /**
+   * Transform a type to another one.
+   * 
+   * @param type the type to transform.
+   * @return a type to transform or null.
+   * 
+   * @see Type#map(TypeMapper)
+   */
+  public /*maybenull*/Type transform(Type type);
 }
