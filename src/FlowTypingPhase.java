@@ -17,6 +17,7 @@ import type.FunctionType;
 import type.IntType;
 import type.OwnerType;
 import type.Type;
+import type.TypeMapper;
 import type.TypeRepository;
 import type.Types;
 import visitor.ASTVisitor2;
@@ -530,6 +531,16 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitFunctionObjectInvocation(DartFunctionObjectInvocation node, FlowEnv parameter) {
+      //FIXME Geoffrey, a function object is when you have a function stored in a
+      // parameter/variable or a result of another call that you call as a function
+      // something like
+      //  int foo(int i) { return i; }
+      //  var a = foo;
+      //  a();   <--- function object invocation
+      // so either it's a call to dynamic or a function type (so uses Types.getReturnType()) 
+      
+      Type targetType = accept(node.getTarget(), parameter);
+      
       // We need to setElement.
 
       node.setElement(((OwnerType) parameter.getThisType()).getSuperType().getElement());
@@ -561,9 +572,12 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     // ----
     @Override
-    public Type visitPropertyAccess(DartPropertyAccess node, FlowEnv parameter) {
+    public Type visitPropertyAccess(final DartPropertyAccess node, FlowEnv parameter) {
       NodeElement nodeElement = node.getElement();
       if (nodeElement != null) {
+        //FIXME Geoffrey, doesn't work if the type of the field is a function type
+        // it should be nullable
+        // you have to do a swith on the element.kind
         Type type = asType(true, node.getType());
         if (type instanceof FunctionType) {
           type = type.asNonNull();
@@ -572,21 +586,30 @@ public class FlowTypingPhase implements DartCompilationPhase {
         return type;
       }
       DartNode qualifier = node.getQualifier();
-      Type qualifierType = asType(true, qualifier.getType());
-
-      if (qualifierType instanceof DynamicType) { // qualifier == this
-        qualifierType = parameter.getThisType();
-      }
-
-      OwnerType asOwnerType = (OwnerType) qualifierType;
-      Element element = asOwnerType.lookupMember(node.getPropertyName());
-      // TypeAnalyzer set some elements.
-      node.setElement(element);
-      Type type = asType(true, element.getType());
-      if (type instanceof FunctionType) {
-        type = type.asNonNull();
-      }
-      return type;
+      Type qualifierType = accept(qualifier, parameter);
+      
+      return qualifierType.map(new TypeMapper() {
+        @Override
+        public Type transform(Type type) {
+          if (type instanceof DynamicType) {  // you can always qualify dynamic
+            return type;
+          }
+          OwnerType ownerType = (OwnerType) type;
+          Element element = ownerType.lookupMember(node.getPropertyName());
+      
+          // TypeAnalyzer set some elements
+          // FIXME, don't set the element if we don't needed when generating the bytecode
+          //node.setElement(element);
+          
+          //FIXME Geoffrey, again here, you can access to a field which is
+          // typed as a function type, in that case it should be nullable
+          Type elementType = asType(true, element.getType());
+          if (elementType instanceof FunctionType) {
+            elementType = elementType.asNonNull();
+          }
+          return elementType;
+        }
+      });
     }
   }
 }

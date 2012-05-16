@@ -47,9 +47,17 @@ public class Types {
   }
 
   public static Type getReturnType(Type type) {
-    return type.accept(RETURN_TYPE_VISITOR, null);
+    return type.map(RETURN_TYPE_MAPPER);
+    
   }// where
-  private static final TypeVisitor<Type, Void> RETURN_TYPE_VISITOR = 
+  private static final TypeMapper RETURN_TYPE_MAPPER = new TypeMapper() {
+    @Override
+    public Type transform(Type type) {
+      return type.accept(RETURN_TYPE_VISITOR, null);
+    }
+  };
+  // and
+  static final TypeVisitor<Type, Void> RETURN_TYPE_VISITOR = 
       new TypeVisitor<Type, Void>() {
         @Override
         public Type visitDynamicType(DynamicType type, Void unused) {
