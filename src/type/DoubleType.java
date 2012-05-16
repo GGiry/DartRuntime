@@ -2,10 +2,7 @@ package type;
 
 import static type.CoreTypeRepository.DOUBLE_NON_NULL_TYPE;
 import static type.CoreTypeRepository.DOUBLE_TYPE;
-import static type.CoreTypeRepository.INT_NON_NULL_TYPE;
 
-import java.lang.invoke.ConstantCallSite;
-import java.math.BigInteger;
 import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
