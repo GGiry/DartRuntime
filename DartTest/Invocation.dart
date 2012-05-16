@@ -1,9 +1,17 @@
+class A {
+  int ddouble(int n) {
+    return n + n;
+  }
+}
+
 class Invocation {
-  int id(int i) {
+  static int id(int i) {
     return i;
   }
-  
-  void main() {
-    var a = id(1);
-  }
+}
+
+void main() {
+  A aa = new A();
+  var a = Invocation.id(1);
+  var b = aa.ddouble(a);
 }

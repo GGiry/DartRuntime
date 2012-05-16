@@ -1,5 +1,4 @@
 import static type.CoreTypeRepository.*;
-import static type.CoreTypeRepository.DYNAMIC_TYPE;
 import static type.CoreTypeRepository.NULL_TYPE;
 import static type.CoreTypeRepository.VOID_TYPE;
 
@@ -9,10 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import javax.lang.model.element.TypeParameterElement;
-
-import org.omg.Dynamic.Parameter;
 
 import type.BoolType;
 import type.CoreTypeRepository;
@@ -510,11 +505,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
       NodeElement nodeElement = node.getTarget().getElement();
       if (nodeElement == null) {
         System.out.println("Unqualified Invocation: Element null: " + node);
-        
+
         Element element = ((OwnerType) flowEnv.getThisType()).lookupMember(node.getTarget().getName());
         node.getTarget().setElement(element);
         nodeElement = (NodeElement) element;
       }
+      
+      System.out.println(nodeElement);
 
       // Because of invoke, the parser doesn't set the value of element.
       switch (nodeElement.getKind()) {
@@ -530,15 +527,15 @@ public class FlowTypingPhase implements DartCompilationPhase {
         throw new UnsupportedOperationException();
       }
     }
-    
+
     @Override
     public Type visitFunctionObjectInvocation(DartFunctionObjectInvocation node, FlowEnv parameter) {
       // We need to setElement.
-      
+
       node.setElement(((OwnerType) parameter.getThisType()).getSuperType().getElement());
       // TODO be sure only super is called.
       System.out.println("visitFunctionObjectInvoke: " + node + " : " + node.getElement());
-      
+
       return null;
     }
 
@@ -556,7 +553,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     public Type visitBooleanLiteral(DartBooleanLiteral node, FlowEnv unused) {
       return BoolType.constant(node.getValue());
     }
-    
+
     @Override
     public Type visitStringLiteral(DartStringLiteral node, FlowEnv parameter) {
       return asType(false, node.getType());
