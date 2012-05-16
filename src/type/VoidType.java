@@ -5,6 +5,11 @@ public class VoidType implements Type {
   VoidType() {
     // enforce singleton
   }
+  
+  @Override
+  public String toString() {
+    return "void";
+  }
 
   @Override
   public boolean isNullable() {

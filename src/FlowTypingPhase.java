@@ -1,4 +1,5 @@
 import static type.CoreTypeRepository.*;
+import static type.CoreTypeRepository.DYNAMIC_TYPE;
 import static type.CoreTypeRepository.NULL_TYPE;
 import static type.CoreTypeRepository.VOID_TYPE;
 
@@ -8,6 +9,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import javax.lang.model.element.TypeParameterElement;
+
+import org.omg.Dynamic.Parameter;
 
 import type.BoolType;
 import type.CoreTypeRepository;
@@ -32,6 +37,7 @@ import com.google.dart.compiler.ast.DartExprStmt;
 import com.google.dart.compiler.ast.DartExpression;
 import com.google.dart.compiler.ast.DartFieldDefinition;
 import com.google.dart.compiler.ast.DartFunction;
+import com.google.dart.compiler.ast.DartFunctionObjectInvocation;
 import com.google.dart.compiler.ast.DartIdentifier;
 import com.google.dart.compiler.ast.DartIntegerLiteral;
 import com.google.dart.compiler.ast.DartMethodDefinition;
@@ -42,6 +48,7 @@ import com.google.dart.compiler.ast.DartParameter;
 import com.google.dart.compiler.ast.DartPropertyAccess;
 import com.google.dart.compiler.ast.DartReturnStatement;
 import com.google.dart.compiler.ast.DartStatement;
+import com.google.dart.compiler.ast.DartStringLiteral;
 import com.google.dart.compiler.ast.DartThisExpression;
 import com.google.dart.compiler.ast.DartThrowStatement;
 import com.google.dart.compiler.ast.DartTypeNode;
@@ -288,7 +295,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
       Type declaredType = asType(true, element.getType());
       Type type = accept(value, flowEnv.expectedType(declaredType));
       flowEnv.register(element, type);
-      System.out.println("register: " + element + ", " + type); 
       return null;
     }
 
@@ -313,8 +319,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitIdentifier(DartIdentifier node, FlowEnv flowEnv) {
-      System.out.println(node);
-      System.out.println(node.getElement());
       switch (node.getElement().getKind()) {
       case VARIABLE:
       case PARAMETER:
@@ -337,7 +341,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
-      System.out.println(node);
       DartExpression arg1 = node.getArg1();
       DartExpression arg2 = node.getArg2();
       Type type1 = accept(arg1, parameter);
@@ -448,30 +451,20 @@ public class FlowTypingPhase implements DartCompilationPhase {
       NodeElement nodeElement = node.getElement();
       // FIXME element can be NULL.
       if (nodeElement == null) {
-        // We need to look for the
         System.out.println("Method Invocation: Element null: " + node);
 
-        System.out.println(node);
-        System.out.println(node.getElement());
-        System.out.println(node.getTarget());
-        System.out.println(node.getTarget().getElement());
-        System.out.println(typeMap.get(node));
-        
+        OwnerType type = (OwnerType) flowEnv.getType((VariableElement) node.getTarget().getElement());
 
-        // FIXME asType return dynamic type, it's an error : the type seem to be not registered at allocation (visitNew...)
-        
-        OwnerType type = (OwnerType) asType(false, node.getTarget().getElement().getType());
         // FIXME doesn't work with constructors like :
         // A a = new A();
         // A b = a.foo();
         // where foo is a named constructor in class A.
+        // It's doesn't have to work but we need to display the error.
         Element element = type.lookupMember(node.getFunctionNameString());
         node.setElement(element);
-
-        // TODO not sure if it's true or not.
-        return asType(true, element.getType());
+        nodeElement = (NodeElement) element;
       }
-
+      
       switch (node.getTarget().getElement().getKind()) {
       case CLASS: // static field or method
       case SUPER: // super field or method
@@ -514,26 +507,39 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
 
       // weird, element is set on target ?
-      NodeElement element = node.getTarget().getElement();
-      // FIXME element can be NULL.
-      if (element == null) {
+      NodeElement nodeElement = node.getTarget().getElement();
+      if (nodeElement == null) {
         System.out.println("Unqualified Invocation: Element null: " + node);
-        return DYNAMIC_TYPE;
+        
+        Element element = ((OwnerType) flowEnv.getThisType()).lookupMember(node.getTarget().getName());
+        node.getTarget().setElement(element);
+        nodeElement = (NodeElement) element;
       }
 
       // Because of invoke, the parser doesn't set the value of element.
-      switch (element.getKind()) {
+      switch (nodeElement.getKind()) {
       case METHOD: // polymorphic method call on 'this'
-        return asType(true, ((MethodElement) element).getReturnType());
+        return asType(true, ((MethodElement) nodeElement).getReturnType());
 
       case FIELD: // function call
       case PARAMETER:
       case VARIABLE:
-        return Types.getReturnType(asType(true, element.getType()));
+        return Types.getReturnType(asType(true, nodeElement.getType()));
 
       default: // FUNCTION_OBJECT ??
         throw new UnsupportedOperationException();
       }
+    }
+    
+    @Override
+    public Type visitFunctionObjectInvocation(DartFunctionObjectInvocation node, FlowEnv parameter) {
+      // We need to setElement.
+      
+      node.setElement(((OwnerType) parameter.getThisType()).getSuperType().getElement());
+      // TODO be sure only super is called.
+      System.out.println("visitFunctionObjectInvoke: " + node + " : " + node.getElement());
+      
+      return null;
     }
 
     @Override
@@ -550,6 +556,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
     public Type visitBooleanLiteral(DartBooleanLiteral node, FlowEnv unused) {
       return BoolType.constant(node.getValue());
     }
+    
+    @Override
+    public Type visitStringLiteral(DartStringLiteral node, FlowEnv parameter) {
+      return asType(false, node.getType());
+    }
 
     // ----
     @Override
@@ -557,7 +568,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       NodeElement nodeElement = node.getElement();
       if (nodeElement != null) {
         Type type = asType(true, node.getType());
-        if (type instanceof FunctionType) { // function type
+        if (type instanceof FunctionType) {
           type = type.asNonNull();
         }
 

@@ -43,7 +43,6 @@ public class FlowEnv {
    * @return the type of the variable or null if the variable is unknown.
    */
   public Type getType(VariableElement variable) {
-    System.out.println(variableTypeMap);
     Type type = variableTypeMap.get(variable);
     if (type == null) {
       if (parent != null) {

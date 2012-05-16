@@ -61,6 +61,7 @@ public class Toto {
 
     String[] paths = { 
         "DartTest/PropertyAccess.dart",
+        "DartTest/Invocation.dart",
     // "Hello.dart"
     };
 
