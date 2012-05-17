@@ -438,34 +438,18 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     @Override
-    public Type visitMethodInvocation(DartMethodInvocation node, FlowEnv flowEnv) {
+    public Type visitMethodInvocation(final DartMethodInvocation node, FlowEnv flowEnv) {      
       ArrayList<Type> argumentTypes = new ArrayList<>();
       for (DartExpression argument : node.getArguments()) {
         argumentTypes.add(accept(argument, flowEnv));
       }
 
-      NodeElement nodeElement = node.getElement();
-      // FIXME element can be NULL.
-      if (nodeElement == null) {
-        System.out.println("Method Invocation: Element null: " + node);
-
-        OwnerType type = (OwnerType) flowEnv.getType((VariableElement) node.getTarget().getElement());
-
-        // FIXME doesn't work with constructors like :
-        // A a = new A();
-        // A b = a.foo();
-        // where foo is a named constructor in class A.
-        // It's doesn't have to work but we need to display the error.
-        Element element = type.lookupMember(node.getFunctionNameString());
-        node.setElement(element);
-        nodeElement = (NodeElement) element;
-      }
-      
       switch (node.getTarget().getElement().getKind()) {
       case CLASS: // static field or method
       case SUPER: // super field or method
       case LIBRARY: // library call
-
+        
+        NodeElement nodeElement = node.getElement();
         switch (nodeElement.getKind()) {
         case FIELD: // field access
           return Types.getReturnType(asType(true, ((FieldElement) nodeElement).getType()));
@@ -487,13 +471,48 @@ public class FlowTypingPhase implements DartCompilationPhase {
         }
 
       default: // polymorphic method call
-        Type receiverType = accept(node.getTarget(), flowEnv);
-        operandIsNonNull(node.getTarget(), flowEnv);
-        // FIXME
-        // because method call can be dynamic, fallback to the declared return
-        // type
-        return asType(true, ((MethodElement) nodeElement).getReturnType());
       }
+
+      Type receiverType = accept(node.getTarget(), flowEnv);
+      
+      // call on 'null' (statically proven), will never succeed at runtime
+      if (receiverType == NULL_TYPE) {
+        return DYNAMIC_NON_NULL_TYPE;
+      }
+      
+      // if the receiver is null, it will raise an exception at runtime
+      // so mark it non null after that call
+      operandIsNonNull(node.getTarget(), flowEnv);
+      
+      // you can call what you want on dynamic
+      if (receiverType instanceof DynamicType) {
+        operandIsNonNull(node.getTarget(), flowEnv);
+        return receiverType;
+      }
+
+      // TODO Geoffrey, remove this test when you agree with me,
+      // node element can be null here but we don't care
+      if (node.getElement() == null) {
+        System.out.println("Method Invocation: Element null: " + node);
+      }
+
+      return receiverType.map(new TypeMapper() { 
+        @Override
+        public Type transform(Type type) {
+          OwnerType ownerType = (OwnerType) type; 
+          Element element = ownerType.lookupMember(node.getFunctionNameString());
+
+          // element can be null because the receiverType can be an union
+          if (element == null) {
+            return null;
+          }
+
+          // here when you should use the Class Hierarchy analysis and
+          // typeflow all overridden methods
+          // but let do something simple for now.
+          return asType(true, ((MethodElement) element).getReturnType());
+        }
+      });
     }
 
     @Override
@@ -505,15 +524,15 @@ public class FlowTypingPhase implements DartCompilationPhase {
       // weird, element is set on target ?
       NodeElement nodeElement = node.getTarget().getElement();
       if (nodeElement == null) {
-        System.out.println("Unqualified Invocation: Element null: " + node);
+        // here we are in trouble, I don't know why this can appear
+        // for the moment, log the error and say that the result is dynamic
+        System.err.println("Unqualified Invocation: Element null: " + node);
 
-        Element element = ((OwnerType) flowEnv.getThisType()).lookupMember(node.getTarget().getName());
-        node.getTarget().setElement(element);
-        nodeElement = (NodeElement) element;
+        //Element element = ((OwnerType) flowEnv.getThisType()).lookupMember(node.getTarget().getName());
+        return DYNAMIC_TYPE;
       }
       
-      System.out.println(nodeElement);
-
+      
       // Because of invoke, the parser doesn't set the value of element.
       switch (nodeElement.getKind()) {
       case METHOD: // polymorphic method call on 'this'

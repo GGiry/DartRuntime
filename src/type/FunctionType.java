@@ -98,7 +98,7 @@ public class FunctionType extends OwnerType {
   
   @Override
   public Element localLookupMember(String name) {
-    return CoreTypeRepository.getCoreTypeRepository().getFunctionClassElement().lookupLocalElement(name);
+    return null;
   }
 
   @Override
