@@ -37,6 +37,7 @@ import com.google.dart.compiler.ast.DartMethodDefinition;
 import com.google.dart.compiler.ast.DartMethodInvocation;
 import com.google.dart.compiler.ast.DartNewExpression;
 import com.google.dart.compiler.ast.DartNode;
+import com.google.dart.compiler.ast.DartNullLiteral;
 import com.google.dart.compiler.ast.DartParameter;
 import com.google.dart.compiler.ast.DartPropertyAccess;
 import com.google.dart.compiler.ast.DartReturnStatement;
@@ -248,9 +249,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
         throw new NullPointerException();
       }
       
-      Type exceptionType = accept(node.getException(), flowEnv);
-
-      throw null;
+      accept(node.getException(), flowEnv);
+      return null;
     }
 
     @Override
@@ -575,6 +575,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitStringLiteral(DartStringLiteral node, FlowEnv parameter) {
       return typeHelper.asType(false, node.getType());
+    }
+    
+    @Override
+    public Type visitNullLiteral(DartNullLiteral node, FlowEnv parameter) {
+      return NULL_TYPE;
     }
 
     // ----
