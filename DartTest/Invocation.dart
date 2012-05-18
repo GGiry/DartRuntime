@@ -11,7 +11,7 @@ class Invocation {
 }
 
 void main() {
-  A aa = new A();
+  var aa = new A();
   var a = Invocation.id(1);
   var b = aa.ddouble(a);
 }

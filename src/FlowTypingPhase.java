@@ -45,6 +45,7 @@ import com.google.dart.compiler.ast.DartPropertyAccess;
 import com.google.dart.compiler.ast.DartReturnStatement;
 import com.google.dart.compiler.ast.DartStatement;
 import com.google.dart.compiler.ast.DartStringLiteral;
+import com.google.dart.compiler.ast.DartSuperExpression;
 import com.google.dart.compiler.ast.DartThisExpression;
 import com.google.dart.compiler.ast.DartThrowStatement;
 import com.google.dart.compiler.ast.DartTypeNode;
@@ -57,6 +58,7 @@ import com.google.dart.compiler.parser.Token;
 import com.google.dart.compiler.resolver.ClassElement;
 import com.google.dart.compiler.resolver.CoreTypeProvider;
 import com.google.dart.compiler.resolver.Element;
+import com.google.dart.compiler.resolver.ElementKind;
 import com.google.dart.compiler.resolver.FieldElement;
 import com.google.dart.compiler.resolver.MethodElement;
 import com.google.dart.compiler.resolver.MethodNodeElement;
@@ -438,7 +440,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     @Override
-    public Type visitMethodInvocation(final DartMethodInvocation node, FlowEnv flowEnv) {      
+    public Type visitMethodInvocation(final DartMethodInvocation node, FlowEnv flowEnv) {
       ArrayList<Type> argumentTypes = new ArrayList<>();
       for (DartExpression argument : node.getArguments()) {
         argumentTypes.add(accept(argument, flowEnv));
@@ -448,7 +450,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       case CLASS: // static field or method
       case SUPER: // super field or method
       case LIBRARY: // library call
-        
+
         NodeElement nodeElement = node.getElement();
         switch (nodeElement.getKind()) {
         case FIELD: // field access
@@ -474,16 +476,16 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
 
       Type receiverType = accept(node.getTarget(), flowEnv);
-      
+
       // call on 'null' (statically proven), will never succeed at runtime
       if (receiverType == NULL_TYPE) {
         return DYNAMIC_NON_NULL_TYPE;
       }
-      
+
       // if the receiver is null, it will raise an exception at runtime
       // so mark it non null after that call
       operandIsNonNull(node.getTarget(), flowEnv);
-      
+
       // you can call what you want on dynamic
       if (receiverType instanceof DynamicType) {
         operandIsNonNull(node.getTarget(), flowEnv);
@@ -496,10 +498,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
         System.out.println("Method Invocation: Element null: " + node);
       }
 
-      return receiverType.map(new TypeMapper() { 
+      return receiverType.map(new TypeMapper() {
         @Override
         public Type transform(Type type) {
-          OwnerType ownerType = (OwnerType) type; 
+          OwnerType ownerType = (OwnerType) type;
           Element element = ownerType.lookupMember(node.getFunctionNameString());
 
           // element can be null because the receiverType can be an union
@@ -528,11 +530,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
         // for the moment, log the error and say that the result is dynamic
         System.err.println("Unqualified Invocation: Element null: " + node);
 
-        //Element element = ((OwnerType) flowEnv.getThisType()).lookupMember(node.getTarget().getName());
+        // Element element = ((OwnerType)
+        // flowEnv.getThisType()).lookupMember(node.getTarget().getName());
         return DYNAMIC_TYPE;
       }
-      
-      
+
       // Because of invoke, the parser doesn't set the value of element.
       switch (nodeElement.getKind()) {
       case METHOD: // polymorphic method call on 'this'
@@ -540,8 +542,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       case FIELD: // function call
       case PARAMETER:
-      case VARIABLE:
         return Types.getReturnType(asType(true, nodeElement.getType()));
+      case VARIABLE:
+        return Types.getReturnType(flowEnv.getType((VariableElement) nodeElement));
 
       default: // FUNCTION_OBJECT ??
         throw new UnsupportedOperationException();
@@ -550,18 +553,24 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitFunctionObjectInvocation(DartFunctionObjectInvocation node, FlowEnv parameter) {
-      //FIXME Geoffrey, a function object is when you have a function stored in a
-      // parameter/variable or a result of another call that you call as a function
+      // FIXME Geoffrey, a function object is when you have a function stored in
+      // a
+      // parameter/variable or a result of another call that you call as a
+      // function
       // something like
-      //  int foo(int i) { return i; }
-      //  var a = foo;
-      //  a();   <--- function object invocation
-      // so either it's a call to dynamic or a function type (so uses Types.getReturnType()) 
-      
-      Type targetType = accept(node.getTarget(), parameter);
-      
-      // We need to setElement.
+      // int foo(int i) { return i; }
+      // var a = foo;
+      // a(); <--- function object invocation
+      // so either it's a call to dynamic or a function type (so uses
+      // Types.getReturnType())
 
+      // FIXME
+      // The test file DartTest/FunctionObject.dart seems to not call
+      // visitFunctionObjectInvocation but UnqualifiedInvocation.
+
+      Type targetType = accept(node.getTarget(), parameter);
+
+      // We need to setElement.
       node.setElement(((OwnerType) parameter.getThisType()).getSuperType().getElement());
       // TODO be sure only super is called.
       System.out.println("visitFunctionObjectInvoke: " + node + " : " + node.getElement());
@@ -590,43 +599,69 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     // ----
+
+    /**
+     * Returns the correct type of the property, depending of the
+     * {@link ElementKind kind} of element.
+     * 
+     * @param type
+     *          Nullable type of the node.
+     * @param element
+     *          Element to test.
+     * @return Type of the property.
+     */
+    private Type propertyType(Type type, Element element) {
+      switch (element.getKind()) {
+      case METHOD:
+      case CONSTRUCTOR:
+        type = type.asNonNull();
+      default:
+        return type;
+      }
+    }
+
+    @Override
+    public Type visitSuperExpression(DartSuperExpression node, FlowEnv parameter) {
+      if (parameter.getThisType() == null) {
+        return DYNAMIC_TYPE;
+      }
+
+      Type type = ((OwnerType) parameter.getThisType()).getSuperType();
+      return type;
+    }
+
     @Override
     public Type visitPropertyAccess(final DartPropertyAccess node, FlowEnv parameter) {
       NodeElement nodeElement = node.getElement();
       if (nodeElement != null) {
-        //FIXME Geoffrey, doesn't work if the type of the field is a function type
+        // FIXME Geoffrey, doesn't work if the type of the field is a function
+        // type
         // it should be nullable
-        // you have to do a swith on the element.kind
-        Type type = asType(true, node.getType());
-        if (type instanceof FunctionType) {
-          type = type.asNonNull();
-        }
+        // you have to do a switch on the element.kind
 
-        return type;
+        return propertyType(asType(true, node.getType()), nodeElement);
       }
       DartNode qualifier = node.getQualifier();
       Type qualifierType = accept(qualifier, parameter);
-      
+
       return qualifierType.map(new TypeMapper() {
         @Override
         public Type transform(Type type) {
-          if (type instanceof DynamicType) {  // you can always qualify dynamic
+          if (type instanceof DynamicType) { // you can always qualify dynamic
             return type;
           }
           OwnerType ownerType = (OwnerType) type;
           Element element = ownerType.lookupMember(node.getPropertyName());
-      
-          // TypeAnalyzer set some elements
-          // FIXME, don't set the element if we don't needed when generating the bytecode
-          //node.setElement(element);
-          
-          //FIXME Geoffrey, again here, you can access to a field which is
+
+          // TypeAnalyzer set some elements.
+          // FIXME, don't set the element if we don't needed when generating the
+          // bytecode.
+          // We need to set the element to compile DartTest/PropertyAcces.dart
+          node.setElement(element);
+
+          // FIXME Geoffrey, again here, you can access to a field which is
           // typed as a function type, in that case it should be nullable
-          Type elementType = asType(true, element.getType());
-          if (elementType instanceof FunctionType) {
-            elementType = elementType.asNonNull();
-          }
-          return elementType;
+          return propertyType(asType(true, element.getType()), element);
         }
       });
     }
