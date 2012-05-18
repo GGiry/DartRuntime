@@ -4,10 +4,6 @@ import static type.CoreTypeRepository.VOID_TYPE;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import type.BoolType;
 import type.CoreTypeRepository;
@@ -64,7 +60,6 @@ import com.google.dart.compiler.resolver.MethodElement;
 import com.google.dart.compiler.resolver.MethodNodeElement;
 import com.google.dart.compiler.resolver.NodeElement;
 import com.google.dart.compiler.resolver.VariableElement;
-import com.google.dart.compiler.type.FunctionAliasType;
 
 public class FlowTypingPhase implements DartCompilationPhase {
   @Override
@@ -73,100 +68,21 @@ public class FlowTypingPhase implements DartCompilationPhase {
     CoreTypeRepository coreTypeRepository = CoreTypeRepository.initCoreTypeRepository(coreTypeProvider);
 
     TypeRepository typeRepository = new TypeRepository(coreTypeRepository);
-    new FTVisitor(typeRepository).flowTyping(unit);
+    TypeHelper typeHelper = new TypeHelper(typeRepository);
+    new DefinitionVisitor(typeHelper).typeFlow(unit);
     return unit;
   }
 
-  private static class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
-    private final TypeRepository typeRepository;
-    private final HashMap<DartNode, Type> typeMap = new HashMap<>();
-
-    FTVisitor(TypeRepository typeRepository) {
-      this.typeRepository = typeRepository;
-    }
-
-    // entry point
-    public Type flowTyping(DartNode node) {
-      return accept(node, null);
-    }
-
-    private Type asType(boolean nullable, com.google.dart.compiler.type.Type type) {
-      switch (type.getKind()) {
-      case VOID:
-        return CoreTypeRepository.VOID_TYPE;
-      case DYNAMIC:
-        return nullable ? CoreTypeRepository.DYNAMIC_TYPE : CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
-      case VARIABLE:
-        // return typeRepository.findType(nullable, (ClassElement)
-        // type.getElement());
-      case INTERFACE:
-        return typeRepository.findType(nullable, (ClassElement) type.getElement());
-      case FUNCTION:
-        return asFunctionType(nullable, (com.google.dart.compiler.type.FunctionType) type);
-      case FUNCTION_ALIAS:
-        return asFunctionType(nullable, ((FunctionAliasType) type).getElement().getFunctionType());
-      case NONE:
-      default:
-        throw new AssertionError("asType: " + type.getKind() + " must be implemented");
-      }
-    }
-
-    private FunctionType asFunctionType(boolean nullable, com.google.dart.compiler.type.FunctionType functionType) {
-      return typeRepository.findFunction(nullable, asType(true, functionType.getReturnType()), asTypeList(functionType.getParameterTypes()),
-          asTypeMap(functionType.getNamedParameterTypes()), null);
+  static class DefinitionVisitor extends ASTVisitor2<Type, FlowEnv> {
+    private final TypeHelper typeHelper;
+    
+    DefinitionVisitor(TypeHelper typeHelper) {
+      this.typeHelper = typeHelper;
     }
     
-    private FunctionType asConstantFunctionType(MethodElement element) {
-      com.google.dart.compiler.type.FunctionType functionType = element.getFunctionType();
-      return typeRepository.findFunction(false, asType(true, functionType.getReturnType()), asTypeList(functionType.getParameterTypes()),
-          asTypeMap(functionType.getNamedParameterTypes()), element);
-    }
-
-    private List<Type> asTypeList(List<com.google.dart.compiler.type.Type> types) {
-      ArrayList<Type> typeList = new ArrayList<>(types.size());
-      for (com.google.dart.compiler.type.Type type : types) {
-        typeList.add(asType(true, type));
-      }
-      return typeList;
-    }
-
-    private Map<String, Type> asTypeMap(Map<String, com.google.dart.compiler.type.Type> types) {
-      LinkedHashMap<String, Type> typeMap = new LinkedHashMap<>(types.size());
-      for (Entry<String, com.google.dart.compiler.type.Type> entry : types.entrySet()) {
-        typeMap.put(entry.getKey(), asType(false, entry.getValue()));
-      }
-      return typeMap;
-    }
-
-    private static void operandIsNonNull(DartExpression expr, FlowEnv flowEnv) {
-      if (!(expr instanceof DartIdentifier)) {
-        return;
-      }
-      Element element = expr.getElement();
-      if (!(element instanceof VariableElement)) {
-        return;
-      }
-      VariableElement variable = (VariableElement) element;
-      Type type = flowEnv.getType(variable);
-      flowEnv.register(variable, type.asNonNull());
-    }
-
-    @Override
-    protected Type accept(DartNode node, FlowEnv flowEnv) {
-      Type type = super.accept(node, flowEnv);
-      if (type == null) {
-        return null;
-      }
-      // record type of the AST node
-      typeMap.put(node, type);
-      return type;
-    }
-
-    // Don't implement the DartTypeNode's visitor, it should be never visited.
-    // The type of the corresponding Element should be used instead
-    @Override
-    public Type visitTypeNode(DartTypeNode node, FlowEnv unused) {
-      throw new AssertionError("this method should never be called");
+    // entry point
+    public void typeFlow(DartUnit unit) {
+      accept(unit, null);
     }
 
     @Override
@@ -207,25 +123,73 @@ public class FlowTypingPhase implements DartCompilationPhase {
       MethodNodeElement element = node.getElement();
       if (!modifiers.isStatic() && !modifiers.isFactory()) {
         if (element instanceof ClassElement) {
-          thisType = typeRepository.findType(false, (ClassElement) element.getEnclosingElement());
+          thisType = typeHelper.findType(false, (ClassElement) element.getEnclosingElement());
         } else {
-          thisType = asType(false, node.getElement().getEnclosingElement().getType());
+          //FIXME Geoffrey, WTF !, you can use 'this' to refer something different that the class ?
+          thisType = typeHelper.asType(false, node.getElement().getEnclosingElement().getType());
         }
       }
 
       FlowEnv flowEnv = new FlowEnv(thisType);
       DartFunction function = node.getFunction();
       if (function != null) {
-        accept(function, flowEnv);
+        new FTVisitor(typeHelper).typeFlow(function, flowEnv);
       }
       return null;
+    }
+  }
+  
+  static class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
+    private final TypeHelper typeHelper;
+    private final HashMap<DartNode, Type> typeMap = new HashMap<>();
+    private Type inferredReturnType;
+
+    FTVisitor(TypeHelper typeHelper) {
+      this.typeHelper = typeHelper;
+    }
+
+    // entry point
+    public Type typeFlow(DartFunction node, FlowEnv flowEnv) {
+      return visitFunction(node, flowEnv);
+    }
+
+
+    private static void operandIsNonNull(DartExpression expr, FlowEnv flowEnv) {
+      if (!(expr instanceof DartIdentifier)) {
+        return;
+      }
+      Element element = expr.getElement();
+      if (!(element instanceof VariableElement)) {
+        return;
+      }
+      VariableElement variable = (VariableElement) element;
+      Type type = flowEnv.getType(variable);
+      flowEnv.register(variable, type.asNonNull());
+    }
+
+    @Override
+    protected Type accept(DartNode node, FlowEnv flowEnv) {
+      Type type = super.accept(node, flowEnv);
+      if (type == null) {
+        return null;
+      }
+      // record type of the AST node
+      typeMap.put(node, type);
+      return type;
+    }
+
+    // Don't implement the DartTypeNode's visitor, it should be never visited.
+    // The type of the corresponding Element should be used instead
+    @Override
+    public Type visitTypeNode(DartTypeNode node, FlowEnv unused) {
+      throw new AssertionError("this method should never be called");
     }
 
     @Override
     public Type visitFunction(DartFunction node, FlowEnv flowEnv) {
       // function element is not initialized, we use the parent element here
       Element element = node.getParent().getElement();
-      Type returnType = ((FunctionType) asType(false, element.getType())).getReturnType();
+      Type returnType = ((FunctionType) typeHelper.asType(false, element.getType())).getReturnType();
 
       // propagate thisType or null
       FlowEnv env = new FlowEnv(flowEnv, returnType, VOID_TYPE);
@@ -238,18 +202,18 @@ public class FlowTypingPhase implements DartCompilationPhase {
       if (body != null) {
         accept(body, env);
       }
-
+      
       // TODO test display, to remove.
       System.out.println(env);
-      return null;
+      return (inferredReturnType != null)? inferredReturnType: returnType;
     }
 
     @Override
     public Type visitParameter(DartParameter node, FlowEnv unused) {
       // use the declared type of the parameter
-      return asType(true, node.getElement().getType());
+      return typeHelper.asType(true, node.getElement().getType());
     }
-
+    
     @Override
     public Type visitBlock(DartBlock node, FlowEnv flowEnv) {
       // each instruction should be compatible with void
@@ -296,7 +260,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
       // the type is the type of the initialization expression
       VariableElement element = node.getElement();
-      Type declaredType = asType(true, element.getType());
+      Type declaredType = typeHelper.asType(true, element.getType());
       Type type = accept(value, flowEnv.expectedType(declaredType));
       flowEnv.register(element, type);
       return null;
@@ -328,10 +292,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
       case PARAMETER:
         return flowEnv.getType((VariableElement) node.getElement());
       case FIELD:
-        return asType(true, node.getElement().getType());
+        return typeHelper.asType(true, node.getElement().getType());
       case METHOD:
         // reference a method by name
-        return asType(false, node.getElement().getType());
+        return typeHelper.asType(false, node.getElement().getType());
       default:
         throw new UnsupportedOperationException();
       }
@@ -431,7 +395,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
 
       // a method call that can be polymorphic
-      return asType(true, node.getElement().getFunctionType().getReturnType());
+      return typeHelper.asType(true, node.getElement().getFunctionType().getReturnType());
     }
 
     @Override
@@ -442,7 +406,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
 
       ClassElement element = node.getElement().getConstructorType();
-      return typeRepository.findType(false, element);
+      return typeHelper.findType(false, element);
     }
 
     @Override
@@ -460,7 +424,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         NodeElement nodeElement = node.getElement();
         switch (nodeElement.getKind()) {
         case FIELD: // field access
-          return Types.getReturnType(asType(true, ((FieldElement) nodeElement).getType()));
+          return Types.getReturnType(typeHelper.asType(true, ((FieldElement) nodeElement).getType()));
 
         case METHOD: { // statically resolved method call
           /*
@@ -471,7 +435,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
            * typeRepository).accept(((MethodNodeElement)element).getNode(),
            * newFlowEnv);
            */
-          return asType(true, ((MethodElement) nodeElement).getReturnType());
+          return typeHelper.asType(true, ((MethodElement) nodeElement).getReturnType());
         }
 
         default:
@@ -518,7 +482,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
           // here when you should use the Class Hierarchy analysis and
           // typeflow all overridden methods
           // but let do something simple for now.
-          return asType(true, ((MethodElement) element).getReturnType());
+          return typeHelper.asType(true, ((MethodElement) element).getReturnType());
         }
       });
     }
@@ -544,11 +508,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
       // Because of invoke, the parser doesn't set the value of element.
       switch (nodeElement.getKind()) {
       case METHOD: // polymorphic method call on 'this'
-        return asType(true, ((MethodElement) nodeElement).getReturnType());
+        return typeHelper.asType(true, ((MethodElement) nodeElement).getReturnType());
 
       case FIELD: // function call
       case PARAMETER:
-        return Types.getReturnType(asType(true, nodeElement.getType()));
+        return Types.getReturnType(typeHelper.asType(true, nodeElement.getType()));
       case VARIABLE:
         return Types.getReturnType(flowEnv.getType((VariableElement) nodeElement));
 
@@ -599,7 +563,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitStringLiteral(DartStringLiteral node, FlowEnv parameter) {
-      return asType(false, node.getType());
+      return typeHelper.asType(false, node.getType());
     }
 
     // ----
@@ -643,7 +607,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         // it should be nullable
         // you have to do a switch on the element.kind
 
-        return propertyType(asType(true, node.getType()), nodeElement);
+        return propertyType(typeHelper.asType(true, node.getType()), nodeElement);
       }
       DartNode qualifier = node.getQualifier();
       Type qualifierType = accept(qualifier, parameter);
@@ -664,7 +628,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
           // FIXME Geoffrey, again here, you can access to a field which is
           // typed as a function type, in that case it should be nullable
-          return propertyType(asType(true, element.getType()), element);
+          return propertyType(typeHelper.asType(true, element.getType()), element);
         }
       });
     }
