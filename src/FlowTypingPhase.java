@@ -22,6 +22,7 @@ import type.TypeRepository;
 import type.Types;
 import visitor.ASTVisitor2;
 
+import com.google.dart.compiler.DartCompilationError;
 import com.google.dart.compiler.DartCompilationPhase;
 import com.google.dart.compiler.DartCompilerContext;
 import com.google.dart.compiler.ast.DartBinaryExpression;
@@ -63,6 +64,7 @@ import com.google.dart.compiler.resolver.FieldElement;
 import com.google.dart.compiler.resolver.MethodElement;
 import com.google.dart.compiler.resolver.MethodNodeElement;
 import com.google.dart.compiler.resolver.NodeElement;
+import com.google.dart.compiler.resolver.ResolverErrorCode;
 import com.google.dart.compiler.resolver.VariableElement;
 import com.google.dart.compiler.type.FunctionAliasType;
 
@@ -171,7 +173,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitUnit(DartUnit node, FlowEnv unused) {
-      // TODO
+      // TODO Temporary display.
       System.out.println("Unit: " + node.getSourceName());
       for (DartNode child : node.getTopLevelNodes()) {
         accept(child, null);
@@ -274,8 +276,17 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitThrowStatement(DartThrowStatement node, FlowEnv flowEnv) {
-      // TODO
-      return null;
+      // FIXME Do we have to verify if the threw object is throwable ?
+      
+      if (node.getException() == null) {
+        // TODO correctly handle the error.
+        System.err.println("Throw statement: null exception");
+        throw new NullPointerException();
+      }
+      
+      Type exceptionType = accept(node.getException(), flowEnv);
+
+      throw null;
     }
 
     @Override
