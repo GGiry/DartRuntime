@@ -60,11 +60,14 @@ public abstract class OwnerType extends NullableType {
       return super.merge(type);
     }
     OwnerType ownerType = (OwnerType) type;
-    if (Types.isAssignable(this, ownerType)) {
-      return type;
+    
+    // isOwnerTypeAssignable don't care about nullability
+    boolean nullable = isNullable() || type.isNullable();
+    if (Types.isOwnerTypeAssignable(this, ownerType)) {
+      return (nullable)? type.asNullable(): type;
     }
-    if (Types.isAssignable(ownerType, this)) {
-      return this;
+    if (Types.isOwnerTypeAssignable(ownerType, this)) {
+      return (nullable)? this.asNullable(): this;
     }
     return super.merge(type);
   }

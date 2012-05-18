@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.RandomAccess;
 
 import com.google.dart.compiler.resolver.Element;
 import com.google.dart.compiler.resolver.MethodElement;
@@ -19,6 +20,7 @@ public class FunctionType extends OwnerType {
   FunctionType(boolean nullable, Type returnType, List<Type> parameterTypes, Map<String, Type> namedParameterTypes, /*maybenull*/MethodElement constant) {
     super(nullable);
     this.returnType = Objects.requireNonNull(returnType);
+    assert parameterTypes instanceof RandomAccess;
     this.parameterTypes = Objects.requireNonNull(parameterTypes);
     this.namedParameterTypes = Objects.requireNonNull(namedParameterTypes);
     this.constant = constant;

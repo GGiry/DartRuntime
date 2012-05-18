@@ -2,6 +2,9 @@ package type;
 
 import static type.CoreTypeRepository.*;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 
 public class Types {
@@ -28,18 +31,18 @@ public class Types {
     return ((NullableType) type1).merge((NullableType) type2);
   }
 
-  static boolean isAssignable(OwnerType type1, OwnerType type2) {
+  static boolean isOwnerTypeAssignable(OwnerType type1, OwnerType type2) {
     if (type1.equals(type2)) {
       return true;
     }
     
     InterfaceType superType2 = type2.getSuperType();
-    if (superType2 != null && isAssignable(type1, superType2)) {
+    if (superType2 != null && isOwnerTypeAssignable(type1, superType2)) {
       return true;
     }
     
     for(InterfaceType interfaze2: type2.getInterfaces()) {
-      if (isAssignable(type1, interfaze2)) {
+      if (isOwnerTypeAssignable(type1, interfaze2)) {
         return true;
       }
     }
