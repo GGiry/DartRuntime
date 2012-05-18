@@ -560,10 +560,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitFunctionObjectInvocation(DartFunctionObjectInvocation node, FlowEnv parameter) {
       // FIXME Geoffrey, a function object is when you have a function stored in
-      // a
-      // parameter/variable or a result of another call that you call as a
-      // function
-      // something like
+      // a parameter/variable or a result of another call that you call as a function
+      // something like :
       // int foo(int i) { return i; }
       // var a = foo;
       // a(); <--- function object invocation
@@ -660,8 +658,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
           Element element = ownerType.lookupMember(node.getPropertyName());
 
           // TypeAnalyzer set some elements.
-          // FIXME, don't set the element if we don't needed when generating the
-          // bytecode.
+          // FIXME, don't set the element if we don't needed when generating the bytecode.
           // We need to set the element to compile DartTest/PropertyAcces.dart
           node.setElement(element);
 
