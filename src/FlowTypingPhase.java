@@ -113,7 +113,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     private FunctionType asFunctionType(boolean nullable, com.google.dart.compiler.type.FunctionType functionType) {
       return typeRepository.findFunction(nullable, asType(true, functionType.getReturnType()), asTypeList(functionType.getParameterTypes()),
-          asTypeMap(functionType.getNamedParameterTypes()));
+          asTypeMap(functionType.getNamedParameterTypes()), null);
+    }
+    
+    private FunctionType asConstantFunctionType(MethodElement element) {
+      com.google.dart.compiler.type.FunctionType functionType = element.getFunctionType();
+      return typeRepository.findFunction(false, asType(true, functionType.getReturnType()), asTypeList(functionType.getParameterTypes()),
+          asTypeMap(functionType.getNamedParameterTypes()), element);
     }
 
     private List<Type> asTypeList(List<com.google.dart.compiler.type.Type> types) {
