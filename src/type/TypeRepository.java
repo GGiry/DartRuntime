@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.dart.compiler.resolver.ClassElement;
+import com.google.dart.compiler.resolver.MethodElement;
 
 public class TypeRepository {
   private final/* maybenull */TypeRepository typeRepository;
@@ -38,8 +39,8 @@ public class TypeRepository {
     return nullableType;
   }
 
-  public FunctionType findFunction(boolean nullable, Type returnType, List<Type> parameterTypes, Map<String, Type> namedParameterTypes) {
-    FunctionType key = new FunctionType(true, returnType, parameterTypes, namedParameterTypes);
+  public FunctionType findFunction(boolean nullable, Type returnType, List<Type> parameterTypes, Map<String, Type> namedParameterTypes, /*maybenull*/MethodElement methodElement) {
+    FunctionType key = new FunctionType(true, returnType, parameterTypes, namedParameterTypes, methodElement);
     return findFunction(nullable, key);
   }
 
@@ -57,7 +58,7 @@ public class TypeRepository {
     }
 
     functionMap.put(key, key);
-    FunctionType dualType = new FunctionType(false, key.getReturnType(), key.getParameterTypes(), key.getNamedParameterTypes());
+    FunctionType dualType = new FunctionType(false, key.getReturnType(), key.getParameterTypes(), key.getNamedParameterTypes(), key.asConstant());
     key.postInitDualType(dualType);
     dualType.postInitDualType(key);
     return key;

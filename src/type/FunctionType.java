@@ -7,22 +7,25 @@ import java.util.Map.Entry;
 import java.util.Objects;
 
 import com.google.dart.compiler.resolver.Element;
+import com.google.dart.compiler.resolver.MethodElement;
 
 public class FunctionType extends OwnerType {
   private final Type returnType;
   private final List<Type> parameterTypes;
   private final Map<String, Type> namedParameterTypes;
-  private FunctionType dualType;
+  private final /*maybenull*/ MethodElement constant;
+  private FunctionType dualType;       // almost final see postInitDualType
 
-  FunctionType(boolean nullable, Type returnType, List<Type> parameterTypes, Map<String, Type> namedParameterTypes) {
+  FunctionType(boolean nullable, Type returnType, List<Type> parameterTypes, Map<String, Type> namedParameterTypes, /*maybenull*/MethodElement constant) {
     super(nullable);
     this.returnType = Objects.requireNonNull(returnType);
     this.parameterTypes = Objects.requireNonNull(parameterTypes);
     this.namedParameterTypes = Objects.requireNonNull(namedParameterTypes);
+    this.constant = constant;
   }
   
   void postInitDualType(FunctionType dualType) {
-    this.dualType = dualType;
+    this.dualType = Objects.requireNonNull(dualType);
   }
   
   @Override
@@ -30,7 +33,8 @@ public class FunctionType extends OwnerType {
     return (isNullable() ? 1 : 0) ^
         returnType.hashCode() ^
         Integer.rotateLeft(parameterTypes.hashCode(), 8) ^
-        Integer.rotateLeft(namedParameterTypes.hashCode(), 24);
+        Integer.rotateLeft(namedParameterTypes.hashCode(), 16) ^
+        Integer.rotateLeft(Objects.hashCode(constant), 24);
   }
   
   @Override
@@ -45,7 +49,8 @@ public class FunctionType extends OwnerType {
     return isNullable() == functionType.isNullable() &&
         returnType.equals(functionType.returnType) &&
         parameterTypes.equals(functionType.parameterTypes) &&
-        namedParameterTypes.equals(functionType.namedParameterTypes);
+        namedParameterTypes.equals(functionType.namedParameterTypes) &&
+        Objects.equals(constant, functionType.constant);
   }
 
   public Type getReturnType() {
@@ -117,7 +122,7 @@ public class FunctionType extends OwnerType {
   }
 
   @Override
-  public Object asConstant() {
-    return null;
+  public MethodElement asConstant() {
+    return constant;
   }
 }
