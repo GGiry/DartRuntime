@@ -1,9 +1,14 @@
 package type;
 
-import static type.CoreTypeRepository.INT_NON_NULL_TYPE;
-import static type.CoreTypeRepository.*;
+import static jdart.type.CoreTypeRepository.*;
 
 import java.math.BigInteger;
+
+import jdart.type.DoubleType;
+import jdart.type.IntType;
+import jdart.type.NullableType;
+import jdart.type.Types;
+import jdart.type.UnionType;
 
 import org.junit.Assert;
 import org.junit.Test;

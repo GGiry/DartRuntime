@@ -1,7 +1,7 @@
-package type;
+package jdart.type;
 
-import static type.CoreTypeRepository.DOUBLE_NON_NULL_TYPE;
-import static type.CoreTypeRepository.DOUBLE_TYPE;
+import static jdart.type.CoreTypeRepository.DOUBLE_NON_NULL_TYPE;
+import static jdart.type.CoreTypeRepository.DOUBLE_TYPE;
 
 import java.util.Objects;
 

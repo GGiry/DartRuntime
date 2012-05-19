@@ -1,13 +1,15 @@
+package jdart.phase;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import type.CoreTypeRepository;
-import type.FunctionType;
-import type.Type;
-import type.TypeRepository;
+import jdart.type.CoreTypeRepository;
+import jdart.type.FunctionType;
+import jdart.type.Type;
+import jdart.type.TypeRepository;
+
 
 import com.google.dart.compiler.resolver.ClassElement;
 import com.google.dart.compiler.resolver.MethodElement;

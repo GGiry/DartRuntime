@@ -1,4 +1,4 @@
-package type;
+package jdart.type;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 
-import static type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
+import static jdart.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
 
 public class UnionType extends NullableType {
   // each component type should be non nullable and not a union type

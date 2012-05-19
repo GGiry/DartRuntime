@@ -1,7 +1,6 @@
-package type;
+package jdart.type;
 
-import static type.CoreTypeRepository.*;
-import static type.CoreTypeRepository.INT_TYPE;
+import static jdart.type.CoreTypeRepository.*;
 
 import java.math.BigInteger;
 import java.util.Objects;

@@ -1,41 +1,40 @@
-package type;
+package jdart.type;
 
-import static type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
+import static jdart.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
 
-public class VoidType implements Type {
-
-  VoidType() {
+public class NullType implements Type {
+  NullType() {
     // enforce singleton
   }
-  
+
   @Override
   public String toString() {
-    return "void";
+    return "null";
   }
 
   @Override
   public boolean isNullable() {
-    throw new IllegalStateException("void type");
+    return true;
   }
 
   @Override
-  public NullableType asNullable() {
-    throw new IllegalStateException("void type");
+  public Type asNullable() {
+    return this;
   }
 
   @Override
-  public NullableType asNonNull() {
-    throw new IllegalStateException("void type");
+  public Type asNonNull() {
+    throw new IllegalStateException("null type");
   }
 
   @Override
   public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
-    return visitor.visitVoidType(this, parameter);
+    return visitor.visitNullType(this, parameter);
   }
 
   @Override
   public Object asConstant() {
-    throw new IllegalStateException("void type");
+    return NULL_VALUE;
   }
   
   @Override

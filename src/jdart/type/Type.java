@@ -1,4 +1,4 @@
-package type;
+package jdart.type;
 
 public interface Type {
   /**

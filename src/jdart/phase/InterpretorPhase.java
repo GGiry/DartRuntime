@@ -1,3 +1,4 @@
+package jdart.phase;
 import java.util.HashMap;
 
 import com.google.dart.compiler.DartCompilationPhase;

@@ -1,4 +1,4 @@
-package type;
+package jdart.type;
 
 /**
  * Transform a type to another type.

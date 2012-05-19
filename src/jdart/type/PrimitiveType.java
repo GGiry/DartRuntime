@@ -1,4 +1,4 @@
-package type;
+package jdart.type;
 
 import com.google.dart.compiler.resolver.ClassElement;
 

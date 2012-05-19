@@ -2,10 +2,14 @@ package type;
 
 import java.math.BigInteger;
 
+import jdart.type.DoubleType;
+import jdart.type.IntType;
+import jdart.type.Type;
+
 import org.junit.Assert;
 import org.junit.Test;
 
-import static type.CoreTypeRepository.*;
+import static jdart.type.CoreTypeRepository.*;
 
 public class TypeTest {
   @Test

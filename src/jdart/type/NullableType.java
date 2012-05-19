@@ -1,6 +1,6 @@
-package type;
+package jdart.type;
 
-import static type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
+import static jdart.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
 
 abstract class NullableType implements Type {
   private final boolean isNullable;

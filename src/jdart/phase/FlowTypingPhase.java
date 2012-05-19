@@ -1,22 +1,22 @@
-import static type.CoreTypeRepository.*;
-import static type.CoreTypeRepository.NULL_TYPE;
-import static type.CoreTypeRepository.VOID_TYPE;
+package jdart.phase;
+import static jdart.type.CoreTypeRepository.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import type.BoolType;
-import type.CoreTypeRepository;
-import type.DoubleType;
-import type.DynamicType;
-import type.FunctionType;
-import type.IntType;
-import type.OwnerType;
-import type.Type;
-import type.TypeMapper;
-import type.TypeRepository;
-import type.Types;
-import visitor.ASTVisitor2;
+import jdart.type.BoolType;
+import jdart.type.CoreTypeRepository;
+import jdart.type.DoubleType;
+import jdart.type.DynamicType;
+import jdart.type.FunctionType;
+import jdart.type.IntType;
+import jdart.type.OwnerType;
+import jdart.type.Type;
+import jdart.type.TypeMapper;
+import jdart.type.TypeRepository;
+import jdart.type.Types;
+import jdart.visitor.ASTVisitor2;
+
 
 import com.google.dart.compiler.DartCompilationError;
 import com.google.dart.compiler.DartCompilationPhase;

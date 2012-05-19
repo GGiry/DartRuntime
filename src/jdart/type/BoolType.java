@@ -1,9 +1,9 @@
-package type;
+package jdart.type;
 
-import static type.CoreTypeRepository.BOOL_NON_NULL_TYPE;
-import static type.CoreTypeRepository.BOOL_TYPE;
-import static type.CoreTypeRepository.FALSE;
-import static type.CoreTypeRepository.TRUE;
+import static jdart.type.CoreTypeRepository.BOOL_NON_NULL_TYPE;
+import static jdart.type.CoreTypeRepository.BOOL_TYPE;
+import static jdart.type.CoreTypeRepository.FALSE;
+import static jdart.type.CoreTypeRepository.TRUE;
 
 import java.util.Objects;
 

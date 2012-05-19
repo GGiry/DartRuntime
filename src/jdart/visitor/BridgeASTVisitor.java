@@ -1,4 +1,4 @@
-package visitor;
+package jdart.visitor;
 
 import com.google.dart.compiler.ast.ASTVisitor;
 import com.google.dart.compiler.ast.DartArrayAccess;

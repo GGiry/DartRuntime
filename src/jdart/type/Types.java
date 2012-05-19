@@ -1,6 +1,6 @@
-package type;
+package jdart.type;
 
-import static type.CoreTypeRepository.*;
+import static jdart.type.CoreTypeRepository.*;
 
 import java.util.List;
 import java.util.Map;

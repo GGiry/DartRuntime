@@ -1,7 +1,7 @@
-package type;
+package jdart.type;
 
-import static type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
-import static type.CoreTypeRepository.DYNAMIC_TYPE;
+import static jdart.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
+import static jdart.type.CoreTypeRepository.DYNAMIC_TYPE;
 
 public class DynamicType extends NullableType {
 

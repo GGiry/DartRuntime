@@ -1,10 +1,12 @@
+package jdart.phase;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import visitor.ASTVisitor2;
+import jdart.visitor.ASTVisitor2;
+
 
 import com.google.dart.compiler.DartCompilationPhase;
 import com.google.dart.compiler.DartCompilerContext;

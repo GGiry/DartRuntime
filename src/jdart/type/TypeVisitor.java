@@ -1,4 +1,4 @@
-package type;
+package jdart.type;
 
 public class TypeVisitor<R, P> {
   protected R visitType(Type type, P parameter) {

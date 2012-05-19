@@ -1,8 +1,10 @@
+package jdart.phase;
 import java.util.HashMap;
 import java.util.Objects;
 
-import type.CoreTypeRepository;
-import type.Type;
+import jdart.type.CoreTypeRepository;
+import jdart.type.Type;
+
 
 import com.google.dart.compiler.resolver.VariableElement;
 

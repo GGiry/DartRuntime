@@ -1,3 +1,4 @@
+package jdart.phase;
 import com.google.dart.compiler.DartCompilationPhase;
 import com.google.dart.compiler.DartCompilerContext;
 import com.google.dart.compiler.ast.ASTVisitor;

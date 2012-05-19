@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import jdart.phase.FlowTypingPhase;
+
 import org.kohsuke.args4j.CmdLineException;
 
 import com.google.dart.compiler.CommandLineOptions;
