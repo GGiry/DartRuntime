@@ -1,17 +1,21 @@
 package jdart.phase;
+
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map.Entry;
 
 import jdart.visitor.ASTVisitor2;
 
-
 import com.google.dart.compiler.DartCompilationPhase;
 import com.google.dart.compiler.DartCompilerContext;
 import com.google.dart.compiler.ast.DartArrayLiteral;
 import com.google.dart.compiler.ast.DartBooleanLiteral;
+import com.google.dart.compiler.ast.DartDirective;
 import com.google.dart.compiler.ast.DartDoubleLiteral;
 import com.google.dart.compiler.ast.DartIntegerLiteral;
 import com.google.dart.compiler.ast.DartMapLiteral;
@@ -22,6 +26,7 @@ import com.google.dart.compiler.ast.DartStringInterpolation;
 import com.google.dart.compiler.ast.DartStringLiteral;
 import com.google.dart.compiler.ast.DartUnit;
 import com.google.dart.compiler.resolver.ClassElement;
+import com.google.dart.compiler.resolver.ConstructorNodeElement;
 import com.google.dart.compiler.resolver.CoreTypeProvider;
 import com.google.dart.compiler.resolver.Element;
 import com.google.dart.compiler.resolver.MethodNodeElement;
@@ -30,11 +35,51 @@ import com.google.dart.compiler.type.InterfaceType;
 
 public class ClassHierarchyAnalysisPhase implements DartCompilationPhase {
   private final CHAVisitor visitor = new CHAVisitor();
+  final LinkedHashSet<DartUnit> seenUnit = new LinkedHashSet<>();
+  final ArrayDeque<DartUnit> pending = new ArrayDeque<>();
+  CoreTypeProvider coreTypeProvider;
+  private boolean alreadyCalledOnce;
+  
+  private ClassHierarchyAnalysisPhase() {
+    // enforce singleton
+  }
+  
+  public static ClassHierarchyAnalysisPhase getInstance() {
+    return SINGLETON;
+  }
+  private static final ClassHierarchyAnalysisPhase SINGLETON = new ClassHierarchyAnalysisPhase();
   
   @Override
   public DartUnit exec(DartUnit unit, DartCompilerContext context, CoreTypeProvider coreTypeProvider) {
-    visitor.analysis(unit);
-    visitor.debug();
+    // this phase is a rogue phase that doesn't follow the phase control flow
+    // the first time this phase it called, it crawle all libraries to performs
+    // the CHA analysis which is not incremental
+    //FIXME this doesn't work because there is no way to get all dependency
+    //  so the current algorithm use static dependency to try to find all dependencies
+    
+    this.coreTypeProvider = coreTypeProvider;
+    
+    // already seen
+    if (seenUnit.contains(unit)) {
+      return unit;
+    }
+    
+    //FIXME it always fails
+    /*if (alreadyCalledOnce) {
+      throw new IllegalStateException("CHA analysis failed "+unit);
+    }*/
+    
+    pending.add(unit);
+    seenUnit.add(unit);
+    
+    while(!pending.isEmpty()) {
+      DartUnit pendingUnit = pending.poll();
+      //System.out.println("visit unit "+pendingUnit.getSourceName());
+      visitor.analysis(pendingUnit);
+    }
+    
+    alreadyCalledOnce = true;
+    //visitor.debug();
     return unit;
   }
   
@@ -113,7 +158,8 @@ public class ClassHierarchyAnalysisPhase implements DartCompilationPhase {
   
   private class CHAVisitor extends ASTVisitor2<Void, Void> {
     final LinkedHashMap<ClassElement, CHAClass> classMap = new LinkedHashMap<>();
-
+    private final HashSet<NodeElement> seen = new HashSet<>();
+    
     CHAVisitor() {
       
     }
@@ -179,20 +225,56 @@ public class ClassHierarchyAnalysisPhase implements DartCompilationPhase {
     @Override
     public Void visitNode(DartNode node, Void unused) {
       acceptChildren(node);
+      
+      // try to find dependency
+      Element element = node.getElement();
+      if (element instanceof NodeElement) {
+        NodeElement nodeElement = (NodeElement)element;
+        if (seen.contains(nodeElement)) {
+          return null;
+        }
+        seen.add(nodeElement);
+        
+        DartNode n = nodeElement.getNode();
+        for(; !(n instanceof DartUnit); n = n.getParent()) {
+          if (n == null) {
+            return null;
+          }
+          // do nothing
+        }
+        DartUnit unit = (DartUnit) n;
+        if (seenUnit.contains(unit)) {
+          return null;
+        }
+        pending.add(unit);
+        seenUnit.add(unit);
+      }
+      
       return null;
     }
     
+    
     @Override
-    public Void visitUnit(DartUnit node, Void unused) {
-      System.out.println("visit "+node.getSourceName());
-      super.visitUnit(node, unused);
+    public Void visitDirective(DartDirective node, Void parameter) {
+      // do nothing
       return null;
     }
     
     @Override
     public Void visitNewExpression(DartNewExpression node, Void unused) {
-      newInstantiation(node.getType().getElement());
-      acceptChildren(node);
+      //FIXME some nodes have no corresponding Element
+      ConstructorNodeElement element = node.getElement();
+      if (element != null) {
+        newInstantiation(element.getEnclosingElement());
+      } else {
+        DartNode constructor = node.getConstructor();
+        if (constructor.getType() == null) {
+          //System.err.println(node);
+        } else {
+          newInstantiation(constructor.getType().getElement());
+        }  
+      }
+      super.visitNewExpression(node, null);
       return null;
     }
     
@@ -200,43 +282,44 @@ public class ClassHierarchyAnalysisPhase implements DartCompilationPhase {
     
     @Override
     public Void visitBooleanLiteral(DartBooleanLiteral node, Void unused) {
-      newInstantiation(node.getType().getElement());
+      newInstantiation(coreTypeProvider.getBoolType().getElement());
       return null;
     }
     @Override
     public Void visitIntegerLiteral(DartIntegerLiteral node, Void unused) {
-      newInstantiation(node.getType().getElement());
+      newInstantiation(coreTypeProvider.getIntType().getElement());
       return null;
     }
     @Override
     public Void visitDoubleLiteral(DartDoubleLiteral node, Void unused) {
-      newInstantiation(node.getType().getElement());
+      newInstantiation(coreTypeProvider.getDoubleType().getElement());
       return null;
     }
     @Override
     public Void visitStringLiteral(DartStringLiteral node, Void unused) {
-      //FIXME
-      //newInstantiation(node.getType().getElement());
+      newInstantiation(coreTypeProvider.getStringType().getElement());
       return null;
     }
     @Override
     public Void visitStringInterpolation(DartStringInterpolation node, Void unused) {
-      newInstantiation(node.getType().getElement());
-      acceptChildren(node);
+      newInstantiation(coreTypeProvider.getStringType().getElement());
+      super.visitStringInterpolation(node, null);
       return null;
     }
     
     @Override
     public Void visitArrayLiteral(DartArrayLiteral node, Void unused) {
-      newInstantiation(node.getType().getElement());
-      acceptChildren(node);
+      //FIXME
+      //newInstantiation(coreTypeProvider.getArrayLiteralType(elementType).getElement());
+      super.visitArrayLiteral(node, null);
       return null;
     }
     
     @Override
     public Void visitMapLiteral(DartMapLiteral node, Void unused) {
-      newInstantiation(node.getType().getElement());
-      acceptChildren(node);
+      //FIXME
+      //newInstantiation(node.getType().getElement());
+      super.visitMapLiteral(node, null);
       return null;
     }
   }

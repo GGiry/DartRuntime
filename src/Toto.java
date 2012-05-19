@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import jdart.phase.ClassHierarchyAnalysisPhase;
 import jdart.phase.FlowTypingPhase;
 
 import org.kohsuke.args4j.CmdLineException;
@@ -40,6 +41,7 @@ public class Toto {
 
         phases.add(new CompileTimeConstantAnalyzer.Phase());
         phases.add(new Resolver.Phase());
+        //phases.add(ClassHierarchyAnalysisPhase.getInstance());
         /*
          * phases.add(new TypeAnalyzer());
          */
