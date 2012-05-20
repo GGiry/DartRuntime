@@ -1,0 +1,51 @@
+This document describe the translation strategy that should be done
+by the compilation back-end during the generation phase.
+
+list of runtime translatable types:
+  nullable boolean
+  boolean
+  nullable integer
+  integer
+  range integer [min, max] (min can be -infinity, max can be +infinity)
+  nullable double
+  double
+  nullable num  (base interface of int and double)
+  num
+  void
+  nullable dynamic 
+  dynamic
+  nullable function type
+  function type
+  nullable interface type
+  interface type
+  
+Some storage formats require more that one slot, in that case a discriminator
+allows to know how the format is decomposed.
+  
+ NULL_VALUE is BigNum.NULL_VALUE
+  
+ ------------------      local|field storage  null         toBool                 toInt                      toInt32                   toDouble                                  toObject
+  nullable boolean         Boolean            null         booleanValue()         --                         --                        --                                        ok 
+  boolean                  boolean            --           ok                     --                         --                        --                                        Double.valueOf()
+  nullable integer         BigNum|int         NULL_VALUE   --                     !NULL_VALUE                !NULL_VALUE+intValue()    !NULL_VALUE+doubleValue()|(double)        NULL_VALUE->null|new Integer()
+  integer                  BigNum|int         --           --                     ok                         intValue()|ok             doubleValue|(double)                      ok|new Integer()
+  integer? [32bit range]   Integer            null         --                     !null                      intValue()                doubleValue()                       ok
+  integer  [32bit range]   int                --           --                     ok                         ok                        (double)                                  new Integer()
+  nullable double          Double             null         --                     intValue()                 intValue()                doubleValue()                             ok
+  double                   double             --           --                     asInt()                    (int)                     ok                                        new Double()
+  nullable num             BigNum|int         NULL_VALUE   --                     asInt()                    !NULL_VALUE+intValue()    !NULL_VALUE+doubleValue()|(double)        NULL_VALUE->null|new Integer()
+  num                      BigNum|int         --           --                     asInt()                    intValue()                doubleValue|(double)                      ok|new Integer()
+  void                     void               --           --                     --                         --                        --                                        --
+  nullable dynamic         Object             null         (Boolean)booleanValue  (Integer)intValue |        (Integer)intValue() |     (Integer)doubleValue |                    ok
+                                                                                  BigNum |                   (BigNum)intValue() |      (BigNum)doubleValue |
+                                                                                  (Double)intValue           (Double)intValue()        (Double)doubleValue
+  dynamic                  Object             --           (Boolean)booleanValue  (Integer) -> ok |          (Integer)intValue |       (Integer)doubleValue|                     ok
+                                                                                  (Double)intValue |         (BigNum)intValue() |      (Double)doubleValue|
+                                                                                  BigNum                     (Double)intValue()        (BigNum)doubleValue
+  nullable function type   MethodHandle       null         --                     --                         --                        --                                        --
+  function type            MethodHandle       --           --                     --                         --                        --                                        --
+  nullable interface type  interface          null         --                     --                         --                        --                                        --
+  interface type           interface          --           --                     --                         --                        --                                        --
+  
+  
+  
