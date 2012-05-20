@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import jdart.phase.ClassHierarchyAnalysisPhase;
-import jdart.phase.FlowTypingPhase;
+import jdart.compiler.phase.ClassHierarchyAnalysisPhase;
+import jdart.compiler.phase.FlowTypingPhase;
 
 import org.kohsuke.args4j.CmdLineException;
 
