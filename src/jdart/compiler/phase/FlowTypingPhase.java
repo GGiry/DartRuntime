@@ -1,10 +1,14 @@
 package jdart.compiler.phase;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
+import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
+import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_TYPE;
+import static jdart.compiler.type.CoreTypeRepository.NULL_TYPE;
+import static jdart.compiler.type.CoreTypeRepository.VOID_TYPE;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map.Entry;
 
 import jdart.compiler.type.BoolType;
 import jdart.compiler.type.CoreTypeRepository;
@@ -21,11 +25,14 @@ import jdart.compiler.visitor.ASTVisitor2;
 
 import com.google.dart.compiler.DartCompilationPhase;
 import com.google.dart.compiler.DartCompilerContext;
+import com.google.dart.compiler.ast.DartArrayAccess;
+import com.google.dart.compiler.ast.DartArrayLiteral;
 import com.google.dart.compiler.ast.DartBinaryExpression;
 import com.google.dart.compiler.ast.DartBlock;
 import com.google.dart.compiler.ast.DartBooleanLiteral;
 import com.google.dart.compiler.ast.DartClass;
 import com.google.dart.compiler.ast.DartDoubleLiteral;
+import com.google.dart.compiler.ast.DartEmptyStatement;
 import com.google.dart.compiler.ast.DartExprStmt;
 import com.google.dart.compiler.ast.DartExpression;
 import com.google.dart.compiler.ast.DartFieldDefinition;
@@ -33,6 +40,7 @@ import com.google.dart.compiler.ast.DartForStatement;
 import com.google.dart.compiler.ast.DartFunction;
 import com.google.dart.compiler.ast.DartFunctionObjectInvocation;
 import com.google.dart.compiler.ast.DartIdentifier;
+import com.google.dart.compiler.ast.DartIfStatement;
 import com.google.dart.compiler.ast.DartIntegerLiteral;
 import com.google.dart.compiler.ast.DartMethodDefinition;
 import com.google.dart.compiler.ast.DartMethodInvocation;
@@ -48,6 +56,7 @@ import com.google.dart.compiler.ast.DartSuperExpression;
 import com.google.dart.compiler.ast.DartThisExpression;
 import com.google.dart.compiler.ast.DartThrowStatement;
 import com.google.dart.compiler.ast.DartTypeNode;
+import com.google.dart.compiler.ast.DartUnaryExpression;
 import com.google.dart.compiler.ast.DartUnit;
 import com.google.dart.compiler.ast.DartUnqualifiedInvocation;
 import com.google.dart.compiler.ast.DartVariable;
@@ -62,7 +71,6 @@ import com.google.dart.compiler.resolver.FieldElement;
 import com.google.dart.compiler.resolver.MethodElement;
 import com.google.dart.compiler.resolver.MethodNodeElement;
 import com.google.dart.compiler.resolver.NodeElement;
-import com.google.dart.compiler.resolver.ResolverErrorCode;
 import com.google.dart.compiler.resolver.VariableElement;
 
 public class FlowTypingPhase implements DartCompilationPhase {
@@ -288,12 +296,20 @@ public class FlowTypingPhase implements DartCompilationPhase {
       return null;
     }
 
-    // @Override
-    // public Type visitIfStatement(DartIfStatement node, FlowEnv parameter) {
-    // accept(node.getThenStatement(), parameter);
-    // accept(node.getElseStatement(), parameter);
-    // return null;
-    // }
+    @Override
+    public Type visitIfStatement(DartIfStatement node, FlowEnv parameter) {
+      System.out.println(node);
+      
+      System.out.println(accept(node.getCondition(), parameter));
+      
+      System.out.println(node.getElement());
+      
+      System.out.println(node.getElseStatement());
+      
+      System.out.println(node.getThenStatement());
+      
+      throw new NullPointerException();
+    }
 
     @Override
     public Type visitForStatement(DartForStatement node, FlowEnv parameter) {
@@ -307,7 +323,12 @@ public class FlowTypingPhase implements DartCompilationPhase {
       } while (!env.isStable());
 
       parameter.update(env);
-      
+
+      return null;
+    }
+
+    @Override
+    public Type visitEmptyStatement(DartEmptyStatement node, FlowEnv parameter) {
       return null;
     }
 
@@ -377,6 +398,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     private Type visitBinaryOp(DartBinaryExpression node, Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
       switch (operator) {
+      case NE:
       case EQ_STRICT:
       case LT:
         return BOOL_NON_NULL_TYPE;
@@ -425,6 +447,29 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       // a method call that can be polymorphic
       return typeHelper.asType(true, node.getElement().getFunctionType().getReturnType());
+    }
+
+    @Override
+    public Type visitUnaryExpression(DartUnaryExpression node, FlowEnv parameter) {
+      DartExpression arg = node.getArg();
+      return visitUnaryOperation(node, node.getOperator(), arg, accept(arg, parameter), parameter);
+    }
+
+    private Type visitUnaryOperation(DartUnaryExpression node, Token operator, DartExpression arg, Type type, FlowEnv flowEnv) {
+      switch (operator) {
+      case INC:
+        if (type instanceof IntType) {
+          IntType iType = (IntType) type;
+          return iType.add(IntType.constant(BigInteger.ONE));
+        }
+        if (type instanceof DoubleType) {
+          DoubleType dType = (DoubleType) type;
+          return dType.add(DoubleType.constant(1));
+        }
+      default:
+
+        throw new UnsupportedOperationException("Unary Expr: " + operator + " (" + operator.name() + ") not implemented for " + type + ".");
+      }
     }
 
     @Override
@@ -605,16 +650,16 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     /**
      * Returns the correct type of the property, depending of the
-     * {@link ElementKind kind} of element.
+     * {@link ElementKind kind}.
      * 
      * @param type
      *          Nullable type of the node.
-     * @param element
-     *          Element to test.
+     * @param kind
+     *          Kind of the element to test.
      * @return Type of the property.
      */
-    private Type propertyType(Type type, Element element) {
-      switch (element.getKind()) {
+    private Type propertyType(Type type, ElementKind kind) {
+      switch (kind) {
       case METHOD:
       case CONSTRUCTOR:
         type = type.asNonNull();
@@ -641,8 +686,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         // type
         // it should be nullable
         // you have to do a switch on the element.kind
-
-        return propertyType(typeHelper.asType(true, node.getType()), nodeElement);
+        return propertyType(typeHelper.asType(true, node.getType()), nodeElement.getKind());
       }
       DartNode qualifier = node.getQualifier();
       Type qualifierType = accept(qualifier, parameter);
@@ -664,9 +708,24 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
           // FIXME Geoffrey, again here, you can access to a field which is
           // typed as a function type, in that case it should be nullable
-          return propertyType(typeHelper.asType(true, element.getType()), element);
+          return propertyType(typeHelper.asType(true, element.getType()), element.getKind());
         }
       });
+    }
+
+    @Override
+    public Type visitArrayLiteral(DartArrayLiteral node, FlowEnv parameter) {
+      // TODO Arrays type ?
+
+      return DYNAMIC_TYPE;
+    }
+
+    @Override
+    public Type visitArrayAccess(DartArrayAccess node, FlowEnv parameter) {
+      // TODO Arrays type ?
+      operandIsNonNull(node.getTarget(), parameter);
+
+      return DYNAMIC_TYPE;
     }
   }
 }
