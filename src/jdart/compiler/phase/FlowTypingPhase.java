@@ -1,4 +1,5 @@
 package jdart.compiler.phase;
+
 import static jdart.compiler.type.CoreTypeRepository.*;
 
 import java.util.ArrayList;
@@ -17,8 +18,6 @@ import jdart.compiler.type.TypeRepository;
 import jdart.compiler.type.Types;
 import jdart.compiler.visitor.ASTVisitor2;
 
-
-import com.google.dart.compiler.DartCompilationError;
 import com.google.dart.compiler.DartCompilationPhase;
 import com.google.dart.compiler.DartCompilerContext;
 import com.google.dart.compiler.ast.DartBinaryExpression;
@@ -29,6 +28,7 @@ import com.google.dart.compiler.ast.DartDoubleLiteral;
 import com.google.dart.compiler.ast.DartExprStmt;
 import com.google.dart.compiler.ast.DartExpression;
 import com.google.dart.compiler.ast.DartFieldDefinition;
+import com.google.dart.compiler.ast.DartForStatement;
 import com.google.dart.compiler.ast.DartFunction;
 import com.google.dart.compiler.ast.DartFunctionObjectInvocation;
 import com.google.dart.compiler.ast.DartIdentifier;
@@ -78,11 +78,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
   static class DefinitionVisitor extends ASTVisitor2<Type, FlowEnv> {
     private final TypeHelper typeHelper;
-    
+
     DefinitionVisitor(TypeHelper typeHelper) {
       this.typeHelper = typeHelper;
     }
-    
+
     // entry point
     public void typeFlow(DartUnit unit) {
       accept(unit, null);
@@ -128,7 +128,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
         if (element instanceof ClassElement) {
           thisType = typeHelper.findType(false, (ClassElement) element.getEnclosingElement());
         } else {
-          //FIXME Geoffrey, WTF !, you can use 'this' to refer something different that the class ?
+          // FIXME Geoffrey, WTF !, you can use 'this' to refer something
+          // different that the class ?
           thisType = typeHelper.asType(false, node.getElement().getEnclosingElement().getType());
         }
       }
@@ -141,7 +142,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       return null;
     }
   }
-  
+
   static class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     private final TypeHelper typeHelper;
     private final HashMap<DartNode, Type> typeMap = new HashMap<>();
@@ -155,7 +156,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
     public Type typeFlow(DartFunction node, FlowEnv flowEnv) {
       return visitFunction(node, flowEnv);
     }
-
 
     private static void operandIsNonNull(DartExpression expr, FlowEnv flowEnv) {
       if (!(expr instanceof DartIdentifier)) {
@@ -205,10 +205,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
       if (body != null) {
         accept(body, env);
       }
-      
+
       // TODO test display, to remove.
       System.out.println(env);
-      return (inferredReturnType != null)? inferredReturnType: returnType;
+      return (inferredReturnType != null) ? inferredReturnType : returnType;
     }
 
     @Override
@@ -216,7 +216,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       // use the declared type of the parameter
       return typeHelper.asType(true, node.getElement().getType());
     }
-    
+
     @Override
     public Type visitBlock(DartBlock node, FlowEnv flowEnv) {
       // each instruction should be compatible with void
@@ -242,13 +242,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitThrowStatement(DartThrowStatement node, FlowEnv flowEnv) {
       // FIXME Do we have to verify if the threw object is throwable ?
-      
+
       if (node.getException() == null) {
         // TODO correctly handle the error.
         System.err.println("Throw statement: null exception");
         throw new NullPointerException();
       }
-      
+
       accept(node.getException(), flowEnv);
       return null;
     }
@@ -293,6 +293,24 @@ public class FlowTypingPhase implements DartCompilationPhase {
     // accept(node.getElseStatement(), parameter);
     // return null;
     // }
+    
+    @Override
+    public Type visitForStatement(DartForStatement node, FlowEnv parameter) {
+      System.out.println(node);
+      
+      FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
+      
+      do {
+        System.out.println();
+        accept(node.getBody(), env);
+        
+        env = new FlowEnv(env, env.getReturnType(), env.getExpectedType());
+        System.out.println(env);
+      } while (!env.sameTypeAsParent());
+      
+      
+      throw new NullPointerException();
+    }
 
     // --- expressions
 
@@ -535,7 +553,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitFunctionObjectInvocation(DartFunctionObjectInvocation node, FlowEnv parameter) {
       // FIXME Geoffrey, a function object is when you have a function stored in
-      // a parameter/variable or a result of another call that you call as a function
+      // a parameter/variable or a result of another call that you call as a
+      // function
       // something like :
       // int foo(int i) { return i; }
       // var a = foo;
@@ -576,7 +595,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     public Type visitStringLiteral(DartStringLiteral node, FlowEnv parameter) {
       return typeHelper.asType(false, node.getType());
     }
-    
+
     @Override
     public Type visitNullLiteral(DartNullLiteral node, FlowEnv parameter) {
       return NULL_TYPE;
@@ -638,7 +657,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
           Element element = ownerType.lookupMember(node.getPropertyName());
 
           // TypeAnalyzer set some elements.
-          // FIXME, don't set the element if we don't needed when generating the bytecode.
+          // FIXME, don't set the element if we don't needed when generating the
+          // bytecode.
           // We need to set the element to compile DartTest/PropertyAcces.dart
           node.setElement(element);
 

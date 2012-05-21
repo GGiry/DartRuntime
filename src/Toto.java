@@ -41,7 +41,7 @@ public class Toto {
 
         phases.add(new CompileTimeConstantAnalyzer.Phase());
         phases.add(new Resolver.Phase());
-        //phases.add(ClassHierarchyAnalysisPhase.getInstance());
+        // phases.add(ClassHierarchyAnalysisPhase.getInstance());
         /*
          * phases.add(new TypeAnalyzer());
          */
@@ -63,14 +63,14 @@ public class Toto {
   public static void main(String[] args) throws IOException {
     String sdkPath = "../../dart-sdk/";
 
-    String[] paths = { 
-
-        "DartTest/Throw.dart",
-    //    "DartTest/FunctionObject.dart",
-    //    "DartTest/Super.dart",
-    //    "DartTest/PropertyAccess.dart",
-    //    "DartTest/Invocation.dart",
-    //    "Hello.dart"
+    String[] paths = {
+        "DartTest/For.dart",
+    // "DartTest/Throw.dart",
+    // "DartTest/FunctionObject.dart",
+    // "DartTest/Super.dart",
+    // "DartTest/PropertyAccess.dart",
+    // "DartTest/Invocation.dart",
+    // "Hello.dart"
     };
 
     for (String path : paths) {
