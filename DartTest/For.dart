@@ -6,7 +6,7 @@ void main() {
   var d = 5.2;
   var e = 1;
   
-  for (var i = 0; i < 10; i = i + 1) {
+  for (var i = 0; i < 10; i++) {
     a = 2 + a;
     b = 2.5 + b; 
   }
