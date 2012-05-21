@@ -27,6 +27,11 @@ public class VoidType implements Type {
   public NullableType asNonNull() {
     throw new IllegalStateException("void type");
   }
+  
+@Override
+  public Type asNullable(boolean nullable) {
+    throw new IllegalStateException("void type");
+  }
 
   @Override
   public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {

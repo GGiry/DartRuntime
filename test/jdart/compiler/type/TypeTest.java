@@ -147,4 +147,23 @@ public class TypeTest {
     Assert.assertEquals(NULL_TYPE, NULL_TYPE.asNullable());
     Assert.assertTrue(NULL_TYPE.asNullable().isNullable());
   }
+  
+  @Test
+  public void int32() {
+    Assert.assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), ((IntType) INT32).getMaxBound());
+    Assert.assertEquals(BigInteger.valueOf(Integer.MIN_VALUE), ((IntType) INT32).getMinBound());
+  }
+  
+  @Test
+  public void positive32() {
+    Assert.assertEquals(BigInteger.valueOf(((long) Integer.MAX_VALUE) * 2 + 1), ((IntType) POSITIVE_INT32).getMaxBound());
+    Assert.assertEquals(BigInteger.valueOf(0), ((IntType) POSITIVE_INT32).getMinBound());
+  }
+  
+  @Test
+  public void negative32() {
+    System.out.println((((long) 1) << 32) - 1);
+    Assert.assertEquals(BigInteger.valueOf(0), ((IntType) NEGATIVE_INT32).getMaxBound());
+    Assert.assertEquals(BigInteger.valueOf(- (((long) Integer.MAX_VALUE) * 2 + 1)), ((IntType) NEGATIVE_INT32).getMinBound());
+  }
 }
