@@ -242,4 +242,28 @@ public class IntType extends PrimitiveType {
     return new IntType(false, minBound, maxBound);
   }*/
   
+  /**
+   * Returns <code>true</code> if this type is include in the specified type.
+   * @param intType Reference type.
+   * @return <code>true</code> if this type is include in the specified type.
+   */
+  public boolean includes(IntType intType) {
+    if (minBound == null && intType.minBound != null) {
+      return false;
+    }
+    
+    if (maxBound == null && intType.maxBound != null) {
+      return false;
+    }
+    boolean min = false;
+    if (intType.minBound == null || intType.minBound.compareTo(minBound) <= 0) {
+      min = true;
+    }
+    boolean max = false;
+    if (intType.maxBound == null || intType.maxBound.compareTo(maxBound) >= 0) {
+      max = true;
+    }
+    
+    return min && max;
+  }
 }
