@@ -122,22 +122,19 @@ public class FlowEnv {
   }
 
   /**
-   * Check if this environment has the same types as it parent.
+   * Check if this environment has the same types as his parent.
    * If a variable doesn't exist in parent environment, the variable is ignored.
    * 
-   * @return <code>true</code> If the types are the same, false otherwise.
+   * @return <code>true</code> If the environment is stable, false otherwise.
    */
-  public boolean sameTypeAsParent() {
+  public boolean isStable() {
     if (parent == null) {
-      System.out.println("parent null");
       return false;
     }
 
     for (Entry<VariableElement, Type> entry: variableTypeMap.entrySet()) {
-      System.out.println("Var: " + entry.getKey());
       Type parentType = parent.getType(entry.getKey());
       if (parentType == null) { // ignore an unknown variable.
-        System.out.println("parent does't know");
         continue;
       }
 
@@ -146,5 +143,18 @@ public class FlowEnv {
       }
     }
     return true;
+  }
+
+  /**
+   * Changes variable type in this environment, using parameter values.
+   * 
+   * Do not create new variables in this environment.
+   * 
+   * @param env Environment with the new values.
+   */
+  public void update(FlowEnv env) {
+    for (Entry<VariableElement, Type> entry: variableTypeMap.entrySet()) {
+      entry.setValue(env.getType(entry.getKey()));
+    }
   }
 }

@@ -95,6 +95,10 @@ public class Types {
       return INT_NON_NULL_TYPE.asNullable(nullable);
     }
     
+    public Type visitDoubleType(DoubleType type, Void unused) {
+      return DOUBLE_NON_NULL_TYPE.asNullable(type.isNullable());
+    };
+    
     @Override
     public Type visitUnionType(UnionType type, Void unused) {
       return type.map(new TypeMapper() {
@@ -102,7 +106,7 @@ public class Types {
         public Type transform(Type type) {
           return widening(type);
         }
-      });  
+      });
     }
   };
 }

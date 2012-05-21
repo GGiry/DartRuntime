@@ -4,6 +4,7 @@ import static jdart.compiler.type.CoreTypeRepository.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map.Entry;
 
 import jdart.compiler.type.BoolType;
 import jdart.compiler.type.CoreTypeRepository;
@@ -293,23 +294,21 @@ public class FlowTypingPhase implements DartCompilationPhase {
     // accept(node.getElseStatement(), parameter);
     // return null;
     // }
-    
+
     @Override
     public Type visitForStatement(DartForStatement node, FlowEnv parameter) {
-      System.out.println(node);
-      
-      FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-      
+      accept(node.getInit(), parameter);
+      FlowEnv env = parameter;
       do {
-        System.out.println();
-        accept(node.getBody(), env);
-        
         env = new FlowEnv(env, env.getReturnType(), env.getExpectedType());
-        System.out.println(env);
-      } while (!env.sameTypeAsParent());
+        accept(node.getCondition(), env);
+        accept(node.getBody(), env);
+        accept(node.getIncrement(), env);
+      } while (!env.isStable());
+
+      parameter.update(env);
       
-      
-      throw new NullPointerException();
+      return null;
     }
 
     // --- expressions
@@ -379,6 +378,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     private Type visitBinaryOp(DartBinaryExpression node, Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
       switch (operator) {
       case EQ_STRICT:
+      case LT:
         return BOOL_NON_NULL_TYPE;
 
       case ADD:
@@ -420,7 +420,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         break;
 
       default:
-        throw new AssertionError("Binary Expr: " + operator + " not implemented");
+        throw new AssertionError("Binary Expr: " + operator + " (" + operator.name() + ") not implemented");
       }
 
       // a method call that can be polymorphic
