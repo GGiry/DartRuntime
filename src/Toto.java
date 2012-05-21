@@ -65,6 +65,7 @@ public class Toto {
 
     String[] paths = {
         "DartTest/If.dart",
+    //  "DartTest/EmptyStatement.dart",
     // "DartTest/Array.dart",
     // "DartTest/For.dart",
     // "DartTest/Throw.dart",
