@@ -399,6 +399,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     private Type visitBinaryOp(DartBinaryExpression node, Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
+      System.out.println(node.getSourceInfo().getSource().getUri() + " " + node.getSourceInfo().getLine());
       switch (operator) {
       case NE:
       case NE_STRICT:
