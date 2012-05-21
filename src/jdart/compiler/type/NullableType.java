@@ -25,6 +25,11 @@ abstract class NullableType implements Type {
   @Override
   public abstract NullableType asNonNull();
 
+  @Override
+  public Type asNullable(boolean nullable) {
+    return (nullable)?asNullable(): asNonNull();
+  }
+  
   NullableType merge(NullableType type) {
     Object constant = asConstant();
     

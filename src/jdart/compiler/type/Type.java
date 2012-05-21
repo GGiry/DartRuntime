@@ -21,6 +21,9 @@ public interface Type {
    * @return the non null type of the current type.
    */
   Type asNonNull();
+  
+  
+  Type asNullable(boolean nullable);
 
   /**
    * Visitor's accept method (doubble dispatch).

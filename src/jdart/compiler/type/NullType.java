@@ -26,6 +26,11 @@ public class NullType implements Type {
   public Type asNonNull() {
     throw new IllegalStateException("null type");
   }
+  
+  @Override
+  public Type asNullable(boolean nullable) {
+    return (nullable)?asNullable(): asNonNull();
+  }
 
   @Override
   public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
