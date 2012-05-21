@@ -122,8 +122,8 @@ public class FlowEnv {
   }
 
   /**
-   * Check if this environment has the same types as his parent.
-   * If a variable doesn't exist in parent environment, the variable is ignored.
+   * Check if this environment has the same types as his parent. If a variable
+   * doesn't exist in parent environment, the variable is ignored.
    * 
    * @return <code>true</code> If the environment is stable, false otherwise.
    */
@@ -132,7 +132,7 @@ public class FlowEnv {
       return false;
     }
 
-    for (Entry<VariableElement, Type> entry: variableTypeMap.entrySet()) {
+    for (Entry<VariableElement, Type> entry : variableTypeMap.entrySet()) {
       Type parentType = parent.getType(entry.getKey());
       if (parentType == null) { // ignore an unknown variable.
         continue;
@@ -146,15 +146,54 @@ public class FlowEnv {
   }
 
   /**
-   * Changes variable type in this environment, using parameter values.
+   * Changes variable type in this environment, using parameter values. Do not
+   * create new variables in this environment.
    * 
-   * Do not create new variables in this environment.
-   * 
-   * @param env Environment with the new values.
+   * @param env
+   *          Environment with the new values.
    */
   public void update(FlowEnv env) {
-    for (Entry<VariableElement, Type> entry: variableTypeMap.entrySet()) {
+    for (Entry<VariableElement, Type> entry : variableTypeMap.entrySet()) {
       entry.setValue(env.getType(entry.getKey()));
+    }
+  }
+
+  /**
+   * Merges the specified environments in this {@link FlowEnv}. Only merge
+   * variables already known by this.
+   * 
+   * @param env1
+   *          First environment to merge.
+   * @param env2
+   *          Second environment to merge.
+   */
+  public void merge(FlowEnv env1, FlowEnv env2) {
+    for (Entry<VariableElement, Type> entry : env1.variableTypeMap.entrySet()) {
+      VariableElement key = entry.getKey();
+      Type type1 = entry.getValue();
+      Type type2 = env2.getType(key);
+
+      if (type2 == null) {
+        // the variable is not set in the other block.
+        type2 = getType(key);
+      }
+
+      Type unionType = Types.union(type1, type2);
+      register(key, unionType);
+    }
+
+    for (Entry<VariableElement, Type> entry : env2.variableTypeMap.entrySet()) {
+      VariableElement key = entry.getKey();
+      Type type1 = env1.getType(key);
+      Type type2 = entry.getValue();
+
+      if (type1 == null) {
+        // the variable is not set in the other block.
+        type1 = getType(key);
+      }
+
+      Type unionType = Types.union(type1, type2);
+      register(key, unionType);
     }
   }
 }

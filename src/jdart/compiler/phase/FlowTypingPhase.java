@@ -298,17 +298,19 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitIfStatement(DartIfStatement node, FlowEnv parameter) {
-      System.out.println(node);
-      
-      System.out.println(accept(node.getCondition(), parameter));
-      
-      System.out.println(node.getElement());
-      
-      System.out.println(node.getElseStatement());
-      
-      System.out.println(node.getThenStatement());
-      
-      throw new NullPointerException();
+
+      accept(node.getCondition(), parameter);
+
+      FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
+      accept(node.getThenStatement(), envThen);
+
+      FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
+      if (node.getElseStatement() != null) {
+        accept(node.getElseStatement(), envElse);
+      }
+
+      parameter.merge(envThen, envElse);
+      return null;
     }
 
     @Override
@@ -399,6 +401,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
     private Type visitBinaryOp(DartBinaryExpression node, Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
       switch (operator) {
       case NE:
+      case NE_STRICT:
+      case EQ:
       case EQ_STRICT:
       case LT:
         return BOOL_NON_NULL_TYPE;
