@@ -50,7 +50,7 @@ class B extends A {
   }
   
   String toString() {
-    return "A";
+    return "B";
   }
   
   int id(int n) {
