@@ -137,9 +137,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         if (element instanceof ClassElement) {
           thisType = typeHelper.findType(false, (ClassElement) element.getEnclosingElement());
         } else {
-          // FIXME Geoffrey, WTF !, you can use 'this' to refer something
-          // different that the class ?
-          thisType = typeHelper.asType(false, node.getElement().getEnclosingElement().getType());
+          thisType = DYNAMIC_TYPE;
         }
       }
 
@@ -360,11 +358,14 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
+      System.out.println(node);
       DartExpression arg1 = node.getArg1();
       DartExpression arg2 = node.getArg2();
       Type type1 = accept(arg1, parameter);
       Type type2 = accept(arg2, parameter);
       Token operator = node.getOperator();
+      System.out.println(arg1 + " " + type1);
+      System.out.println(arg2 + " " + type2);
 
       if (!operator.isAssignmentOperator()) {
         return visitBinaryOp(node, operator, arg1, type1, arg2, type2, parameter);
@@ -399,6 +400,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     private Type visitBinaryOp(DartBinaryExpression node, Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
+      System.out.println(node);
       System.out.println(node.getSourceInfo().getSource().getUri() + " " + node.getSourceInfo().getLine());
       switch (operator) {
       case NE:
@@ -469,10 +471,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
         }
         if (type instanceof DoubleType) {
           DoubleType dType = (DoubleType) type;
-          return dType.add(DoubleType.constant(1));
+          return dType.add(DoubleType.constant(1.));
         }
       default:
-
         throw new UnsupportedOperationException("Unary Expr: " + operator + " (" + operator.name() + ") not implemented for " + type + ".");
       }
     }
@@ -539,12 +540,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
       if (receiverType instanceof DynamicType) {
         operandIsNonNull(node.getTarget(), flowEnv);
         return receiverType;
-      }
-
-      // TODO Geoffrey, remove this test when you agree with me,
-      // node element can be null here but we don't care
-      if (node.getElement() == null) {
-        System.out.println("Method Invocation: Element null: " + node);
       }
 
       return receiverType.map(new TypeMapper() {
@@ -685,12 +680,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitPropertyAccess(final DartPropertyAccess node, FlowEnv parameter) {
+      System.out.println("Visit property acess: " + node + " line: " + node.getSourceInfo().getLine());
       NodeElement nodeElement = node.getElement();
       if (nodeElement != null) {
-        // FIXME Geoffrey, doesn't work if the type of the field is a function
-        // type
-        // it should be nullable
-        // you have to do a switch on the element.kind
         return propertyType(typeHelper.asType(true, node.getType()), nodeElement.getKind());
       }
       DartNode qualifier = node.getQualifier();
@@ -711,8 +703,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
           // We need to set the element to compile DartTest/PropertyAcces.dart
           node.setElement(element);
 
-          // FIXME Geoffrey, again here, you can access to a field which is
-          // typed as a function type, in that case it should be nullable
           return propertyType(typeHelper.asType(true, element.getType()), element.getKind());
         }
       });
