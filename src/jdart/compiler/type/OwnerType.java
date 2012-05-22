@@ -12,7 +12,7 @@ public abstract class OwnerType extends NullableType {
   OwnerType(boolean nullable) {
     super(nullable);
   }
-  
+
   /**
    * Returns the super type of the current type.
    * 
@@ -26,17 +26,15 @@ public abstract class OwnerType extends NullableType {
    * @return the interfaces of the current type or an empty list.
    */
   public abstract List<InterfaceType> getInterfaces();
-  
-  
+
   public abstract Element localLookupMember(String name);
-  
-  
+
   public Element lookupMember(String name) {
     Element element = localLookupMember(name);
     if (element != null) {
       return element;
     }
-    
+
     InterfaceType superType = getSuperType();
     if (superType != null) {
       element = superType.lookupMember(name);
@@ -44,8 +42,8 @@ public abstract class OwnerType extends NullableType {
         return element;
       }
     }
-    
-    for(InterfaceType interfaze: getInterfaces()) {
+
+    for (InterfaceType interfaze : getInterfaces()) {
       element = interfaze.lookupMember(name);
       if (element != null) {
         return element;
@@ -53,21 +51,21 @@ public abstract class OwnerType extends NullableType {
     }
     return null;
   }
-  
+
   @Override
   NullableType merge(NullableType type) {
     if (!(type instanceof OwnerType)) {
       return super.merge(type);
     }
     OwnerType ownerType = (OwnerType) type;
-    
+
     // isOwnerTypeAssignable don't care about nullability
     boolean nullable = isNullable() || type.isNullable();
     if (Types.isOwnerTypeAssignable(this, ownerType)) {
-      return (nullable)? type.asNullable(): type;
+      return (nullable) ? type.asNullable() : type;
     }
     if (Types.isOwnerTypeAssignable(ownerType, this)) {
-      return (nullable)? this.asNullable(): this;
+      return (nullable) ? this.asNullable() : this;
     }
     return super.merge(type);
   }
