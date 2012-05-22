@@ -4,6 +4,7 @@ import static jdart.compiler.type.CoreTypeRepository.*;
 import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
 import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_TYPE;
 import static jdart.compiler.type.CoreTypeRepository.NULL_TYPE;
+import static jdart.compiler.type.CoreTypeRepository.POSITIVE_INT32;
 import static jdart.compiler.type.CoreTypeRepository.VOID_TYPE;
 
 import java.math.BigInteger;
@@ -70,10 +71,8 @@ import com.google.dart.compiler.resolver.Element;
 import com.google.dart.compiler.resolver.ElementKind;
 import com.google.dart.compiler.resolver.FieldElement;
 import com.google.dart.compiler.resolver.MethodElement;
-import com.google.dart.compiler.resolver.MethodNodeElement;
 import com.google.dart.compiler.resolver.NodeElement;
 import com.google.dart.compiler.resolver.VariableElement;
-import com.google.dart.compiler.type.TypeAnalyzer;
 
 public class FlowTypingPhase implements DartCompilationPhase {
   @Override
@@ -134,9 +133,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       Type thisType = null;
       Modifiers modifiers = node.getModifiers();
-      MethodNodeElement element = node.getElement();
+      MethodElement element = node.getElement();
       if (!modifiers.isStatic() && !modifiers.isFactory()) {
-        if (element instanceof ClassElement) {
+        if (element.getEnclosingElement() instanceof ClassElement) {
           thisType = typeHelper.findType(false, (ClassElement) element.getEnclosingElement());
         } else {
           thisType = DYNAMIC_TYPE;
@@ -728,24 +727,24 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitArrayAccess(DartArrayAccess node, FlowEnv parameter) {
-      System.out.println(node);
-
       Type typeOfIndex = accept(node.getKey(), parameter);
       if (!(typeOfIndex instanceof IntType)) {
         System.err.println("In " + node + ", " + node.getKey() + '(' + typeOfIndex + ')' + " is not a number");
-        //TODO Log the error (in a file) and abort compilation ?
+        // TODO Log the error (in a file) and abort compilation ?
         throw null;
       }
       if (!((IntType) typeOfIndex).isIncludeIn(POSITIVE_INT32)) {
         System.err.println("In " + node + ", " + node.getKey() + '(' + typeOfIndex + ')' + " is not a 32bits integer number");
-        //TODO Log the error (in a file) and abort compilation ?
+        // TODO Log the error (in a file) and abort compilation ?
         throw null;
       }
 
       Type typeOfArray = accept(node.getTarget(), parameter);
       if (!(typeOfArray instanceof ArrayType)) {
-        System.err.println(node.getTarget() + " is not an array");
-        //TODO Log the error (in a file) and abort compilation ?
+        // FIXME If the class declare a method "operator[]", the class must be
+        // considered as an array, (we can do this [i] or a[i] where a is an
+        // instance of class A).
+        // TODO Log the error (in a file) and abort compilation ?
         throw null;
       }
 
@@ -761,8 +760,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
       for (int i = min + 1; i <= max; i++) {
         finalType = Types.union(finalType, array.getType(i));
       }
-      
-      System.out.println(finalType);
 
       return finalType;
     }
