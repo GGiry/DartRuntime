@@ -162,7 +162,6 @@ public class TypeTest {
   
   @Test
   public void negative32() {
-    System.out.println((((long) 1) << 32) - 1);
     Assert.assertEquals(BigInteger.valueOf(0), ((IntType) NEGATIVE_INT32).getMaxBound());
     Assert.assertEquals(BigInteger.valueOf(Integer.MIN_VALUE), ((IntType) NEGATIVE_INT32).getMinBound());
   }
