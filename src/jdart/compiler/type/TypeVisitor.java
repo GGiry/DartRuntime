@@ -44,4 +44,8 @@ public class TypeVisitor<R, P> {
   public R visitFunctionType(FunctionType type, P parameter) {
     return visitOwnerType(type, parameter);
   }
+  
+  public R  visitArrayType(ArrayType type, P parameter) {
+    return visitType(type, parameter);
+  }
 }

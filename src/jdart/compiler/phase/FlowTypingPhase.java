@@ -73,6 +73,7 @@ import com.google.dart.compiler.resolver.MethodElement;
 import com.google.dart.compiler.resolver.MethodNodeElement;
 import com.google.dart.compiler.resolver.NodeElement;
 import com.google.dart.compiler.resolver.VariableElement;
+import com.google.dart.compiler.type.TypeAnalyzer;
 
 public class FlowTypingPhase implements DartCompilationPhase {
   @Override
@@ -728,17 +729,42 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitArrayAccess(DartArrayAccess node, FlowEnv parameter) {
       System.out.println(node);
-      System.out.println(node.getKey());
+
       Type typeOfIndex = accept(node.getKey(), parameter);
-      System.out.println(typeOfIndex);
-      if (typeOfIndex instanceof IntType) {
-        if (!((IntType) typeOfIndex).isIncludeIn(POSITIVE_INT32)) {
-          System.err.println("In " + node + ", " + node.getKey() + '(' + typeOfIndex + ')' + " is not a number");
-        }
+      if (!(typeOfIndex instanceof IntType)) {
+        System.err.println("In " + node + ", " + node.getKey() + '(' + typeOfIndex + ')' + " is not a number");
+        //TODO Log the error (in a file) and abort compilation ?
+        throw null;
       }
+      if (!((IntType) typeOfIndex).isIncludeIn(POSITIVE_INT32)) {
+        System.err.println("In " + node + ", " + node.getKey() + '(' + typeOfIndex + ')' + " is not a 32bits integer number");
+        //TODO Log the error (in a file) and abort compilation ?
+        throw null;
+      }
+
+      Type typeOfArray = accept(node.getTarget(), parameter);
+      if (!(typeOfArray instanceof ArrayType)) {
+        System.err.println(node.getTarget() + " is not an array");
+        //TODO Log the error (in a file) and abort compilation ?
+        throw null;
+      }
+
       operandIsNonNull(node.getTarget(), parameter);
 
-      throw null;
+      IntType index = (IntType) typeOfIndex;
+
+      int min = index.getMinBound().intValue();
+      int max = index.getMaxBound().intValue();
+      ArrayType array = (ArrayType) typeOfArray;
+      Type finalType = array.getType(min);
+
+      for (int i = min + 1; i <= max; i++) {
+        finalType = Types.union(finalType, array.getType(i));
+      }
+      
+      System.out.println(finalType);
+
+      return finalType;
     }
   }
 }

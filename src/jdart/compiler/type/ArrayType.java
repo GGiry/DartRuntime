@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ArrayType extends NullableType {
-  private final ArrayList<Integer> dimensionSize = new ArrayList<>();
   private final ArrayList<Type> values = new ArrayList<>();
 
   public ArrayType(boolean isNullable, List<Type> types) {
@@ -13,31 +12,36 @@ public class ArrayType extends NullableType {
   }
 
   @Override
-  public Object asConstant() {
-    // TODO Auto-generated method stub
-    return null;
+  public List<Type> asConstant() {
+    return values;
   }
   
   @Override
   public String toString() {
-    return "array" + super.toString();
+    return "array" + super.toString() + ' ' + values;
   }
   
   @Override
   public NullableType asNullable() {
-    // TODO Auto-generated method stub
-    return null;
+    return isNullable() ? this : new ArrayType(false, values);
   }
 
   @Override
   public NullableType asNonNull() {
-    // TODO Auto-generated method stub
-    return null;
+    return isNullable() ? new ArrayType(false, values) : this;
   }
   
   @Override
   public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
-    // TODO Auto-generated method stub
+    visitor.visitArrayType(this, parameter);
     return null;
-  }  
+  }
+
+  public Type getType(int min) {
+    return values.get(min);
+  }
+  
+  public int getSize() {
+    return values.size();
+  }
 }
