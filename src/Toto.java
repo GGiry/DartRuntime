@@ -63,20 +63,20 @@ public class Toto {
   public static void main(String[] args) throws IOException {
     String sdkPath = "../../dart-sdk/";
 
-    String[] paths = {
-        "DartTest/BinaryOp.dart",
-        "DartTest/PropertyAccess2.dart",
-        "DartTest/GetterSetter.dart",
-    // "DartTest/If.dart",
-    // "DartTest/EmptyStatement.dart",
-    // "DartTest/Array.dart",
-    // "DartTest/For.dart",
-    // "DartTest/Throw.dart",
-    // "DartTest/FunctionObject.dart",
-    // "DartTest/Super.dart",
-    // "DartTest/PropertyAccess.dart",
-    // "DartTest/Invocation.dart",
-    // "Hello.dart"
+    String[] paths = { 
+        "DartTest/Array.dart",
+        // "DartTest/If.dart",
+        // "DartTest/For.dart",
+        // "DartTest/PropertyAccess2.dart",
+        // "DartTest/GetterSetter.dart",
+        // "DartTest/BinaryOp.dart",
+        // "DartTest/EmptyStatement.dart",
+        // "DartTest/Throw.dart",
+        // "DartTest/FunctionObject.dart",
+        // "DartTest/Super.dart",
+        // "DartTest/PropertyAccess.dart",
+        // "DartTest/Invocation.dart",
+        // "Hello.dart"
     };
 
     for (String path : paths) {
