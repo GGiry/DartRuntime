@@ -64,6 +64,7 @@ public class Toto {
     String sdkPath = "../../dart-sdk/";
 
     String[] paths = {
+        "DartTest/BinaryOp.dart",
         "DartTest/PropertyAccess2.dart",
         "DartTest/GetterSetter.dart",
     // "DartTest/If.dart",

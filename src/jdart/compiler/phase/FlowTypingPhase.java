@@ -408,6 +408,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
       case EQ:
       case EQ_STRICT:
       case LT:
+      case LTE:
+      case GT:
+      case GTE:
+      case AND:
+      case OR:
         return BOOL_NON_NULL_TYPE;
 
       case ADD:
