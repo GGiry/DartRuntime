@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import jdart.compiler.type.ArrayType;
 import jdart.compiler.type.BoolType;
 import jdart.compiler.type.CoreTypeRepository;
 import jdart.compiler.type.DoubleType;
@@ -253,7 +254,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       if (node.getException() == null) {
         // TODO correctly handle the error.
         System.err.println("Throw statement: null exception");
-        throw new NullPointerException();
+        throw null;
       }
 
       accept(node.getException(), flowEnv);
@@ -358,14 +359,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
-      System.out.println(node);
       DartExpression arg1 = node.getArg1();
       DartExpression arg2 = node.getArg2();
       Type type1 = accept(arg1, parameter);
       Type type2 = accept(arg2, parameter);
       Token operator = node.getOperator();
-      System.out.println(arg1 + " " + type1);
-      System.out.println(arg2 + " " + type2);
 
       if (!operator.isAssignmentOperator()) {
         return visitBinaryOp(node, operator, arg1, type1, arg2, type2, parameter);
@@ -400,8 +398,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     private Type visitBinaryOp(DartBinaryExpression node, Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
-      System.out.println(node);
-      System.out.println(node.getSourceInfo().getSource().getUri() + " " + node.getSourceInfo().getLine());
       switch (operator) {
       case NE:
       case NE_STRICT:
@@ -458,6 +454,12 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
 
       // a method call that can be polymorphic
+      if (node.getElement() == null) {
+        // FIXME A setter with a dynamic parameter will make the field dynamic.
+        // (see PropertyAccess2.dart)
+        System.err.println("NoSuchMethodExcpetion: " + node.getOperator() + " for type: " + type1 + ", " + type2);
+        return DYNAMIC_TYPE;
+      }
       return typeHelper.asType(true, node.getElement().getFunctionType().getReturnType());
     }
 
@@ -685,7 +687,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitPropertyAccess(final DartPropertyAccess node, FlowEnv parameter) {
-      System.out.println("Visit property acess: " + node + " line: " + node.getSourceInfo().getLine());
       NodeElement nodeElement = node.getElement();
       if (nodeElement != null) {
         return propertyType(typeHelper.asType(true, node.getType()), nodeElement.getKind());
@@ -715,17 +716,29 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitArrayLiteral(DartArrayLiteral node, FlowEnv parameter) {
-      // TODO Arrays type ?
+      ArrayList<Type> types = new ArrayList<>();
 
-      return DYNAMIC_TYPE;
+      for (DartExpression expr : node.getExpressions()) {
+        types.add(accept(expr, parameter));
+      }
+
+      return new ArrayType(false, types);
     }
 
     @Override
     public Type visitArrayAccess(DartArrayAccess node, FlowEnv parameter) {
-      // TODO Arrays type ?
+      System.out.println(node);
+      System.out.println(node.getKey());
+      Type typeOfIndex = accept(node.getKey(), parameter);
+      System.out.println(typeOfIndex);
+      if (typeOfIndex instanceof IntType) {
+        if (!((IntType) typeOfIndex).isIncludeIn(POSITIVE_INT32)) {
+          System.err.println("In " + node + ", " + node.getKey() + '(' + typeOfIndex + ')' + " is not a number");
+        }
+      }
       operandIsNonNull(node.getTarget(), parameter);
 
-      return DYNAMIC_TYPE;
+      throw null;
     }
   }
 }
