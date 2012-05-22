@@ -247,7 +247,7 @@ public class IntType extends PrimitiveType {
    * @param intType Reference type.
    * @return <code>true</code> if this type is include in the specified type.
    */
-  public boolean includes(IntType intType) {
+  public boolean isIncludeIn(IntType intType) {
     if (minBound == null && intType.minBound != null) {
       return false;
     }

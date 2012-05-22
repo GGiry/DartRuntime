@@ -83,13 +83,13 @@ public class Types {
     @Override
     public Type visitIntType(IntType type, Void unused) {
       boolean nullable = type.isNullable();
-      if (type.includes(POSITIVE_INT32)) {
+      if (type.isIncludeIn(POSITIVE_INT32)) {
         return POSITIVE_INT32.asNullable(nullable);
       }
-      if (type.includes(NEGATIVE_INT32)) {
+      if (type.isIncludeIn(NEGATIVE_INT32)) {
         return NEGATIVE_INT32.asNullable(nullable);
       }
-      if (type.includes(INT32)) {
+      if (type.isIncludeIn(INT32)) {
         return INT32;
       }
       return INT_NON_NULL_TYPE.asNullable(nullable);
