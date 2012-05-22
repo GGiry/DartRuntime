@@ -156,7 +156,7 @@ public class TypeTest {
   
   @Test
   public void positive32() {
-    Assert.assertEquals(BigInteger.valueOf(((long) Integer.MAX_VALUE) * 2 + 1), ((IntType) POSITIVE_INT32).getMaxBound());
+    Assert.assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), ((IntType) POSITIVE_INT32).getMaxBound());
     Assert.assertEquals(BigInteger.valueOf(0), ((IntType) POSITIVE_INT32).getMinBound());
   }
   
@@ -164,6 +164,6 @@ public class TypeTest {
   public void negative32() {
     System.out.println((((long) 1) << 32) - 1);
     Assert.assertEquals(BigInteger.valueOf(0), ((IntType) NEGATIVE_INT32).getMaxBound());
-    Assert.assertEquals(BigInteger.valueOf(- (((long) Integer.MAX_VALUE) * 2 + 1)), ((IntType) NEGATIVE_INT32).getMinBound());
+    Assert.assertEquals(BigInteger.valueOf(Integer.MIN_VALUE), ((IntType) NEGATIVE_INT32).getMinBound());
   }
 }

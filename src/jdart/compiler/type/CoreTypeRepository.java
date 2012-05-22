@@ -17,8 +17,11 @@ public class CoreTypeRepository extends TypeRepository {
   public final static IntType INT_TYPE = new IntType(true, null, null);
   public final static IntType INT_NON_NULL_TYPE = new IntType(false, null, null);
   public final static IntType INT32 = new IntType(true, BigInteger.valueOf(Integer.MIN_VALUE), BigInteger.valueOf(Integer.MAX_VALUE));
-  public final static IntType POSITIVE_INT32 = new IntType(true, BigInteger.ZERO, BigInteger.valueOf((((long) 1) << 32) - 1));
-  public final static IntType NEGATIVE_INT32 = new IntType(true, BigInteger.valueOf(- ((((long) 1) << 32) - 1)), BigInteger.ZERO);
+  public final static IntType POSITIVE_INT32 = new IntType(true, BigInteger.ZERO, BigInteger.valueOf(Integer.MAX_VALUE));
+  public final static IntType NEGATIVE_INT32 = new IntType(true, BigInteger.valueOf(Integer.MIN_VALUE), BigInteger.ZERO);
+  
+ /* public final static IntType POSITIVE_INT32 = new IntType(true, BigInteger.ZERO, BigInteger.valueOf((((long) 1) << 32) - 1));
+  public final static IntType NEGATIVE_INT32 = new IntType(true, BigInteger.valueOf(- ((((long) 1) << 32) - 1)), BigInteger.ZERO);*/
 
   public final static DoubleType DOUBLE_TYPE = new DoubleType(true, null);
   public final static DoubleType DOUBLE_NON_NULL_TYPE = new DoubleType(false, null);
