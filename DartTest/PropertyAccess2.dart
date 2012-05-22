@@ -4,7 +4,7 @@ class A {
     return _foo;
   }
   
-  set foo(int n) {
+  set foo(n) {
     _foo = n;
   }
   
@@ -14,7 +14,7 @@ class A {
     return a;
   }
 
-  var _foo = 1;
+  int _foo = 1;
 }
 
 void main() {
