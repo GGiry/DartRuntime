@@ -170,6 +170,11 @@ public class FlowEnv {
   public void merge(FlowEnv env1, FlowEnv env2) {
     for (Entry<VariableElement, Type> entry : env1.variableTypeMap.entrySet()) {
       VariableElement key = entry.getKey();
+      
+      if (getType(key) == null) {
+        continue;
+      }
+      
       Type type1 = entry.getValue();
       Type type2 = env2.getType(key);
 
@@ -184,6 +189,11 @@ public class FlowEnv {
 
     for (Entry<VariableElement, Type> entry : env2.variableTypeMap.entrySet()) {
       VariableElement key = entry.getKey();
+      
+      if (getType(key) == null) {
+        continue;
+      }
+      
       Type type1 = env1.getType(key);
       Type type2 = entry.getValue();
 
