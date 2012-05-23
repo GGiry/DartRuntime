@@ -250,10 +250,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitThrowStatement(DartThrowStatement node, FlowEnv flowEnv) {
-      // FIXME Do we have to verify if the threw object is throwable ?
-
       if (node.getException() == null) {
-        // TODO correctly handle the error.
+        // TODO correctly handle the error?
         System.err.println("Throw statement: null exception");
         throw null;
       }
@@ -276,6 +274,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       if (value == null) {
         // variable is not initialized, in Dart variables are initialized
         // with null by default
+        flowEnv.register(node.getElement(), NULL_TYPE);
         return NULL_TYPE;
       }
       // the type is the type of the initialization expression
@@ -298,8 +297,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitIfStatement(DartIfStatement node, FlowEnv parameter) {
-
-      accept(node.getCondition(), parameter);
+      // FIXME IfStatement doesn't work well.
+      System.out.println("If:");
+      System.out.println(accept(node.getCondition(), parameter).asConstant());
 
       FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
       accept(node.getThenStatement(), envThen);
@@ -314,6 +314,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     @Override
+    // FIXME ForStatement doesn't work well.
     public Type visitForStatement(DartForStatement node, FlowEnv parameter) {
       accept(node.getInit(), parameter);
       FlowEnv env = parameter;
@@ -338,15 +339,16 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitIdentifier(DartIdentifier node, FlowEnv flowEnv) {
-      switch (node.getElement().getKind()) {
+      NodeElement element = node.getElement();
+      switch (element.getKind()) {
       case VARIABLE:
       case PARAMETER:
-        return flowEnv.getType((VariableElement) node.getElement());
+        return flowEnv.getType((VariableElement) element);
       case FIELD:
-        return typeHelper.asType(true, node.getElement().getType());
+        return typeHelper.asType(true, element.getType());
       case METHOD:
         // reference a method by name
-        return typeHelper.asType(false, node.getElement().getType());
+        return typeHelper.asType(false, element.getType());
       default:
         throw new UnsupportedOperationException();
       }
@@ -400,10 +402,15 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     private Type visitBinaryOp(DartBinaryExpression node, Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
       switch (operator) {
+      // TODO finish binary op
       case NE:
       case NE_STRICT:
+        //TODO known the difference between != and !==.
+        return type1.equals(type2) ? FALSE : TRUE;
       case EQ:
       case EQ_STRICT:
+        //TODO known the difference between == and ===.
+        return type1.equals(type2) ? TRUE : FALSE;
       case LT:
       case LTE:
       case GT:
@@ -496,7 +503,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       ClassElement element = node.getElement().getConstructorType();
       return typeHelper.findType(false, element);
     }
-    
+
     @Override
     public Type visitSuperExpression(DartSuperExpression node, FlowEnv parameter) {
       if (parameter.getThisType() == null) {
@@ -508,7 +515,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     // --- Invocation
-    
+
     @Override
     public Type visitMethodInvocation(final DartMethodInvocation node, FlowEnv flowEnv) {
       ArrayList<Type> argumentTypes = new ArrayList<>();
@@ -640,7 +647,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       return null;
     }
-    
+
     // --- literals
 
     @Override
@@ -678,7 +685,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       return new ArrayType(false, types);
     }
-    
+
     // ---- Access
 
     /**
@@ -748,7 +755,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       if (!(typeOfArray instanceof ArrayType)) {
         if (typeOfArray instanceof InterfaceType) {
           InterfaceType interfaceArray = (InterfaceType) typeOfArray;
-          
+
           Element element = interfaceArray.lookupMember("operator []");
           if (element == null || !(element instanceof MethodElement)) {
             // class is not an array
