@@ -14,6 +14,9 @@ public class Types {
   public static Type union(Type type1, Type type2) {
     Objects.requireNonNull(type1);
     Objects.requireNonNull(type2);
+    if (type1 == VOID_TYPE || type2 == VOID_TYPE) {
+      throw new IllegalArgumentException("void can not be a component of an union");
+    }
 
     if (type1 == DYNAMIC_TYPE || type2 == DYNAMIC_TYPE) {
       return DYNAMIC_TYPE;

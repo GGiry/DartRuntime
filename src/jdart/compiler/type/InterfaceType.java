@@ -7,7 +7,7 @@ import com.google.dart.compiler.resolver.ClassElement;
 public class InterfaceType extends ElementType {
   private final ClassElement element;
   private final TypeRepository typeRepository;
-  private InterfaceType dualType;
+  private transient InterfaceType dualType;
 
   InterfaceType(boolean nullable, TypeRepository typeRepository, ClassElement element) {
     super(nullable);

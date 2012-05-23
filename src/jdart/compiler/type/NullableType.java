@@ -1,9 +1,10 @@
 package jdart.compiler.type;
 
-import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
+import static jdart.compiler.type.CoreTypeRepository.*;
 
 abstract class NullableType implements Type {
   private final boolean isNullable;
+  private ArrayType arrayType;  // lazy allocated
 
   NullableType(boolean isNullable) {
     this.isNullable = isNullable;
@@ -28,6 +29,17 @@ abstract class NullableType implements Type {
   @Override
   public Type asNullable(boolean nullable) {
     return (nullable)?asNullable(): asNonNull();
+  }
+  
+  /**
+   * Returns the nullable array type with the current type as component type.
+   * @return the nullable array type with the current type as component type.
+   */
+  public ArrayType asArrayType() {
+    if (arrayType != null) {
+      return arrayType;
+    }
+    return arrayType = new ArrayType(true, this, INT32, null);
   }
   
   NullableType merge(NullableType type) {

@@ -10,6 +10,7 @@ import static jdart.compiler.type.CoreTypeRepository.VOID_TYPE;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import jdart.compiler.type.ArrayType;
 import jdart.compiler.type.BoolType;
@@ -719,12 +720,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitArrayLiteral(DartArrayLiteral node, FlowEnv parameter) {
       ArrayList<Type> types = new ArrayList<>();
-
       for (DartExpression expr : node.getExpressions()) {
         types.add(accept(expr, parameter));
       }
-
-      return new ArrayType(false, types);
+      return ArrayType.constant(types);
     }
 
     // ---- Access
@@ -780,50 +779,57 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitArrayAccess(DartArrayAccess node, FlowEnv parameter) {
+      //FIXME Geoffrey, you have to take a look to the parent to know
+      // if it represent a[12] or a[12] = ...
+      // or perhaps this check should be done in visitBinary for ASSIGN
+      
+      operandIsNonNull(node.getTarget(), parameter);
+      
       Type typeOfIndex = accept(node.getKey(), parameter);
       if (!(typeOfIndex instanceof IntType)) {
-        System.err.println("In " + node + ", " + node.getKey() + '(' + typeOfIndex + ')' + " is not a number");
-        // TODO Log the error (in a file) and abort compilation ?
-        throw null;
+        return DYNAMIC_NON_NULL_TYPE;
       }
       if (!((IntType) typeOfIndex).isIncludeIn(POSITIVE_INT32)) {
-        System.err.println("In " + node + ", " + node.getKey() + '(' + typeOfIndex + ')' + " is not a 32bits integer number");
-        // TODO Log the error (in a file) and abort compilation ?
-        throw null;
+        return DYNAMIC_NON_NULL_TYPE;
       }
 
       Type typeOfArray = accept(node.getTarget(), parameter);
       if (!(typeOfArray instanceof ArrayType)) {
-        if (typeOfArray instanceof InterfaceType) {
-          InterfaceType interfaceArray = (InterfaceType) typeOfArray;
-
-          Element element = interfaceArray.lookupMember("operator []");
-          if (element == null || !(element instanceof MethodElement)) {
-            // class is not an array
-            System.err.println(node.getTarget() + " is not an array.");
-            throw null;
-          }
-          return typeHelper.asType(true, ((MethodElement) element).getReturnType());
+        if (!(typeOfArray instanceof InterfaceType)) {
+          return DYNAMIC_NON_NULL_TYPE;  
         }
-        // TODO Log the error (in a file) and abort compilation ?
-        System.err.println(node.getTarget() + " is not an array.");
-        throw null;
-      }
+        InterfaceType interfaceArray = (InterfaceType) typeOfArray;
 
-      operandIsNonNull(node.getTarget(), parameter);
+        Element element = interfaceArray.lookupMember("operator []");
+        if (element == null || !(element instanceof MethodElement)) {
+          // the class doesn't provide any operator []
+          return DYNAMIC_NON_NULL_TYPE;
+        }
+        return typeHelper.asType(true, ((MethodElement) element).getReturnType()); 
+      }
 
       IntType index = (IntType) typeOfIndex;
-
-      int min = index.getMinBound().intValue();
-      int max = index.getMaxBound().intValue();
       ArrayType array = (ArrayType) typeOfArray;
-      Type finalType = array.getType(min);
-
-      for (int i = min + 1; i <= max; i++) {
-        finalType = Types.union(finalType, array.getType(i));
+      
+      // is it a constant array ?
+      List<Type> constant = array.asConstant();
+      if (constant == null) {
+        return array.getComponentType();
       }
-
-      return finalType;
+      
+      int max = index.getMaxBound().intValue();
+      BigInteger arrayMaxBound = array.getLength().getMaxBound();
+      if (max >= arrayMaxBound.intValue()) {
+        // we may access to a index which is bigger than length of the array
+        return array.getComponentType();
+      }
+      
+      int min = index.getMinBound().intValue();
+      Type type = constant.get(min);  
+      for (int i = min + 1; i <= max; i++) {
+        type = Types.union(type, constant.get(i));
+      }
+      return type;
     }
   }
 }

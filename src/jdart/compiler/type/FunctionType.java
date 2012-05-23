@@ -15,7 +15,7 @@ public class FunctionType extends OwnerType {
   private final List<Type> parameterTypes;
   private final Map<String, Type> namedParameterTypes;
   private final /*maybenull*/ MethodElement constant;
-  private FunctionType dualType;       // almost final see postInitDualType
+  private transient FunctionType dualType;   // almost final see postInitDualType
 
   FunctionType(boolean nullable, Type returnType, List<Type> parameterTypes, Map<String, Type> namedParameterTypes, /*maybenull*/MethodElement constant) {
     super(nullable);
