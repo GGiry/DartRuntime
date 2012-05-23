@@ -496,7 +496,19 @@ public class FlowTypingPhase implements DartCompilationPhase {
       ClassElement element = node.getElement().getConstructorType();
       return typeHelper.findType(false, element);
     }
+    
+    @Override
+    public Type visitSuperExpression(DartSuperExpression node, FlowEnv parameter) {
+      if (parameter.getThisType() == null) {
+        return DYNAMIC_TYPE;
+      }
 
+      Type type = ((OwnerType) parameter.getThisType()).getSuperType();
+      return type;
+    }
+
+    // --- Invocation
+    
     @Override
     public Type visitMethodInvocation(final DartMethodInvocation node, FlowEnv flowEnv) {
       ArrayList<Type> argumentTypes = new ArrayList<>();
@@ -628,6 +640,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       return null;
     }
+    
+    // --- literals
 
     @Override
     public Type visitIntegerLiteral(DartIntegerLiteral node, FlowEnv unused) {
@@ -654,7 +668,18 @@ public class FlowTypingPhase implements DartCompilationPhase {
       return NULL_TYPE;
     }
 
-    // ----
+    @Override
+    public Type visitArrayLiteral(DartArrayLiteral node, FlowEnv parameter) {
+      ArrayList<Type> types = new ArrayList<>();
+
+      for (DartExpression expr : node.getExpressions()) {
+        types.add(accept(expr, parameter));
+      }
+
+      return new ArrayType(false, types);
+    }
+    
+    // ---- Access
 
     /**
      * Returns the correct type of the property, depending of the
@@ -674,16 +699,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
       default:
         return type;
       }
-    }
-
-    @Override
-    public Type visitSuperExpression(DartSuperExpression node, FlowEnv parameter) {
-      if (parameter.getThisType() == null) {
-        return DYNAMIC_TYPE;
-      }
-
-      Type type = ((OwnerType) parameter.getThisType()).getSuperType();
-      return type;
     }
 
     @Override
@@ -716,22 +731,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     @Override
-    public Type visitArrayLiteral(DartArrayLiteral node, FlowEnv parameter) {
-      ArrayList<Type> types = new ArrayList<>();
-
-      for (DartExpression expr : node.getExpressions()) {
-        types.add(accept(expr, parameter));
-      }
-
-      return new ArrayType(false, types);
-    }
-
-    @Override
     public Type visitArrayAccess(DartArrayAccess node, FlowEnv parameter) {
-      System.out.println("ArrayAccess:");
-      System.out.println("Node: " + node);
       Type typeOfIndex = accept(node.getKey(), parameter);
-      System.out.println("Index: " + typeOfIndex);
       if (!(typeOfIndex instanceof IntType)) {
         System.err.println("In " + node + ", " + node.getKey() + '(' + typeOfIndex + ')' + " is not a number");
         // TODO Log the error (in a file) and abort compilation ?
@@ -744,8 +745,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
 
       Type typeOfArray = accept(node.getTarget(), parameter);
-      System.out.println("Array: " + typeOfArray);
-      System.out.println("Class: " + typeOfArray.getClass());
       if (!(typeOfArray instanceof ArrayType)) {
         if (typeOfArray instanceof InterfaceType) {
           InterfaceType interfaceArray = (InterfaceType) typeOfArray;
