@@ -15,15 +15,14 @@ public class FlowEnv {
   private final Type thisType;
   private final Type returnType;
   private final Type expectedType;
-  private final HashMap<VariableElement, Type> variableTypeMap;
+  private final/* maybenull */ HashMap<VariableElement, Type> variableTypeMap;
 
   private FlowEnv(/* maybenull */FlowEnv parent, /* maybenull */Type thisType, Type returnType, Type expectedType,
-      HashMap<VariableElement, Type> variableTypeMap) {
+      /* maybenull */HashMap<VariableElement, Type> variableTypeMap) {
     this.parent = parent;
     this.thisType = thisType;
     this.returnType = Objects.requireNonNull(returnType);
     this.expectedType = Objects.requireNonNull(expectedType);
-    ;
     this.variableTypeMap = variableTypeMap;
   }
 
@@ -51,6 +50,10 @@ public class FlowEnv {
    * @return the type of the variable or null if the variable is unknown.
    */
   public Type getType(VariableElement variable) {
+    if (variableTypeMap == null) {
+      return null;
+    }
+
     Type type = variableTypeMap.get(variable);
     if (type == null) {
       if (parent != null) {
