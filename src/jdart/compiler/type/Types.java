@@ -95,9 +95,10 @@ public class Types {
       return INT_NON_NULL_TYPE.asNullable(nullable);
     }
     
+    @Override
     public Type visitDoubleType(DoubleType type, Void unused) {
       return DOUBLE_NON_NULL_TYPE.asNullable(type.isNullable());
-    };
+    }
     
     @Override
     public Type visitUnionType(UnionType type, Void unused) {
