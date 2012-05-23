@@ -150,19 +150,19 @@ public class TypeTest {
   
   @Test
   public void int32() {
-    Assert.assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), ((IntType) INT32).getMaxBound());
-    Assert.assertEquals(BigInteger.valueOf(Integer.MIN_VALUE), ((IntType) INT32).getMinBound());
+    Assert.assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), INT32.getMaxBound());
+    Assert.assertEquals(BigInteger.valueOf(Integer.MIN_VALUE), INT32.getMinBound());
   }
   
   @Test
   public void positive32() {
-    Assert.assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), ((IntType) POSITIVE_INT32).getMaxBound());
-    Assert.assertEquals(BigInteger.valueOf(0), ((IntType) POSITIVE_INT32).getMinBound());
+    Assert.assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), POSITIVE_INT32.getMaxBound());
+    Assert.assertEquals(BigInteger.valueOf(0), POSITIVE_INT32.getMinBound());
   }
   
   @Test
   public void negative32() {
-    Assert.assertEquals(BigInteger.valueOf(0), ((IntType) NEGATIVE_INT32).getMaxBound());
-    Assert.assertEquals(BigInteger.valueOf(Integer.MIN_VALUE), ((IntType) NEGATIVE_INT32).getMinBound());
+    Assert.assertEquals(BigInteger.valueOf(0), NEGATIVE_INT32.getMaxBound());
+    Assert.assertEquals(BigInteger.valueOf(Integer.MIN_VALUE), NEGATIVE_INT32.getMinBound());
   }
 }
