@@ -162,16 +162,14 @@ public class FlowEnv {
   }
 
   /**
-   * Merges the specified environments in this {@link FlowEnv}. Only merge
+   * Merges the specified environment in this {@link FlowEnv}. Only merge
    * variables already known by this.
    * 
-   * @param env1
-   *          First environment to merge.
-   * @param env2
-   *          Second environment to merge.
+   * @param env
+   *          Environment to merge.
    */
-  public void merge(FlowEnv env1, FlowEnv env2) {
-    for (Entry<VariableElement, Type> entry : env1.variableTypeMap.entrySet()) {
+  public void merge(FlowEnv env) {
+    for (Entry<VariableElement, Type> entry : env.variableTypeMap.entrySet()) {
       VariableElement key = entry.getKey();
       
       if (getType(key) == null) {
@@ -179,32 +177,7 @@ public class FlowEnv {
       }
       
       Type type1 = entry.getValue();
-      Type type2 = env2.getType(key);
-
-      if (type2 == null) {
-        // the variable is not set in the other block.
-        type2 = getType(key);
-      }
-
-      Type unionType = Types.union(type1, type2);
-      register(key, unionType);
-    }
-
-    for (Entry<VariableElement, Type> entry : env2.variableTypeMap.entrySet()) {
-      VariableElement key = entry.getKey();
-      
-      if (getType(key) == null) {
-        continue;
-      }
-      
-      Type type1 = env1.getType(key);
-      Type type2 = entry.getValue();
-
-      if (type1 == null) {
-        // the variable is not set in the other block.
-        type1 = getType(key);
-      }
-
+      Type type2 = getType(key);
       Type unionType = Types.union(type1, type2);
       register(key, unionType);
     }

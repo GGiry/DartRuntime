@@ -295,21 +295,62 @@ public class FlowTypingPhase implements DartCompilationPhase {
       return null;
     }
 
+    /**
+     * Change the type of variables used in condition, depending of the
+     * condition and it's trueness.
+     * 
+     * //TODO find a better name...
+     * 
+     * @param isTrue
+     *          Trueness of the condition
+     * @param node
+     *          Condition to use
+     * @param parameter
+     *          Used to modify variable types
+     */
+    private void magicChangeType(boolean isTrue, DartBinaryExpression node, FlowEnv parameter) {
+      // TODO Auto-generated method stub
+      DartExpression arg1 = node.getArg1();
+      DartExpression arg2 = node.getArg2();
+      Type type1 = accept(arg1, parameter);
+      Type type2 = accept(arg2, parameter);
+      Token operator = node.getOperator();
+
+      switch (operator) {
+      case EQ:
+        // Il faut regarder quel type est inclus dans l'autre pour savoir que type doit prendre la valeur de l'autre type.
+        if (isTrue) {
+          if (type1 instanceof IntType) {
+            IntType iType1 = (IntType) type1;
+            IntType iType2 = (IntType) type2;
+            if (iType1.isIncludeIn(iType2)) {
+              parameter.register((VariableElement) arg2.getElement(), iType1);
+            }
+          }
+        }
+      }
+    }
+
     @Override
     public Type visitIfStatement(DartIfStatement node, FlowEnv parameter) {
       // FIXME IfStatement doesn't work well.
       System.out.println("If:");
-      System.out.println(accept(node.getCondition(), parameter).asConstant());
+      boolean isTrue = (boolean) accept(node.getCondition(), parameter).asConstant();
 
-      FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-      accept(node.getThenStatement(), envThen);
-
-      FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-      if (node.getElseStatement() != null) {
+      if (isTrue) {
+        FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
+        magicChangeType(isTrue, (DartBinaryExpression) node.getCondition(), envThen);
+        System.out.println("Then:");
+        System.out.println(envThen);
+        accept(node.getThenStatement(), envThen);
+        parameter.merge(envThen);
+      } else if (node.getElseStatement() != null) {
+        FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
+        magicChangeType(!isTrue, (DartBinaryExpression) node.getCondition(), envElse);
         accept(node.getElseStatement(), envElse);
+        parameter.merge(envElse);
       }
 
-      parameter.merge(envThen, envElse);
       return null;
     }
 
@@ -405,11 +446,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
       // TODO finish binary op
       case NE:
       case NE_STRICT:
-        //TODO known the difference between != and !==.
+        // TODO known the difference between != and !==.
         return type1.equals(type2) ? FALSE : TRUE;
       case EQ:
       case EQ_STRICT:
-        //TODO known the difference between == and ===.
+        // TODO known the difference between == and ===.
         return type1.equals(type2) ? TRUE : FALSE;
       case LT:
       case LTE:
