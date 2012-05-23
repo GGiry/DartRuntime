@@ -20,11 +20,4 @@ void main() {
   var e = a[0];
   var f = a[1];
   var g = a[2];
-  
-  print('$b');
-  print('$c');
-  print('$d');
-  print('$e');
-  print('$f');
-  print('$g');
 }
