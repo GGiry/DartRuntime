@@ -18,6 +18,7 @@ import jdart.compiler.type.DoubleType;
 import jdart.compiler.type.DynamicType;
 import jdart.compiler.type.FunctionType;
 import jdart.compiler.type.IntType;
+import jdart.compiler.type.InterfaceType;
 import jdart.compiler.type.OwnerType;
 import jdart.compiler.type.Type;
 import jdart.compiler.type.TypeMapper;
@@ -727,7 +728,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitArrayAccess(DartArrayAccess node, FlowEnv parameter) {
+      System.out.println("ArrayAccess:");
+      System.out.println("Node: " + node);
       Type typeOfIndex = accept(node.getKey(), parameter);
+      System.out.println("Index: " + typeOfIndex);
       if (!(typeOfIndex instanceof IntType)) {
         System.err.println("In " + node + ", " + node.getKey() + '(' + typeOfIndex + ')' + " is not a number");
         // TODO Log the error (in a file) and abort compilation ?
@@ -740,11 +744,22 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
 
       Type typeOfArray = accept(node.getTarget(), parameter);
+      System.out.println("Array: " + typeOfArray);
+      System.out.println("Class: " + typeOfArray.getClass());
       if (!(typeOfArray instanceof ArrayType)) {
-        // FIXME If the class declare a method "operator[]", the class must be
-        // considered as an array, (we can do this [i] or a[i] where a is an
-        // instance of class A).
+        if (typeOfArray instanceof InterfaceType) {
+          InterfaceType interfaceArray = (InterfaceType) typeOfArray;
+          
+          Element element = interfaceArray.lookupMember("operator []");
+          if (element == null || !(element instanceof MethodElement)) {
+            // class is not an array
+            System.err.println(node.getTarget() + " is not an array.");
+            throw null;
+          }
+          return typeHelper.asType(true, ((MethodElement) element).getReturnType());
+        }
         // TODO Log the error (in a file) and abort compilation ?
+        System.err.println(node.getTarget() + " is not an array.");
         throw null;
       }
 
