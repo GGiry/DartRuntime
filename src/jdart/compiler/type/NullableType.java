@@ -39,7 +39,7 @@ abstract class NullableType implements Type {
     if (arrayType != null) {
       return arrayType;
     }
-    return arrayType = new ArrayType(true, this, INT32, null);
+    return arrayType = new ArrayType(true, this, INT32_TYPE, null);
   }
   
   NullableType merge(NullableType type) {

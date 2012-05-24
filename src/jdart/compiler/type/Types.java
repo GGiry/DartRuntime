@@ -2,11 +2,11 @@ package jdart.compiler.type;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
 import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.INT32;
+import static jdart.compiler.type.CoreTypeRepository.INT32_TYPE;
 import static jdart.compiler.type.CoreTypeRepository.INT_NON_NULL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.NEGATIVE_INT32;
+import static jdart.compiler.type.CoreTypeRepository.NEGATIVE_INT32_TYPE;
 import static jdart.compiler.type.CoreTypeRepository.NULL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.POSITIVE_INT32;
+import static jdart.compiler.type.CoreTypeRepository.POSITIVE_INT32_TYPE;
 
 import java.util.Objects;
 
@@ -86,14 +86,14 @@ public class Types {
     @Override
     public Type visitIntType(IntType type, Void unused) {
       boolean nullable = type.isNullable();
-      if (type.isIncludeIn(POSITIVE_INT32)) {
-        return POSITIVE_INT32.asNullable(nullable);
+      if (type.isIncludeIn(POSITIVE_INT32_TYPE)) {
+        return POSITIVE_INT32_TYPE.asNullable(nullable);
       }
-      if (type.isIncludeIn(NEGATIVE_INT32)) {
-        return NEGATIVE_INT32.asNullable(nullable);
+      if (type.isIncludeIn(NEGATIVE_INT32_TYPE)) {
+        return NEGATIVE_INT32_TYPE.asNullable(nullable);
       }
-      if (type.isIncludeIn(INT32)) {
-        return INT32;
+      if (type.isIncludeIn(INT32_TYPE)) {
+        return INT32_TYPE;
       }
       return INT_NON_NULL_TYPE.asNullable(nullable);
     }

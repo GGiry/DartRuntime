@@ -4,7 +4,7 @@ import static jdart.compiler.type.CoreTypeRepository.*;
 import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
 import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_TYPE;
 import static jdart.compiler.type.CoreTypeRepository.NULL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.POSITIVE_INT32;
+import static jdart.compiler.type.CoreTypeRepository.POSITIVE_INT32_TYPE;
 import static jdart.compiler.type.CoreTypeRepository.VOID_TYPE;
 
 import java.math.BigInteger;
@@ -319,13 +319,19 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       switch (operator) {
       case EQ:
-        // Il faut regarder quel type est inclus dans l'autre pour savoir que type doit prendre la valeur de l'autre type.
         if (isTrue) {
-          if (type1 instanceof IntType) {
+          // Il faut regarder quel type est inclus dans l'autre pour savoir que type doit prendre la valeur de l'autre type.
+          if (type1 instanceof IntType && type2 instanceof IntType) {
             IntType iType1 = (IntType) type1;
             IntType iType2 = (IntType) type2;
             if (iType1.isIncludeIn(iType2)) {
               parameter.register((VariableElement) arg2.getElement(), iType1);
+            } else if (iType2.isIncludeIn(iType1)) {
+              parameter.register((VariableElement) arg1.getElement(), iType2);
+            } else {
+              // we have something like int[10;20] == int[15;25] -> int[15;20].
+              IntType type = IntType.intersect(iType1, iType2);
+              System.out.println(iType1 + ", " + iType2 + ", type");
             }
           }
         }
@@ -448,11 +454,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
       case NE:
       case NE_STRICT:
         // TODO known the difference between != and !==.
-        return type1.equals(type2) ? FALSE : TRUE;
+        return type1.equals(type2) ? FALSE_TYPE : TRUE;
       case EQ:
       case EQ_STRICT:
         // TODO known the difference between == and ===.
-        return type1.equals(type2) ? TRUE : FALSE;
+        return type1.equals(type2) ? TRUE : FALSE_TYPE;
       case LT:
       case LTE:
       case GT:
@@ -783,17 +789,22 @@ public class FlowTypingPhase implements DartCompilationPhase {
       // if it represent a[12] or a[12] = ...
       // or perhaps this check should be done in visitBinary for ASSIGN
       
-      operandIsNonNull(node.getTarget(), parameter);
-      
+      Type typeOfArray = accept(node.getTarget(), parameter);
       Type typeOfIndex = accept(node.getKey(), parameter);
+      
+      operandIsNonNull(node.getTarget(), parameter);
+      // node.getKey -> int32+
+      
       if (!(typeOfIndex instanceof IntType)) {
         return DYNAMIC_NON_NULL_TYPE;
       }
-      if (!((IntType) typeOfIndex).isIncludeIn(POSITIVE_INT32)) {
+      if (!((IntType) typeOfIndex).isIncludeIn(POSITIVE_INT32_TYPE)) {
         return DYNAMIC_NON_NULL_TYPE;
       }
 
-      Type typeOfArray = accept(node.getTarget(), parameter);
+      
+      
+      
       if (!(typeOfArray instanceof ArrayType)) {
         if (!(typeOfArray instanceof InterfaceType)) {
           return DYNAMIC_NON_NULL_TYPE;  

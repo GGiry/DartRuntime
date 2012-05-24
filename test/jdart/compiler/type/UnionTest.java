@@ -4,12 +4,6 @@ import static jdart.compiler.type.CoreTypeRepository.*;
 
 import java.math.BigInteger;
 
-import jdart.compiler.type.DoubleType;
-import jdart.compiler.type.IntType;
-import jdart.compiler.type.NullableType;
-import jdart.compiler.type.Types;
-import jdart.compiler.type.UnionType;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -85,17 +79,17 @@ public class UnionTest {
   
   @Test
   public void booleanConstUnion() {
-    Assert.assertEquals(BOOL_NON_NULL_TYPE, Types.union(TRUE, FALSE));
-    Assert.assertEquals(BOOL_NON_NULL_TYPE, Types.union(FALSE, TRUE));
-    Assert.assertEquals(BOOL_TYPE, Types.union(TRUE.asNullable(), FALSE));
-    Assert.assertEquals(BOOL_TYPE, Types.union(TRUE, FALSE.asNullable()));
-    Assert.assertEquals(BOOL_TYPE, Types.union(FALSE.asNullable(), TRUE));
-    Assert.assertEquals(BOOL_TYPE, Types.union(FALSE, TRUE.asNullable()));
-    Assert.assertEquals(TRUE, Types.union(TRUE, TRUE));
-    Assert.assertEquals(FALSE, Types.union(FALSE, FALSE));
-    Assert.assertEquals(TRUE.asNullable(), Types.union(TRUE.asNullable(), TRUE));
-    Assert.assertEquals(TRUE.asNullable(), Types.union(TRUE, TRUE.asNullable()));
-    Assert.assertEquals(FALSE.asNullable(), Types.union(FALSE, FALSE.asNullable()));
+    Assert.assertEquals(BOOL_NON_NULL_TYPE, Types.union(TRUE_TYPE, FALSE_TYPE));
+    Assert.assertEquals(BOOL_NON_NULL_TYPE, Types.union(FALSE_TYPE, TRUE_TYPE));
+    Assert.assertEquals(BOOL_TYPE, Types.union(TRUE_TYPE.asNullable(), FALSE_TYPE));
+    Assert.assertEquals(BOOL_TYPE, Types.union(TRUE_TYPE, FALSE_TYPE.asNullable()));
+    Assert.assertEquals(BOOL_TYPE, Types.union(FALSE_TYPE.asNullable(), TRUE_TYPE));
+    Assert.assertEquals(BOOL_TYPE, Types.union(FALSE_TYPE, TRUE_TYPE.asNullable()));
+    Assert.assertEquals(TRUE_TYPE, Types.union(TRUE_TYPE, TRUE_TYPE));
+    Assert.assertEquals(FALSE_TYPE, Types.union(FALSE_TYPE, FALSE_TYPE));
+    Assert.assertEquals(TRUE_TYPE.asNullable(), Types.union(TRUE_TYPE.asNullable(), TRUE_TYPE));
+    Assert.assertEquals(TRUE_TYPE.asNullable(), Types.union(TRUE_TYPE, TRUE_TYPE.asNullable()));
+    Assert.assertEquals(FALSE_TYPE.asNullable(), Types.union(FALSE_TYPE, FALSE_TYPE.asNullable()));
   }
   
   @Test

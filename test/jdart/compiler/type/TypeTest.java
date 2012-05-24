@@ -1,15 +1,11 @@
 package jdart.compiler.type;
 
-import java.math.BigInteger;
+import static jdart.compiler.type.CoreTypeRepository.*;
 
-import jdart.compiler.type.DoubleType;
-import jdart.compiler.type.IntType;
-import jdart.compiler.type.Type;
+import java.math.BigInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
-
-import static jdart.compiler.type.CoreTypeRepository.*;
 
 public class TypeTest {
   @Test
@@ -29,8 +25,8 @@ public class TypeTest {
 
   @Test
   public void nullableStillConst() {
-    Assert.assertEquals(TRUE.asNullable().asConstant(), true);
-    Assert.assertEquals(FALSE.asNullable().asConstant(), false);
+    Assert.assertEquals(TRUE_TYPE.asNullable().asConstant(), true);
+    Assert.assertEquals(FALSE_TYPE.asNullable().asConstant(), false);
     Assert.assertEquals(IntType.constant(BigInteger.TEN).asNullable().asConstant(), BigInteger.TEN);
     Assert.assertEquals(DoubleType.constant(42.0).asNullable().asConstant(), (Double)42.0);
     Assert.assertEquals(NULL_TYPE.asNullable().asConstant(), Type.NULL_VALUE);
@@ -38,8 +34,8 @@ public class TypeTest {
 
   @Test
   public void nonNullStillConst() {
-    Assert.assertEquals(TRUE.asNonNull().asConstant(), true);
-    Assert.assertEquals(FALSE.asNonNull().asConstant(), false);
+    Assert.assertEquals(TRUE_TYPE.asNonNull().asConstant(), true);
+    Assert.assertEquals(FALSE_TYPE.asNonNull().asConstant(), false);
     Assert.assertEquals(IntType.constant(BigInteger.TEN).asNonNull().asConstant(), BigInteger.TEN);
     Assert.assertEquals(DoubleType.constant(42.0).asNonNull().asConstant(), (Double)42.0);
   }
@@ -51,12 +47,12 @@ public class TypeTest {
 
   @Test
   public void constBoolean() {
-    Assert.assertTrue(TRUE.asConstant());
-    Assert.assertTrue(!TRUE.isNullable());
-    Assert.assertTrue(TRUE.asNullable().isNullable());
-    Assert.assertFalse(FALSE.asConstant());
-    Assert.assertTrue(!FALSE.isNullable());
-    Assert.assertTrue(FALSE.asNullable().isNullable());
+    Assert.assertTrue(TRUE_TYPE.asConstant());
+    Assert.assertTrue(!TRUE_TYPE.isNullable());
+    Assert.assertTrue(TRUE_TYPE.asNullable().isNullable());
+    Assert.assertFalse(FALSE_TYPE.asConstant());
+    Assert.assertTrue(!FALSE_TYPE.isNullable());
+    Assert.assertTrue(FALSE_TYPE.asNullable().isNullable());
   }
 
   @Test
@@ -150,19 +146,19 @@ public class TypeTest {
   
   @Test
   public void int32() {
-    Assert.assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), INT32.getMaxBound());
-    Assert.assertEquals(BigInteger.valueOf(Integer.MIN_VALUE), INT32.getMinBound());
+    Assert.assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), INT32_TYPE.getMaxBound());
+    Assert.assertEquals(BigInteger.valueOf(Integer.MIN_VALUE), INT32_TYPE.getMinBound());
   }
   
   @Test
   public void positive32() {
-    Assert.assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), POSITIVE_INT32.getMaxBound());
-    Assert.assertEquals(BigInteger.valueOf(0), POSITIVE_INT32.getMinBound());
+    Assert.assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), POSITIVE_INT32_TYPE.getMaxBound());
+    Assert.assertEquals(BigInteger.valueOf(0), POSITIVE_INT32_TYPE.getMinBound());
   }
   
   @Test
   public void negative32() {
-    Assert.assertEquals(BigInteger.valueOf(0), NEGATIVE_INT32.getMaxBound());
-    Assert.assertEquals(BigInteger.valueOf(Integer.MIN_VALUE), NEGATIVE_INT32.getMinBound());
+    Assert.assertEquals(BigInteger.valueOf(0), NEGATIVE_INT32_TYPE.getMaxBound());
+    Assert.assertEquals(BigInteger.valueOf(Integer.MIN_VALUE), NEGATIVE_INT32_TYPE.getMinBound());
   }
 }

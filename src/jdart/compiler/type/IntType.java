@@ -266,4 +266,28 @@ public class IntType extends PrimitiveType {
     
     return min && max;
   }
+
+  /**
+   * Returns the type includes in type1 and type2.
+   * @param type1
+   * @param type2
+   * @return The type includes in type1 and type2.
+   */
+  public static IntType intersect(IntType type1, IntType type2) {
+    BigInteger min;
+    BigInteger max;
+    if (type1.minBound.compareTo(type2.minBound) < 0) {
+      min = type2.minBound;
+    } else {
+      min = type1.minBound;
+    }
+    
+    if (type1.maxBound.compareTo(type2.maxBound) < 0) {
+      max = type1.maxBound;
+    } else {
+      max = type2.maxBound;
+    }
+    
+    return new IntType(type1.isNullable() && type2.isNullable(), min, max);
+  }
 }

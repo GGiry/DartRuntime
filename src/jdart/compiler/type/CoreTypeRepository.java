@@ -11,14 +11,14 @@ public class CoreTypeRepository extends TypeRepository {
 
   public final static BoolType BOOL_TYPE = new BoolType(true, null);
   public final static BoolType BOOL_NON_NULL_TYPE = new BoolType(false, null);
-  public final static BoolType TRUE = new BoolType(false, true);
-  public final static BoolType FALSE = new BoolType(false, false);
+  public final static BoolType TRUE_TYPE = new BoolType(false, true);
+  public final static BoolType FALSE_TYPE = new BoolType(false, false);
 
   public final static IntType INT_TYPE = new IntType(true, null, null);
   public final static IntType INT_NON_NULL_TYPE = new IntType(false, null, null);
-  public final static IntType INT32 = new IntType(true, BigInteger.valueOf(Integer.MIN_VALUE), BigInteger.valueOf(Integer.MAX_VALUE));
-  public final static IntType POSITIVE_INT32 = new IntType(true, BigInteger.ZERO, BigInteger.valueOf(Integer.MAX_VALUE));
-  public final static IntType NEGATIVE_INT32 = new IntType(true, BigInteger.valueOf(Integer.MIN_VALUE), BigInteger.ZERO);
+  public final static IntType INT32_TYPE = new IntType(true, BigInteger.valueOf(Integer.MIN_VALUE), BigInteger.valueOf(Integer.MAX_VALUE));
+  public final static IntType POSITIVE_INT32_TYPE = new IntType(true, BigInteger.ZERO, BigInteger.valueOf(Integer.MAX_VALUE));
+  public final static IntType NEGATIVE_INT32_TYPE = new IntType(true, BigInteger.valueOf(Integer.MIN_VALUE), BigInteger.ZERO);
   
  /* public final static IntType POSITIVE_INT32 = new IntType(true, BigInteger.ZERO, BigInteger.valueOf((((long) 1) << 32) - 1));
   public final static IntType NEGATIVE_INT32 = new IntType(true, BigInteger.valueOf(- ((((long) 1) << 32) - 1)), BigInteger.ZERO);*/

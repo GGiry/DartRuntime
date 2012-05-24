@@ -1,9 +1,6 @@
 package jdart.compiler.type;
 
-import static jdart.compiler.type.CoreTypeRepository.BOOL_NON_NULL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.BOOL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.FALSE;
-import static jdart.compiler.type.CoreTypeRepository.TRUE;
+import static jdart.compiler.type.CoreTypeRepository.*;
 
 import java.util.Objects;
 
@@ -18,7 +15,7 @@ public class BoolType extends PrimitiveType {
   }
 
   public static BoolType constant(boolean constant) {
-    return (constant) ? TRUE : FALSE;
+    return (constant) ? TRUE_TYPE : FALSE_TYPE;
   }
 
   @Override
