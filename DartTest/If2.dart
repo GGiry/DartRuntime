@@ -7,10 +7,6 @@ void main() {
 
   var a = aa.foo;
   
-  var b;
-  var c;
-  var d;
-  
   var a1;
   var a2;
   var a3;
@@ -21,15 +17,13 @@ void main() {
     a1 = a;
     if (a == 3) {
       // on ne rentre pas.
-      b = 10;
       a2 = a;
     }
-    c = 1.2;
   } else if (a != 15) {
     // a == int[-inf; 14)] U int[16; +inf]
     a3 = a; 
   } else {
+    // a = int[-inf; +inf]
     a4 = a;
-    d = true;
   }
 }
