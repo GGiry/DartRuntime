@@ -454,11 +454,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
       case NE:
       case NE_STRICT:
         // TODO known the difference between != and !==.
-        return type1.equals(type2) ? FALSE_TYPE : TRUE;
+        return type1.equals(type2) ? FALSE_TYPE : TRUE_TYPE;
       case EQ:
       case EQ_STRICT:
         // TODO known the difference between == and ===.
-        return type1.equals(type2) ? TRUE : FALSE_TYPE;
+        return type1.equals(type2) ? TRUE_TYPE : FALSE_TYPE;
       case LT:
       case LTE:
       case GT:
