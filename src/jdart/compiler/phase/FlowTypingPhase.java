@@ -315,26 +315,102 @@ public class FlowTypingPhase implements DartCompilationPhase {
       DartExpression arg2 = node.getArg2();
       Type type1 = accept(arg1, parameter);
       Type type2 = accept(arg2, parameter);
-      Token operator = node.getOperator();
+      Token operator;
+
+      if (!isTrue) {
+        switch (node.getOperator()) {
+        case EQ:
+          operator = Token.NE;
+          break;
+        case NE:
+          operator = Token.EQ;
+          break;
+        default:
+          throw new UnsupportedOperationException("Operator: " + node.getOperator() + " is not supported");
+        }
+      } else {
+        operator = node.getOperator();
+      }
+
 
       switch (operator) {
       case EQ:
-        if (isTrue) {
-          // Il faut regarder quel type est inclus dans l'autre pour savoir que type doit prendre la valeur de l'autre type.
-          if (type1 instanceof IntType && type2 instanceof IntType) {
-            IntType iType1 = (IntType) type1;
-            IntType iType2 = (IntType) type2;
-            if (iType1.isIncludeIn(iType2)) {
+        if (type1 instanceof IntType && type2 instanceof IntType) {
+          IntType iType1 = (IntType) type1;
+          IntType iType2 = (IntType) type2;
+          if (iType1.isIncludeIn(iType2)) {
+            // int[12;17] == int[10;20]
+            if (arg2.getElement() != null) {
               parameter.register((VariableElement) arg2.getElement(), iType1);
-            } else if (iType2.isIncludeIn(iType1)) {
-              parameter.register((VariableElement) arg1.getElement(), iType2);
-            } else {
-              // we have something like int[10;20] == int[15;25] -> int[15;20].
-              IntType type = IntType.intersect(iType1, iType2);
-              System.out.println(iType1 + ", " + iType2 + ", type");
             }
+            break;
+          } else if (iType2.isIncludeIn(iType1)) {
+            // int[10;20] == int[12;17]
+            if (arg1.getElement() != null) {
+              parameter.register((VariableElement) arg1.getElement(), iType2);
+            }
+            break;
+          } else {
+            // we have something like int[10;20] == int[15;25] -> int[15;20].
+            IntType type = IntType.intersect(iType1, iType2);
+            if (arg1.getElement() != null) {
+              parameter.register((VariableElement) arg1.getElement(), type);
+            }
+            if (arg2.getElement() != null) {
+              parameter.register((VariableElement) arg2.getElement(), type);
+            }
+            break;
           }
         }
+        throw new UnsupportedOperationException("Not supported for types: " + type1 + " " + operator + " " + type2);
+      case NE:
+        if (type1 instanceof IntType && type2 instanceof IntType) {
+          IntType iType1 = (IntType) type1;
+          IntType iType2 = (IntType) type2;
+
+          if (iType1.isIncludeIn(iType2)) {
+            Type type = iType2.exclude(iType1);
+            if (type == null) {
+              return;
+            }
+            if (arg1.getElement() != null) {
+              parameter.register((VariableElement) arg1.getElement(), type);
+            }
+            if (arg2.getElement() != null) {
+              parameter.register((VariableElement) arg2.getElement(), type);
+            }
+            break;
+          } else if (iType2.isIncludeIn(iType1)) {
+            Type type = iType1.exclude(iType2);
+            if (type == null) {
+              return;
+            }
+            if (arg1.getElement() != null) {
+              parameter.register((VariableElement) arg1.getElement(), type);
+            }
+            if (arg2.getElement() != null) {
+              parameter.register((VariableElement) arg2.getElement(), type);
+            }
+            break;
+          } else {
+            IntType union =  (IntType) Types.union(iType1, iType2);
+            IntType intersection = IntType.intersect(iType1, iType2);
+            Type type = union.exclude(intersection);
+            if (type == null) {
+              return;
+            }
+            if (arg1.getElement() != null) {
+              parameter.register((VariableElement) arg1.getElement(), type);
+            }
+            if (arg2.getElement() != null) {
+              parameter.register((VariableElement) arg2.getElement(), type);
+            }
+            break;
+          }
+        }
+        throw new UnsupportedOperationException("Not supported for types: " + type1 + " " + operator + " " + type2);
+      default:
+        throw new UnsupportedOperationException("Operator: " + operator + " is not supported");
       }
     }
 
@@ -342,22 +418,45 @@ public class FlowTypingPhase implements DartCompilationPhase {
     public Type visitIfStatement(DartIfStatement node, FlowEnv parameter) {
       // FIXME IfStatement doesn't work well.
       System.out.println("If:");
-      boolean isTrue = (boolean) accept(node.getCondition(), parameter).asConstant();
+      BoolType bType = (BoolType) accept(node.getCondition(), parameter);
 
-      if (isTrue) {
+      System.out.println(node.getCondition());
+      System.out.println("bType: " + bType);
+
+      if (bType == TRUE_TYPE) {
+        System.out.println("TRUE: Then:");
         FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-        magicChangeType(isTrue, (DartBinaryExpression) node.getCondition(), envThen);
-        System.out.println("Then:");
-        System.out.println(envThen);
+        magicChangeType(true, (DartBinaryExpression) node.getCondition(), envThen);
         accept(node.getThenStatement(), envThen);
+        System.out.println(envThen);
         parameter.merge(envThen);
-      } else if (node.getElseStatement() != null) {
-        FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-        magicChangeType(!isTrue, (DartBinaryExpression) node.getCondition(), envElse);
-        accept(node.getElseStatement(), envElse);
-        parameter.merge(envElse);
-      }
+      } else if (bType == FALSE_TYPE) {
+        if (node.getElseStatement() != null) {
+          System.out.println("FALSE: Else:");
+          FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
+          magicChangeType(false, (DartBinaryExpression) node.getCondition(), envElse);
+          accept(node.getElseStatement(), envElse);
 
+          System.out.println(envElse);
+          parameter.merge(envElse);
+        }
+      } else {
+        FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
+        System.out.println("Then:");
+        magicChangeType(true, (DartBinaryExpression) node.getCondition(), envThen);
+        accept(node.getThenStatement(), envThen);
+        System.out.println(envThen);
+        parameter.merge(envThen);
+
+        if (node.getElseStatement() != null) {
+          System.out.println("Else:");
+          FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
+          magicChangeType(false, (DartBinaryExpression) node.getCondition(), envElse);
+          accept(node.getElseStatement(), envElse);
+          System.out.println(envElse);
+          parameter.merge(envElse);
+        }
+      }
       return null;
     }
 
@@ -452,13 +551,40 @@ public class FlowTypingPhase implements DartCompilationPhase {
       switch (operator) {
       // TODO finish binary op
       case NE:
-      case NE_STRICT:
+      case NE_STRICT: {
         // TODO known the difference between != and !==.
-        return type1.equals(type2) ? FALSE_TYPE : TRUE_TYPE;
+        Object constant1 = type1.asConstant();
+        Object constant2 = type2.asConstant();
+        if (constant1 != null && constant2 != null) {
+          return constant1.equals(constant2) ? FALSE_TYPE : TRUE_TYPE;
+        }
+
+        if (type1 instanceof IntType && type2 instanceof IntType) {
+          IntType iType1 = (IntType) type1;
+          IntType iType2 = (IntType) type2;
+          return iType1.asCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : TRUE_TYPE;
+        }
+
+        throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
+      }
       case EQ:
-      case EQ_STRICT:
+      case EQ_STRICT: {
         // TODO known the difference between == and ===.
-        return type1.equals(type2) ? TRUE_TYPE : FALSE_TYPE;
+
+        Object constant1 = type1.asConstant();
+        Object constant2 = type2.asConstant();
+        if (constant1 != null && constant2 != null) {
+          return type1.equals(type2) ? TRUE_TYPE : FALSE_TYPE;
+        }
+
+        if (type1 instanceof IntType && type2 instanceof IntType) {
+          IntType iType1 = (IntType) type1;
+          IntType iType2 = (IntType) type2;
+          return iType1.asCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : FALSE_TYPE;
+        }
+
+        throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
+      }
       case LT:
       case LTE:
       case GT:
@@ -472,8 +598,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
         operandIsNonNull(arg1, flowEnv);
         if (type1 instanceof IntType && type2 instanceof IntType) {
           operandIsNonNull(arg2, flowEnv);
-          IntType itype1 = (IntType) type1;
-          IntType itype2 = (IntType) type2;
+          IntType iType1 = (IntType) type1;
+          IntType iType2 = (IntType) type2;
+          IntType itype1 = iType1;
+          IntType itype2 = iType2;
           switch (operator) {
           case ADD:
             return itype1.add(itype2);
@@ -485,11 +613,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
           operandIsNonNull(arg2, flowEnv);
           DoubleType dtype1, dtype2;
           if (type1 instanceof IntType) {
-            dtype1 = ((IntType) type1).asDouble();
+            IntType iType1 = (IntType) type1;
+            dtype1 = iType1.asDouble();
             dtype2 = (DoubleType) type2;
           } else if (type2 instanceof IntType) {
+            IntType iType2 = (IntType) type2;
             dtype1 = (DoubleType) type1;
-            dtype2 = ((IntType) type2).asDouble();
+            dtype2 = iType2.asDouble();
           } else {
             dtype1 = (DoubleType) type1;
             dtype2 = (DoubleType) type2;
@@ -788,13 +918,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
       //FIXME Geoffrey, you have to take a look to the parent to know
       // if it represent a[12] or a[12] = ...
       // or perhaps this check should be done in visitBinary for ASSIGN
-      
+
       Type typeOfArray = accept(node.getTarget(), parameter);
       Type typeOfIndex = accept(node.getKey(), parameter);
-      
+
       operandIsNonNull(node.getTarget(), parameter);
       // node.getKey -> int32+
-      
+
       if (!(typeOfIndex instanceof IntType)) {
         return DYNAMIC_NON_NULL_TYPE;
       }
@@ -802,9 +932,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
         return DYNAMIC_NON_NULL_TYPE;
       }
 
-      
-      
-      
+
+
+
       if (!(typeOfArray instanceof ArrayType)) {
         if (!(typeOfArray instanceof InterfaceType)) {
           return DYNAMIC_NON_NULL_TYPE;  
@@ -821,20 +951,20 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       IntType index = (IntType) typeOfIndex;
       ArrayType array = (ArrayType) typeOfArray;
-      
+
       // is it a constant array ?
       List<Type> constant = array.asConstant();
       if (constant == null) {
         return array.getComponentType();
       }
-      
+
       int max = index.getMaxBound().intValue();
       BigInteger arrayMaxBound = array.getLength().getMaxBound();
       if (max >= arrayMaxBound.intValue()) {
         // we may access to a index which is bigger than length of the array
         return array.getComponentType();
       }
-      
+
       int min = index.getMinBound().intValue();
       Type type = constant.get(min);  
       for (int i = min + 1; i <= max; i++) {

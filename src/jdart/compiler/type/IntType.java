@@ -155,13 +155,13 @@ public class IntType extends PrimitiveType {
     }
     return new IntType(nullable, min, max);
   }
-  
+
   public DoubleType asDouble() {
     if (minBound != null && minBound == maxBound) {
       DoubleType type = DoubleType.constant(minBound.doubleValue());
-      return (isNullable())? type.asNullable(): type;
+      return (isNullable()) ? type.asNullable() : type;
     }
-    return (isNullable())? DOUBLE_TYPE: DOUBLE_NON_NULL_TYPE;
+    return (isNullable()) ? DOUBLE_TYPE : DOUBLE_NON_NULL_TYPE;
   }
 
   //
@@ -207,51 +207,46 @@ public class IntType extends PrimitiveType {
   public/* maybenull */IntType asTypeGreaterThan(BigInteger value) {
     return asTypeGreaterOrEqualsThan(value.subtract(BigInteger.ONE));
   }
-  
+
   public IntType add(IntType type) {
-    BigInteger minBound = (this.minBound == null | type.minBound == null)? null:
-      this.minBound.add(type.minBound);
-    BigInteger maxBound = (this.maxBound == null | type.maxBound == null)? null:
-      this.maxBound.add(type.maxBound);
+    BigInteger minBound = (this.minBound == null | type.minBound == null) ? null : this.minBound.add(type.minBound);
+    BigInteger maxBound = (this.maxBound == null | type.maxBound == null) ? null : this.maxBound.add(type.maxBound);
     if (minBound == null && maxBound == null) {
       return INT_NON_NULL_TYPE;
     }
     return new IntType(false, minBound, maxBound);
   }
-  
+
   public IntType sub(IntType type) {
-    BigInteger minBound = (this.minBound == null | type.minBound == null)? null:
-      this.minBound.subtract(type.minBound);
-    BigInteger maxBound = (this.maxBound == null | type.maxBound == null)? null:
-      this.maxBound.subtract(type.maxBound);
+    BigInteger minBound = (this.minBound == null | type.minBound == null) ? null : this.minBound.subtract(type.minBound);
+    BigInteger maxBound = (this.maxBound == null | type.maxBound == null) ? null : this.maxBound.subtract(type.maxBound);
     if (minBound == null && maxBound == null) {
       return INT_NON_NULL_TYPE;
     }
     return new IntType(false, minBound, maxBound);
   }
-  
+
   /*
-  public IntType mul(IntType type) {
-    BigInteger minBound = (this.minBound == null | type.minBound == null)? null:
-      this.minBound.multiply(type.minBound);
-    BigInteger maxBound = (this.maxBound == null | type.maxBound == null)? null:
-      this.maxBound.multiply(type.maxBound);
-    if (minBound == null && maxBound == null) {
-      return INT_NON_NULL_TYPE;
-    }
-    return new IntType(false, minBound, maxBound);
-  }*/
-  
+   * public IntType mul(IntType type) { BigInteger minBound = (this.minBound ==
+   * null | type.minBound == null)? null: this.minBound.multiply(type.minBound);
+   * BigInteger maxBound = (this.maxBound == null | type.maxBound == null)?
+   * null: this.maxBound.multiply(type.maxBound); if (minBound == null &&
+   * maxBound == null) { return INT_NON_NULL_TYPE; } return new IntType(false,
+   * minBound, maxBound); }
+   */
+
   /**
    * Returns <code>true</code> if this type is include in the specified type.
-   * @param intType Reference type.
+   * 
+   * @param intType
+   *          Reference type.
    * @return <code>true</code> if this type is include in the specified type.
    */
   public boolean isIncludeIn(IntType intType) {
     if (minBound == null && intType.minBound != null) {
       return false;
     }
-    
+
     if (maxBound == null && intType.maxBound != null) {
       return false;
     }
@@ -263,12 +258,13 @@ public class IntType extends PrimitiveType {
     if (intType.maxBound == null || intType.maxBound.compareTo(maxBound) >= 0) {
       max = true;
     }
-    
+
     return min && max;
   }
 
   /**
    * Returns the type includes in type1 and type2.
+   * 
    * @param type1
    * @param type2
    * @return The type includes in type1 and type2.
@@ -281,13 +277,288 @@ public class IntType extends PrimitiveType {
     } else {
       min = type1.minBound;
     }
-    
+
     if (type1.maxBound.compareTo(type2.maxBound) < 0) {
       max = type1.maxBound;
     } else {
       max = type2.maxBound;
     }
-    
+
     return new IntType(type1.isNullable() && type2.isNullable(), min, max);
+  }
+
+  /**
+   * Returns <code>true</code> if this type as common values with the specified
+   * type.
+   * 
+   * @param other
+   *          Type to check.
+   * @return <code>true</code> if this type as common values with the specified
+   *         type.
+   */
+  public boolean asCommonValuesWith(IntType other) {
+    if (minBound == null) {
+      // min == -inf
+      if (maxBound == null || other.minBound == null || maxBound.compareTo(other.minBound) < 0) {
+        // max == +inf || other.min == inf || max < other.min
+        return true;
+      }
+      return false;
+    } else {
+      // min != -inf
+      if (other.maxBound == null) {
+        // oher.max == +inf
+        if (maxBound != null) {
+          // max != +inf
+          if (other.minBound == null || maxBound.compareTo(other.minBound) > 0) {
+            // other.min == inf || max > other.min
+            return true;
+          }
+          return false;
+        }
+        // max == +inf
+        return true;
+      } else {
+        // min != -inf
+        // other.max != +inf
+        if (minBound.compareTo(other.maxBound) > 0) {
+          return false;
+        }
+        return true;
+      }
+    }
+  }
+
+  /**
+   * Remove type range to this range.
+   * 
+   * For example if this range is [10; 20] ad type range is [12; 17], the return
+   * range will be union([10; 12], [17; 20])
+   * 
+   * @param type
+   *          Element to remove
+   * @return A new type with the right range. Or null if the range is null.
+   */
+  public Type exclude(IntType type) {
+    BigInteger min = null;
+    BigInteger max = null;
+    boolean nullable = isNullable() || type.isNullable();
+
+    if (minBound == null) {
+      if (maxBound == null) {
+        if (type.minBound == null) {
+          if (type.maxBound == null) {
+            // [-inf;+inf] and [-inf;+inf]
+            return null;
+          }
+          // [-inf;+inf] and [-inf;i]
+          min = type.maxBound.add(BigInteger.ONE);
+          return new IntType(nullable, null, null);
+        }
+        // [-inf;+inf] and [i;?]
+        if (type.maxBound != null) {
+          // [-inf;+inf] and [i;j]
+          max = type.minBound.subtract(BigInteger.ONE);
+          IntType tmp1 = new IntType(nullable, null, max);
+
+          min = type.maxBound.add(BigInteger.ONE);
+          IntType tmp2 = new IntType(nullable, min, null);
+          return Types.union(tmp1, tmp2);
+        }
+        // [-inf;+inf] and [i;+inf]
+        max = type.minBound.subtract(BigInteger.ONE);
+        return new IntType(nullable, null, max);
+      }
+
+      return minBoundIsNull(type, nullable);
+    }
+    return minBoundIsNotNull(type, nullable);
+  }
+
+  private Type minBoundIsNull(IntType type, boolean nullable) {
+    BigInteger min;
+    BigInteger max;
+    // [-inf;i] and [?;?]
+    if (type.minBound == null && type.maxBound == null) {
+      // [-inf;i] and [-inf;+inf]
+      return null;
+    }
+
+    if (type.minBound != null) {
+      if (type.minBound.compareTo(maxBound) > 0) {
+        // [-inf;i] and [j;?] where j > i
+        return this;
+      }
+
+      if (type.minBound.compareTo(maxBound) <= 0) {
+        // [-inf;i] and [j;?] where j <= i
+        if (type.maxBound != null && type.maxBound.compareTo(maxBound) > 0) {
+          // [-inf;i] and [j;k] where j <= i and k > i
+          max = type.minBound.subtract(BigInteger.ONE);
+          return new IntType(nullable, null, max);
+        }
+        // [-inf;i] and [j;k] where j <= i and k <= i
+        max = type.minBound.subtract(BigInteger.ONE);
+        IntType tmp1 = new IntType(nullable, null, max);
+
+        min = type.maxBound.add(BigInteger.ONE);
+        max = maxBound;
+        IntType tmp2 = new IntType(nullable, min, max);
+        return Types.union(tmp1, tmp2);
+      }
+
+      if (type.maxBound == null) {
+        // [-inf;i] and [j;+inf]
+        max = type.minBound.subtract(BigInteger.ONE);
+        return new IntType(nullable, null, max);
+      }
+    }
+
+    // [-inf;i] and [-inf;j]
+    min = type.maxBound.add(BigInteger.ONE);
+    max = maxBound;
+    if (min.compareTo(max) == 0) {
+      // [-inf;i] and [-inf;j] where j > i
+      return null;
+    }
+    return new IntType(nullable, min, max);
+  }
+
+  private Type minBoundIsNotNull(IntType type, boolean nullable) {
+    BigInteger min;
+    BigInteger max;
+    // [i;?] [?;?]
+    if (maxBound == null) {
+      return minBoundNotNullMaxBoundNull(type, nullable);
+    }
+    // [i;j] [?;?]
+
+    if (type.minBound == null && type.maxBound == null) {
+      // [i;j] [-inf;+inf]
+      return null;
+    }
+
+    if (type.minBound != null && type.maxBound != null) {
+      // [i;j] [k;l]
+      if (type.maxBound.compareTo(minBound) < 0) {
+        // [i;j] [k;l] && l < i
+        return this;
+      }
+      if (type.minBound.compareTo(maxBound) > 0) {
+        // [i;j] [k;l] && j < k
+        return this;
+      }
+      if (type.maxBound.compareTo(minBound) > 0) {
+        // [i;j] [k;l] && l > i
+        if (type.minBound.compareTo(minBound) < 0) {
+          // [i;j] [k;l] && l > i && k < i
+          min = type.maxBound.add(BigInteger.ONE);
+          return new IntType(nullable, min, maxBound);
+        }
+      }
+      if (type.minBound.compareTo(maxBound) < 0) {
+        // [i;j] [k;l] && k < j
+        if (type.maxBound.compareTo(maxBound) < 0) {
+          // [i;j] [k;l] && k < j && l < j
+          max = type.minBound.subtract(BigInteger.ONE);
+          IntType tmp1 = new IntType(nullable, minBound, max);
+
+          min = type.maxBound.add(BigInteger.ONE);
+          IntType tmp2 = new IntType(nullable, min, maxBound);
+
+          return Types.union(tmp1, tmp2);
+        }
+        // [i;j] [k;l] && k < j && l >= j
+        max = type.maxBound.subtract(BigInteger.ONE);
+        return new IntType(nullable, minBound, max);
+      }
+      // [i;j] [k;l] && k >= j
+      return this;
+    }
+
+    if (type.minBound == null) {
+      // [i;j] [-inf;l]
+      if (type.maxBound.compareTo(minBound) < 0) {
+        // [i;j] [-inf;l] && l < i
+        return this;
+      }
+      if (type.maxBound.compareTo(maxBound) < 0) {
+        // [i;j] [-inf;l] & l < j
+        min = type.maxBound.add(BigInteger.ONE);
+        return new IntType(nullable, min, maxBound);
+      }
+      // [i;j] [-inf;l] && l >= j
+      return null;
+    }
+
+    if (type.maxBound == null) {
+      // [i;j] [k;+inf]
+      if (type.minBound.compareTo(maxBound) > 0) {
+        // [i;j] [k;+inf] && k > j
+        return this;
+      }
+      if (type.minBound.compareTo(minBound) > 0) {
+        // [i;j] [k;+inf] && k > i
+        max = type.minBound.subtract(BigInteger.ONE);
+        return new IntType(nullable, minBound, max);
+      }
+      // [i;j] [k;+inf] && k <= i
+      return null;
+    }
+    return type;
+  }
+
+  private Type minBoundNotNullMaxBoundNull(IntType type, boolean nullable) {
+    BigInteger min;
+    BigInteger max;
+    // [i;?+inf] [?;?]
+    if (type.minBound == null && type.maxBound == null) {
+      // [i;?+inf] [-inf;+inf]
+      return null;
+    }
+
+    if (type.minBound != null) {
+      // [i;+inf] [j;?]
+      if (type.minBound.compareTo(minBound) > 0) {
+        // [i;?+inf] [j;?] && i < j
+        if (type.maxBound != null) {
+          // [i;?+inf] [j;k]
+          max = type.minBound.subtract(BigInteger.ONE);
+          IntType tmp1 = new IntType(nullable, minBound, max);
+
+          min = type.maxBound.add(BigInteger.ONE);
+          IntType tmp2 = new IntType(nullable, min, null);
+          return Types.union(tmp1, tmp2);
+        }
+        // [i;?+inf] [j;+inf]
+        min = minBound;
+        max = type.minBound.subtract(BigInteger.ONE);
+        return new IntType(nullable, min, max);
+      } else {
+        // [i;?+inf] [j;?] && i >= j
+        if (type.maxBound == null) {
+          // [i;?+inf] [j;+inf] && i >= j
+          return null;
+        }
+        // [i;?+inf] [j;k] && i >= j
+        if (type.maxBound.compareTo(minBound) < 0) {
+          // [i;?+inf] [j;k] && i >= j && i > k
+          return this;
+        }
+        // [i;?+inf] [j;k] && i >= j && i <= k
+        min = type.maxBound.add(BigInteger.ONE);
+        return new IntType(nullable, min, null);
+      }
+    } else {
+      // [i;?+inf] [-inf;j]
+      if (type.maxBound.compareTo(minBound) > 0) {
+        // [i;?+inf] [-inf;j] && j > i
+        min = type.maxBound.add(BigInteger.ONE);
+        return new IntType(nullable, min, null);
+      } else {
+        // [i;?+inf] [-inf;j] && j <= i
+        return this;
+      }
+    }
   }
 }
