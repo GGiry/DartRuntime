@@ -374,9 +374,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
             if (type == null) {
               return;
             }
-            if (arg1.getElement() != null) {
-              parameter.register((VariableElement) arg1.getElement(), type);
-            }
             if (arg2.getElement() != null) {
               parameter.register((VariableElement) arg2.getElement(), type);
             }
@@ -389,12 +386,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
             if (arg1.getElement() != null) {
               parameter.register((VariableElement) arg1.getElement(), type);
             }
-            if (arg2.getElement() != null) {
-              parameter.register((VariableElement) arg2.getElement(), type);
-            }
             break;
           } else {
-            IntType union =  (IntType) Types.union(iType1, iType2);
+            // The two ranges have a common value, the union of two IntType with a common value always return a IntType.
+            IntType union = (IntType) Types.union(iType1, iType2);
             IntType intersection = IntType.intersect(iType1, iType2);
             Type type = union.exclude(intersection);
             if (type == null) {
@@ -409,9 +404,38 @@ public class FlowTypingPhase implements DartCompilationPhase {
             break;
           }
         }
+
         throw new UnsupportedOperationException("Not supported for types: " + type1 + " " + operator + " " + type2);
       default:
         throw new UnsupportedOperationException("Operator: " + operator + " is not supported");
+      }
+    }
+    
+    static class ConditionVisitor extends ASTVisitor2<List<Type>, FlowEnv> {
+      private final FTVisitor visitor;
+      
+      public ConditionVisitor(FTVisitor visitor) {
+        this.visitor = visitor;
+      }
+
+      @Override
+      public List<Type> visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
+        // TODO WIP
+        DartExpression arg1 = node.getArg1();
+        DartExpression arg2 = node.getArg2();
+        Type type1 = visitor.accept(arg1, parameter);
+        Type type2 = visitor.accept(arg2, parameter);
+        Token operator = node.getOperator();
+        switch (operator) {
+        case EQ:
+          Type typeTrue = type1.commonValuesWith(type2);
+          Type typeFalse = typeTrue.invert();
+          break;
+
+        default:
+          break;
+        }
+        return super.visitBinaryExpression(node, parameter);
       }
     }
 
@@ -474,7 +498,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
       } while (!env.isStable());
 
       parameter.update(env);
-
       return null;
     }
 
@@ -567,11 +590,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
         }
         
         if (type1 instanceof UnionType) {
-          return ((UnionType) type1).hasCommonValuesWith(type2);
+          return ((UnionType) type1).commonValuesWith(type2);
         }
         
         if (type2 instanceof UnionType) {
-          return ((UnionType) type2).hasCommonValuesWith(type1);
+          return ((UnionType) type2).commonValuesWith(type1);
         }
 
         throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);

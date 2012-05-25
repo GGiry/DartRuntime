@@ -67,15 +67,15 @@ public class UnionType extends NullableType {
   NullableType merge(NullableType type) {
     if (type instanceof UnionType) {
       UnionType unionType = (UnionType) type;
-      
+
       if (this.types.size() >= unionType.types.size())
         return reduce(this, unionType.isNullable(), unionType.types);
       return reduce(unionType, isNullable(), types);
     }
-    
+
     return reduce(this, type.isNullable(), Collections.singleton(type.asNonNull()));
   }
-  
+
   /**
    * Create a new union from a union and a collection of types.
    * 
@@ -91,30 +91,30 @@ public class UnionType extends NullableType {
     for(NullableType type: collection) {
       assert !type.isNullable();
       assert !(type instanceof UnionType);
-      
+
       if (unionSet.contains(type)) {
         continue;
       }
       candidates.add(type);
     }
-    
+
     if (candidates.isEmpty()) {
       return (nullable)? unionType.asNullable(): unionType;
     }
-    
+
     // compute nullability
     nullable |= unionType.isNullable();
-    
+
     HashSet<NullableType> newUnionSet = new HashSet<>(unionSet);
     Iterator<NullableType> candidateIt = candidates.iterator();
     NullableType candidate = candidateIt.next();
-    
+
     loop: for(;;) {
       Iterator<NullableType> it = newUnionSet.iterator();
       while(it.hasNext()) {
         NullableType type = it.next();
         NullableType merge = candidate.merge(type);
-        
+
         // if merge is not a UnionType,
         // then types were successfully merged
         if (!(merge instanceof UnionType)) {
@@ -123,14 +123,14 @@ public class UnionType extends NullableType {
           continue loop;
         }
       }
-     
+
       newUnionSet.add(candidate);
-      
+
       if (candidateIt.hasNext()) {
         candidate = candidateIt.next();
         continue loop;
       }
-      
+
       if (newUnionSet.size() == 1) {
         NullableType singleton = newUnionSet.iterator().next();
         return (nullable)? singleton.asNullable(): singleton;
@@ -148,7 +148,7 @@ public class UnionType extends NullableType {
   public Object asConstant() {
     return null;
   }
-  
+
   @Override
   public Type map(TypeMapper typeMapper) {
     Type resultType = null;
@@ -170,12 +170,23 @@ public class UnionType extends NullableType {
   }
 
   @Override
-  public BoolType hasCommonValuesWith(Type type) {
-    for (NullableType typ : types) {
-      if (typ.hasCommonValuesWith(type) == TRUE_TYPE) {
-        return TRUE_TYPE;
+  public Type commonValuesWith(final Type other) {
+    return map(new TypeMapper() {
+
+      @Override
+      public Type transform(Type type) {
+        return type.commonValuesWith(other);
       }
-    }
-    return FALSE_TYPE;
+    });
+  }
+
+  @Override
+  public Type invert() {
+    return map(new TypeMapper() {
+      @Override
+      public Type transform(Type type) {
+        return type.invert();
+      }
+    });
   }
 }

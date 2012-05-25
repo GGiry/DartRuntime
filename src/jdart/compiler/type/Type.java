@@ -61,4 +61,15 @@ public interface Type {
    * @see UnionType#map(TypeMapper)
    */
   Type map(TypeMapper typeMapper);
+
+  /**
+   * Returns common values between this and the other type.
+   * 
+   * @param type
+   *          Type to use to check common values.
+   * @return Type containing common values between this and the other type.
+   */
+  Type commonValuesWith(Type type);
+
+  Type invert();
 }

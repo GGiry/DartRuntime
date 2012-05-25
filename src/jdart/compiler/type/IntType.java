@@ -261,58 +261,106 @@ public class IntType extends PrimitiveType {
 
     return min && max;
   }
-  
+
   @Override
-  public BoolType hasCommonValuesWith(Type type) {
+  public Type commonValuesWith(Type type) {
     if (type instanceof IntType) {
-      if (((IntType) type).hasCommonValuesWith(this)) {
-        return TRUE_TYPE;
-      }
+      return intersect(this, (IntType) type);
     }
-    
+
     if (type instanceof DoubleType) {
       DoubleType dType = (DoubleType) type;
       double constant = dType.asConstant().doubleValue();
-      
-      if  (Math.floor(constant) == constant) {
+
+      if  ( ((int)constant) == constant) {
         BigInteger valueOfCst = BigInteger.valueOf((long) constant);
-        return isIncludeIn(new IntType(false, valueOfCst, valueOfCst)) ? TRUE_TYPE : FALSE_TYPE;
+        return intersect(new IntType(isNullable() && type.isNullable(), valueOfCst, valueOfCst), this);
       }
-      return FALSE_TYPE;
+      return null;
     }
-    
+
     if (type instanceof UnionType) {
-      return ((UnionType) type).hasCommonValuesWith(this);
+      return type.commonValuesWith(this);
     }
-    
-    // should we handle function type ?
-    
-    return FALSE_TYPE;
+
+    return null;
   }
 
   /**
-   * Returns the type includes in type1 and type2.
+   * Returns the intersection of type1 and type2.
    * 
    * @param type1
    * @param type2
-   * @return The type includes in type1 and type2.
+   * @return The intersection of type1 and type2. Or null if two ranges doens't intersect.
    */
   public static IntType intersect(IntType type1, IntType type2) {
+    int diff = diff(type1, type2);
+    
+    if (diff == -2 || diff == 2) {
+      return null;
+    }
+    
+    if (diff == -3) {
+      return type2;
+    }
+    
+    if (diff == 3) {
+      return type1;
+    }
+    
+    if (diff == 0) {
+      return type1;
+    }
+    
     BigInteger min;
     BigInteger max;
-    if (type1.minBound.compareTo(type2.minBound) < 0) {
+    if (diff == -1) {
       min = type2.minBound;
-    } else {
-      min = type1.minBound;
-    }
-
-    if (type1.maxBound.compareTo(type2.maxBound) < 0) {
       max = type1.maxBound;
-    } else {
+    } else { // diff == 1
+      min = type1.minBound;
       max = type2.maxBound;
     }
 
     return new IntType(type1.isNullable() && type2.isNullable(), min, max);
+  }
+
+
+  private static int diff(IntType type1, IntType type2) {
+    int tmp = diffHelp(type1, type2);
+    if (tmp != 0) {
+      return -tmp;
+    }
+    
+    tmp = diffHelp(type2, type1);
+    if (tmp != 0) {
+      return tmp;
+    }
+
+    if (type1.minBound == null && type2.minBound == null && type1.maxBound == null && type2.maxBound == null) {
+      return 0;
+    }
+    throw new IllegalStateException();
+  }
+
+  private static int diffHelp(IntType type1, IntType type2) {
+    if (type2.minBound != null) {
+      if (type2.maxBound != null) {
+        if (type1.minBound == null || type1.minBound.compareTo(type2.minBound) < 0) {
+          if (type1.maxBound == null || type1.maxBound.compareTo(type2.maxBound) < 0) {
+            return 3;
+          }
+        }
+      }
+      if (type1.maxBound != null) {
+        if (type1.maxBound.compareTo(type2.minBound) < 0) {
+          return 2;
+        } else {
+          return 1;
+        }
+      }
+    }
+    return 0;
   }
 
   /**
@@ -588,5 +636,25 @@ public class IntType extends PrimitiveType {
         return this;
       }
     }
+  }
+  
+  @Override
+  public Type invert() {
+    if (minBound == null) {
+      if (maxBound == null) {
+        return null;
+      }
+    }
+    
+    Type result;
+    if (minBound != null) {
+      result = new IntType(isNullable(), null, minBound.subtract(BigInteger.ONE));
+      if (maxBound != null) {
+        result = Types.union(result, new IntType(isNullable(), maxBound.add(BigInteger.ONE), null));
+      }
+      return result;
+    }
+    
+    return new IntType(isNullable(), maxBound.add(BigInteger.ONE), null);
   }
 }

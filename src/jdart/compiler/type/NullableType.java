@@ -60,14 +60,4 @@ abstract class NullableType implements Type {
     Type resultType = typeMapper.transform(this);
     return (resultType == null) ? DYNAMIC_NON_NULL_TYPE : resultType;
   }
-
-  /**
-   * Check if this Type has common values with type.
-   * 
-   * @param type
-   *          Type to use to check common values.
-   * @return TRUE_TYPE if the test this == type could return true. FALSE_TYPE
-   *         otherwise.
-   */
-  public abstract BoolType hasCommonValuesWith(Type type);
 }

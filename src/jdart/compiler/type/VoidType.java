@@ -48,4 +48,14 @@ public class VoidType implements Type {
     Type resultType = typeMapper.transform(this);
     return (resultType == null)? DYNAMIC_NON_NULL_TYPE: resultType;
   }
+  
+  @Override
+  public Type commonValuesWith(Type type) {
+    throw new IllegalStateException("void type");
+  }
+  
+  @Override
+  public Type invert() {
+    throw new IllegalStateException("void type");
+  }
 }

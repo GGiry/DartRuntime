@@ -96,35 +96,40 @@ public class DoubleType extends PrimitiveType {
     }
     return super.merge(type);
   }
-  
+
   public DoubleType add(DoubleType type) {
     if (constant != null && type.constant != null) {
       return constant(constant + type.constant);
     }
     return DOUBLE_NON_NULL_TYPE;
   }
-  
+
   public DoubleType sub(DoubleType type) {
     if (constant != null && type.constant != null) {
       return constant(constant - type.constant);
     }
     return DOUBLE_NON_NULL_TYPE;
   }
-  
+
   @Override
-  public BoolType hasCommonValuesWith(Type type) {
+  public Type commonValuesWith(Type type) {
     if (type instanceof DoubleType) {
-      return (constant.equals(((DoubleType) type).constant)) ? TRUE_TYPE : FALSE_TYPE;
+      return (constant.equals(((DoubleType) type).constant)) ? this : null;
     }
-    
+
     if (type instanceof IntType) {
-      return ((IntType) type).hasCommonValuesWith(this);
+      return ((IntType) type).commonValuesWith(this);
     }
-    
+
     if (type instanceof UnionType) {
-      return ((UnionType) type).hasCommonValuesWith(this);
+      return ((UnionType) type).commonValuesWith(this);
     }
-    
-    return FALSE_TYPE;
+
+    return null;
+  }
+
+  @Override
+  public Type invert() {
+    return DOUBLE_TYPE;
   }
 }

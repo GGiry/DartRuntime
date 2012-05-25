@@ -38,9 +38,23 @@ public class DynamicType extends NullableType {
   public Object asConstant() {
     return null;
   }
+
+  @Override
+  public Type commonValuesWith(Type type) {
+    if (type instanceof DynamicType) {
+      return equals(type) ? this : null;
+    }
+
+    if (type instanceof UnionType) {
+      return ((UnionType) type).commonValuesWith(this);
+    }
+
+    return null;
+  }
   
   @Override
-  public BoolType hasCommonValuesWith(Type type) {
-    return FALSE_TYPE;
+  public Type invert() {
+    // TODO 
+    return null;
   }
 }

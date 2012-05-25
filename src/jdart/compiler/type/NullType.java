@@ -1,6 +1,6 @@
 package jdart.compiler.type;
 
-import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
+import static jdart.compiler.type.CoreTypeRepository.*;
 
 public class NullType implements Type {
   NullType() {
@@ -46,5 +46,18 @@ public class NullType implements Type {
   public Type map(TypeMapper typeMapper) {
     Type resultType = typeMapper.transform(this);
     return (resultType == null)? DYNAMIC_NON_NULL_TYPE: resultType;
+  }
+  
+  @Override
+  public Type commonValuesWith(Type type) {
+    if (type.isNullable()) {
+      return NULL_TYPE;
+    }
+    return null;
+  }
+
+  @Override
+  public Type invert() {
+    return null;
   }
 }

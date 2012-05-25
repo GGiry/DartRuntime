@@ -1,7 +1,5 @@
 package jdart.compiler.type;
 
-import static jdart.compiler.type.CoreTypeRepository.*;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
@@ -118,18 +116,20 @@ public class ArrayType extends NullableType {
   }
 
   @Override
-  public BoolType hasCommonValuesWith(Type type) {
+  public Type commonValuesWith(Type type) {
     if (type instanceof ArrayType) {
-      ArrayType aType = (ArrayType) type;
-      if (length == aType.length && componentType.equals(aType.componentType) && Objects.equals(constantItemTypes, aType.constantItemTypes)) {
-        return TRUE_TYPE;
-      }
+      return equals(type) ? this : null;
     }
-    
+
     if (type instanceof UnionType) {
-      return ((UnionType) type).hasCommonValuesWith(this);
+      return ((UnionType) type).commonValuesWith(this);
     }
-    
-    return FALSE_TYPE;
+
+    return null;
+  }
+  
+  @Override
+  public Type invert() {
+    return null;
   }
 }

@@ -111,15 +111,49 @@ public class BoolType extends PrimitiveType {
   }
   
   @Override
-  public BoolType hasCommonValuesWith(Type type) {
+  public Type commonValuesWith(Type type) {
     if (type instanceof BoolType) {
-      return constant.equals(((BoolType) type).constant) ? TRUE_TYPE : FALSE_TYPE;
+      if (constant.equals(((BoolType) type).constant)) {
+        return this;
+      }
+      
+      if (this == TRUE_TYPE) {
+        if (type == FALSE_TYPE) {
+          return null;
+        }
+        return this;
+      }
+      
+      if (this == FALSE_TYPE) {
+        if (type == TRUE_TYPE) {
+          return null;
+        }
+        return this;
+      }
+      
+      if (type == TRUE_TYPE || type == FALSE_TYPE) {
+        return type;
+      }
+      
+      return BOOL_NON_NULL_TYPE;
     }
     
     if (type instanceof UnionType) {
-      return ((UnionType) type).hasCommonValuesWith(this);
+      return ((UnionType) type).commonValuesWith(this);
     }
     
-    return FALSE_TYPE;
+    return null;
+  }
+  
+  @Override
+  public Type invert() {
+    if (this == TRUE_TYPE) {
+      return FALSE_TYPE;
+    }
+    if (this == FALSE_TYPE) {
+      return TRUE_TYPE;
+    }
+    //return this;
+    return null;
   }
 }

@@ -1,7 +1,5 @@
 package jdart.compiler.type;
 
-import static jdart.compiler.type.CoreTypeRepository.*;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -124,14 +122,20 @@ public class FunctionType extends OwnerType {
   }
 
   @Override
-  public BoolType hasCommonValuesWith(Type type) {
+  public Type commonValuesWith(Type type) {
     if (type instanceof FunctionType) {
-      return equals(type) ? TRUE_TYPE : FALSE_TYPE;
+      return equals(type) ? this : null;
     }
 
     if (type instanceof UnionType) {
-      return ((UnionType) type).hasCommonValuesWith(this);
+      return ((UnionType) type).commonValuesWith(this);
     }
-    return FALSE_TYPE;
+    return null;
+  }
+  
+  @Override
+  public Type invert() {
+    // TODO 
+    return null;
   }
 }
