@@ -1,7 +1,6 @@
 package jdart.compiler.type;
 
-import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_TYPE;
+import static jdart.compiler.type.CoreTypeRepository.*;
 
 public class DynamicType extends NullableType {
 
@@ -38,5 +37,10 @@ public class DynamicType extends NullableType {
   @Override
   public Object asConstant() {
     return null;
+  }
+  
+  @Override
+  public BoolType hasCommonValuesWith(Type type) {
+    return FALSE_TYPE;
   }
 }

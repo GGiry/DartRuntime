@@ -1,12 +1,12 @@
 package jdart.compiler.type;
 
+import static jdart.compiler.type.CoreTypeRepository.*;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
-
-import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
 
 public class UnionType extends NullableType {
   // each component type should be non nullable and not a union type
@@ -167,5 +167,15 @@ public class UnionType extends NullableType {
       return resultType;
     }
     return DYNAMIC_NON_NULL_TYPE;
+  }
+
+  @Override
+  public BoolType hasCommonValuesWith(Type type) {
+    for (NullableType typ : types) {
+      if (typ.hasCommonValuesWith(type) == TRUE_TYPE) {
+        return TRUE_TYPE;
+      }
+    }
+    return FALSE_TYPE;
   }
 }

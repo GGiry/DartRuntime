@@ -109,4 +109,17 @@ public class BoolType extends PrimitiveType {
     // only true and false are accepted
     return BOOL_NON_NULL_TYPE;
   }
+  
+  @Override
+  public BoolType hasCommonValuesWith(Type type) {
+    if (type instanceof BoolType) {
+      return constant.equals(((BoolType) type).constant) ? TRUE_TYPE : FALSE_TYPE;
+    }
+    
+    if (type instanceof UnionType) {
+      return ((UnionType) type).hasCommonValuesWith(this);
+    }
+    
+    return FALSE_TYPE;
+  }
 }

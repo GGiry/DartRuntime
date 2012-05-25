@@ -25,6 +25,7 @@ import jdart.compiler.type.Type;
 import jdart.compiler.type.TypeMapper;
 import jdart.compiler.type.TypeRepository;
 import jdart.compiler.type.Types;
+import jdart.compiler.type.UnionType;
 import jdart.compiler.visitor.ASTVisitor2;
 
 import com.google.dart.compiler.DartCompilationPhase;
@@ -562,7 +563,15 @@ public class FlowTypingPhase implements DartCompilationPhase {
         if (type1 instanceof IntType && type2 instanceof IntType) {
           IntType iType1 = (IntType) type1;
           IntType iType2 = (IntType) type2;
-          return iType1.asCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : TRUE_TYPE;
+          return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : TRUE_TYPE;
+        }
+        
+        if (type1 instanceof UnionType) {
+          return ((UnionType) type1).hasCommonValuesWith(type2);
+        }
+        
+        if (type2 instanceof UnionType) {
+          return ((UnionType) type2).hasCommonValuesWith(type1);
         }
 
         throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
@@ -580,7 +589,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         if (type1 instanceof IntType && type2 instanceof IntType) {
           IntType iType1 = (IntType) type1;
           IntType iType2 = (IntType) type2;
-          return iType1.asCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : FALSE_TYPE;
+          return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : FALSE_TYPE;
         }
 
         throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);

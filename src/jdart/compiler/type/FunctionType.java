@@ -1,5 +1,7 @@
 package jdart.compiler.type;
 
+import static jdart.compiler.type.CoreTypeRepository.*;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -14,10 +16,10 @@ public class FunctionType extends OwnerType {
   private final Type returnType;
   private final List<Type> parameterTypes;
   private final Map<String, Type> namedParameterTypes;
-  private final /*maybenull*/ MethodElement constant;
-  private transient FunctionType dualType;   // almost final see postInitDualType
+  private final/* maybenull */MethodElement constant;
+  private transient FunctionType dualType; // almost final see postInitDualType
 
-  FunctionType(boolean nullable, Type returnType, List<Type> parameterTypes, Map<String, Type> namedParameterTypes, /*maybenull*/MethodElement constant) {
+  FunctionType(boolean nullable, Type returnType, List<Type> parameterTypes, Map<String, Type> namedParameterTypes, /* maybenull */MethodElement constant) {
     super(nullable);
     this.returnType = Objects.requireNonNull(returnType);
     assert parameterTypes instanceof RandomAccess;
@@ -25,20 +27,17 @@ public class FunctionType extends OwnerType {
     this.namedParameterTypes = Objects.requireNonNull(namedParameterTypes);
     this.constant = constant;
   }
-  
+
   void postInitDualType(FunctionType dualType) {
     this.dualType = Objects.requireNonNull(dualType);
   }
-  
+
   @Override
   public int hashCode() {
-    return (isNullable() ? 1 : 0) ^
-        returnType.hashCode() ^
-        Integer.rotateLeft(parameterTypes.hashCode(), 8) ^
-        Integer.rotateLeft(namedParameterTypes.hashCode(), 16) ^
-        Integer.rotateLeft(Objects.hashCode(constant), 24);
+    return (isNullable() ? 1 : 0) ^ returnType.hashCode() ^ Integer.rotateLeft(parameterTypes.hashCode(), 8)
+        ^ Integer.rotateLeft(namedParameterTypes.hashCode(), 16) ^ Integer.rotateLeft(Objects.hashCode(constant), 24);
   }
-  
+
   @Override
   public boolean equals(Object obj) {
     if (this == obj) {
@@ -48,11 +47,8 @@ public class FunctionType extends OwnerType {
       return false;
     }
     FunctionType functionType = (FunctionType) obj;
-    return isNullable() == functionType.isNullable() &&
-        returnType.equals(functionType.returnType) &&
-        parameterTypes.equals(functionType.parameterTypes) &&
-        namedParameterTypes.equals(functionType.namedParameterTypes) &&
-        Objects.equals(constant, functionType.constant);
+    return isNullable() == functionType.isNullable() && returnType.equals(functionType.returnType) && parameterTypes.equals(functionType.parameterTypes)
+        && namedParameterTypes.equals(functionType.namedParameterTypes) && Objects.equals(constant, functionType.constant);
   }
 
   public Type getReturnType() {
@@ -66,17 +62,17 @@ public class FunctionType extends OwnerType {
   public Map<String, Type> getNamedParameterTypes() {
     return namedParameterTypes;
   }
-  
+
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
     builder.append('(');
-    for(Type type: parameterTypes) {
+    for (Type type : parameterTypes) {
       builder.append(type).append(", ");
     }
     if (!namedParameterTypes.isEmpty()) {
       builder.append('[');
-      for(Entry<String, Type> entry: namedParameterTypes.entrySet()) {
+      for (Entry<String, Type> entry : namedParameterTypes.entrySet()) {
         builder.append(entry.getKey()).append(' ').append(entry.getValue()).append(", ");
       }
       if (!namedParameterTypes.isEmpty()) {
@@ -88,21 +84,20 @@ public class FunctionType extends OwnerType {
         builder.setLength(builder.length() - 2);
       }
     }
-    builder.append(')').append(super.toString())
-        .append(" -> ").append(returnType);
+    builder.append(')').append(super.toString()).append(" -> ").append(returnType);
     return builder.toString();
   }
-  
+
   @Override
   public InterfaceType getSuperType() {
     return null;
   }
-  
+
   @Override
   public List<InterfaceType> getInterfaces() {
     return Collections.singletonList(CoreTypeRepository.getCoreTypeRepository().getFunctionType());
   }
-  
+
   @Override
   public Element localLookupMember(String name) {
     return null;
@@ -126,5 +121,17 @@ public class FunctionType extends OwnerType {
   @Override
   public MethodElement asConstant() {
     return constant;
+  }
+
+  @Override
+  public BoolType hasCommonValuesWith(Type type) {
+    if (type instanceof FunctionType) {
+      return equals(type) ? TRUE_TYPE : FALSE_TYPE;
+    }
+
+    if (type instanceof UnionType) {
+      return ((UnionType) type).hasCommonValuesWith(this);
+    }
+    return FALSE_TYPE;
   }
 }

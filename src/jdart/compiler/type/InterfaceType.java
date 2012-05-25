@@ -1,5 +1,7 @@
 package jdart.compiler.type;
 
+import static jdart.compiler.type.CoreTypeRepository.*;
+
 import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
@@ -70,5 +72,18 @@ public class InterfaceType extends ElementType {
   @Override
   public Object asConstant() {
     return null;
+  }
+  
+  @Override
+  public BoolType hasCommonValuesWith(Type type) {
+    if (type instanceof InterfaceType) {
+      return (equals(type)) ? TRUE_TYPE : FALSE_TYPE;
+    }
+    
+    if (type instanceof UnionType) {
+      return ((UnionType) type).hasCommonValuesWith(this);
+    }
+    
+    return FALSE_TYPE;
   }
 }

@@ -4,7 +4,7 @@ import static jdart.compiler.type.CoreTypeRepository.*;
 
 abstract class NullableType implements Type {
   private final boolean isNullable;
-  private ArrayType arrayType;  // lazy allocated
+  private ArrayType arrayType; // lazy allocated
 
   NullableType(boolean isNullable) {
     this.isNullable = isNullable;
@@ -28,11 +28,12 @@ abstract class NullableType implements Type {
 
   @Override
   public Type asNullable(boolean nullable) {
-    return (nullable)?asNullable(): asNonNull();
+    return (nullable) ? asNullable() : asNonNull();
   }
-  
+
   /**
    * Returns the nullable array type with the current type as component type.
+   * 
    * @return the nullable array type with the current type as component type.
    */
   public ArrayType asArrayType() {
@@ -41,10 +42,10 @@ abstract class NullableType implements Type {
     }
     return arrayType = new ArrayType(true, this, INT32_TYPE, null);
   }
-  
+
   NullableType merge(NullableType type) {
     Object constant = asConstant();
-    
+
     if (constant != null && constant.equals(type.asConstant())) {
       return (type.isNullable) ? asNullable() : this;
     }
@@ -57,6 +58,16 @@ abstract class NullableType implements Type {
   @Override
   public Type map(TypeMapper typeMapper) {
     Type resultType = typeMapper.transform(this);
-    return (resultType == null)? DYNAMIC_NON_NULL_TYPE: resultType;
+    return (resultType == null) ? DYNAMIC_NON_NULL_TYPE : resultType;
   }
+
+  /**
+   * Check if this Type has common values with type.
+   * 
+   * @param type
+   *          Type to use to check common values.
+   * @return TRUE_TYPE if the test this == type could return true. FALSE_TYPE
+   *         otherwise.
+   */
+  public abstract BoolType hasCommonValuesWith(Type type);
 }

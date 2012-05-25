@@ -1,7 +1,6 @@
 package jdart.compiler.type;
 
-import static jdart.compiler.type.CoreTypeRepository.DOUBLE_NON_NULL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.DOUBLE_TYPE;
+import static jdart.compiler.type.CoreTypeRepository.*;
 
 import java.util.Objects;
 
@@ -110,5 +109,22 @@ public class DoubleType extends PrimitiveType {
       return constant(constant - type.constant);
     }
     return DOUBLE_NON_NULL_TYPE;
+  }
+  
+  @Override
+  public BoolType hasCommonValuesWith(Type type) {
+    if (type instanceof DoubleType) {
+      return (constant.equals(((DoubleType) type).constant)) ? TRUE_TYPE : FALSE_TYPE;
+    }
+    
+    if (type instanceof IntType) {
+      return ((IntType) type).hasCommonValuesWith(this);
+    }
+    
+    if (type instanceof UnionType) {
+      return ((UnionType) type).hasCommonValuesWith(this);
+    }
+    
+    return FALSE_TYPE;
   }
 }

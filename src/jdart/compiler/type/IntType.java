@@ -261,6 +261,34 @@ public class IntType extends PrimitiveType {
 
     return min && max;
   }
+  
+  @Override
+  public BoolType hasCommonValuesWith(Type type) {
+    if (type instanceof IntType) {
+      if (((IntType) type).hasCommonValuesWith(this)) {
+        return TRUE_TYPE;
+      }
+    }
+    
+    if (type instanceof DoubleType) {
+      DoubleType dType = (DoubleType) type;
+      double constant = dType.asConstant().doubleValue();
+      
+      if  (Math.floor(constant) == constant) {
+        BigInteger valueOfCst = BigInteger.valueOf((long) constant);
+        return isIncludeIn(new IntType(false, valueOfCst, valueOfCst)) ? TRUE_TYPE : FALSE_TYPE;
+      }
+      return FALSE_TYPE;
+    }
+    
+    if (type instanceof UnionType) {
+      return ((UnionType) type).hasCommonValuesWith(this);
+    }
+    
+    // should we handle function type ?
+    
+    return FALSE_TYPE;
+  }
 
   /**
    * Returns the type includes in type1 and type2.
@@ -296,7 +324,7 @@ public class IntType extends PrimitiveType {
    * @return <code>true</code> if this type as common values with the specified
    *         type.
    */
-  public boolean asCommonValuesWith(IntType other) {
+  public boolean hasCommonValuesWith(IntType other) {
     if (minBound == null) {
       // min == -inf
       if (maxBound == null || other.minBound == null || maxBound.compareTo(other.minBound) < 0) {
