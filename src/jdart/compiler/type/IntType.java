@@ -336,7 +336,6 @@ public class IntType extends PrimitiveType {
     if (tmp != 0) {
       return tmp;
     }
-
     if (type1.minBound == null && type2.minBound == null && type1.maxBound == null && type2.maxBound == null) {
       return 0;
     }
@@ -347,7 +346,7 @@ public class IntType extends PrimitiveType {
     if (type2.minBound != null) {
       if (type2.maxBound != null) {
         if (type1.minBound == null || type1.minBound.compareTo(type2.minBound) < 0) {
-          if (type1.maxBound == null || type1.maxBound.compareTo(type2.maxBound) < 0) {
+          if (type1.maxBound == null || type1.maxBound.compareTo(type2.maxBound) > 0) {
             return 3;
           }
         }
@@ -355,7 +354,7 @@ public class IntType extends PrimitiveType {
       if (type1.maxBound != null) {
         if (type1.maxBound.compareTo(type2.minBound) < 0) {
           return 2;
-        } else {
+        } else if (type1.minBound == null || type1.minBound.compareTo(type2.minBound) < 0) {
           return 1;
         }
       }

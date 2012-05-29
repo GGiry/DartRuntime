@@ -321,11 +321,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
         Token operator = node.getOperator();
         ArrayList<Type> list = new ArrayList<>(2);
         Type typeTrue;
-        Type typeFalse;
+        Type typeFalse = null;
         switch (operator) {
         case EQ:
           typeTrue = type1.commonValuesWith(type2);
-          typeFalse = typeTrue.invert();
+          if (typeTrue != null) {
+            typeFalse = typeTrue.invert();
+          }
           break;
         case NE:
           typeFalse = type1.commonValuesWith(type2);
@@ -333,7 +335,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
           break;
 
         default:
-          throw new IllegalStateException("You must implement ConditionVisitor.visitBinaryExpression() for " + operator + " (" + operator.name() + ")");
+          throw new IllegalStateException("You have to implement ConditionVisitor.visitBinaryExpression() for " + operator + " (" + operator.name() + ")");
         }
         list.add(typeTrue);
         list.add(typeFalse);
@@ -361,60 +363,33 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitIfStatement(DartIfStatement node, FlowEnv parameter) {
       // FIXME IfStatement doesn't work well.
-      System.out.println("If:");
       Type type = accept(node.getCondition(), parameter);
-
-      System.out.println(node.getCondition());
-      System.out.println("type: " + type);
 
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
       List<Type> types = conditionVisitor.accept(node.getCondition(), parameter);
 
-      System.out.println("Types: " + types);
-
       if (type == TRUE_TYPE) {
-        System.out.println("TRUE: Then:");
-
         FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) node.getCondition(), envThen);
         accept(node.getThenStatement(), envThen);
-
-        System.out.println(envThen);
-
         parameter.merge(envThen);
       } else if (type == FALSE_TYPE) {
         if (node.getElseStatement() != null) {
-          System.out.println("FALSE: Else:");
-
           FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
           changeOperandsTypes(types.get(ConditionVisitor.FALSE_POSITION), (DartBinaryExpression) node.getCondition(), envElse);
           accept(node.getElseStatement(), envElse);
-
-          System.out.println(envElse);
-
           parameter.merge(envElse);
         }
       } else {
         FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-
-        System.out.println("Then:");
-
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) node.getCondition(), envThen);
         accept(node.getThenStatement(), envThen);
-
-        System.out.println(envThen);
-
         parameter.merge(envThen);
 
         if (node.getElseStatement() != null) {
-          System.out.println("Else:");
-
           FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
           changeOperandsTypes(types.get(ConditionVisitor.FALSE_POSITION), (DartBinaryExpression) node.getCondition(), envElse);
           accept(node.getElseStatement(), envElse);
-
-          System.out.println(envElse);
-
           parameter.merge(envElse);
         }
       }
@@ -548,7 +523,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
           return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : FALSE_TYPE;
         }
 
-        throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
+
       }
       case LT:
       case LTE:
