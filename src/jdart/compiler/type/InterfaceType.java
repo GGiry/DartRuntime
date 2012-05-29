@@ -87,7 +87,6 @@ public class InterfaceType extends ElementType {
   
   @Override
   public Type invert() {
-    // TODO 
     return null;
   }
 }

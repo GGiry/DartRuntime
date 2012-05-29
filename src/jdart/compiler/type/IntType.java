@@ -327,12 +327,12 @@ public class IntType extends PrimitiveType {
 
 
   private static int diff(IntType type1, IntType type2) {
-    int tmp = diffHelp(type1, type2);
+    int tmp = diffHelper(type1, type2);
     if (tmp != 0) {
       return -tmp;
     }
     
-    tmp = diffHelp(type2, type1);
+    tmp = diffHelper(type2, type1);
     if (tmp != 0) {
       return tmp;
     }
@@ -343,7 +343,7 @@ public class IntType extends PrimitiveType {
     throw new IllegalStateException();
   }
 
-  private static int diffHelp(IntType type1, IntType type2) {
+  private static int diffHelper(IntType type1, IntType type2) {
     if (type2.minBound != null) {
       if (type2.maxBound != null) {
         if (type1.minBound == null || type1.minBound.compareTo(type2.minBound) < 0) {

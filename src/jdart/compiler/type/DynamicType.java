@@ -54,7 +54,6 @@ public class DynamicType extends NullableType {
   
   @Override
   public Type invert() {
-    // TODO 
     return null;
   }
 }

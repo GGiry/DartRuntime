@@ -135,7 +135,6 @@ public class FunctionType extends OwnerType {
   
   @Override
   public Type invert() {
-    // TODO 
     return null;
   }
 }
