@@ -21,8 +21,8 @@ public interface Type {
    * @return the non null type of the current type.
    */
   Type asNonNull();
-  
-  
+
+
   Type asNullable(boolean nullable);
 
   /**
@@ -48,7 +48,7 @@ public interface Type {
   Object asConstant();
 
   public static final Object NULL_VALUE = new Object();
-  
+
   /**
    * Transforms the current type to a new type by applying the mapping
    * specified by the {@link TypeMapper}.
@@ -72,4 +72,6 @@ public interface Type {
   Type commonValuesWith(Type type);
 
   Type invert();
+
+  Type LTEValues(Type other);
 }

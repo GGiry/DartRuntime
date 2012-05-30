@@ -89,4 +89,9 @@ public class InterfaceType extends ElementType {
   public Type invert() {
     return null;
   }
+  
+  @Override
+  public Type LTEValues(Type other) {
+    return null;
+  }
 }

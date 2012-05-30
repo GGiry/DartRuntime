@@ -333,6 +333,14 @@ public class FlowTypingPhase implements DartCompilationPhase {
           typeFalse = type1.commonValuesWith(type2);
           typeTrue = typeFalse.invert();
           break;
+        case LTE:
+          typeTrue = type1.LTEValues(type2);
+          if (typeTrue != null) {
+            typeFalse = typeTrue.invert();
+          }
+          System.out.println("True: " + typeTrue);
+          System.out.println("False: " + typeFalse);
+          break;
 
         default:
           throw new IllegalStateException("You have to implement ConditionVisitor.visitBinaryExpression() for " + operator + " (" + operator.name() + ")");
@@ -346,17 +354,33 @@ public class FlowTypingPhase implements DartCompilationPhase {
     private void changeOperandsTypes(Type type, DartBinaryExpression node, FlowEnv parameter) {
       DartExpression arg1 = node.getArg1();
       DartExpression arg2 = node.getArg2();
+      Type type1 = accept(arg1, parameter);
+      Type type2 = accept(arg2, parameter);
       Token operator = node.getOperator();
+
+      VariableElement element1 = (VariableElement) arg1.getElement();
+      VariableElement element2 = (VariableElement) arg2.getElement();
 
       switch (operator) {
       case EQ:
       case NE:
-        if (arg1.getElement() != null) {
-          parameter.register((VariableElement) arg1.getElement(), type);
+        if (element1 != null) {
+          parameter.register(element1, type);
         }
-        if (arg2.getElement() != null) {
-          parameter.register((VariableElement) arg2.getElement(), type);
+        if (element2 != null) {
+          parameter.register(element2, type);
         }
+        break;
+      case LTE:
+        if (element1 != null && type1.asConstant() == null) {
+          parameter.register(element1, type);
+        }
+        if (element2 != null && type2.asConstant() == null) {
+          parameter.register(element2, type);
+        }
+        break;
+      default:
+        throw new IllegalStateException("You must implement changeOperand for " + operator + " (" + operator.name() + ")");
       }
     }
 
@@ -368,24 +392,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
       List<Type> types = conditionVisitor.accept(node.getCondition(), parameter);
 
-      if (type == TRUE_TYPE) {
+      if (type != FALSE_TYPE) {
         FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) node.getCondition(), envThen);
         accept(node.getThenStatement(), envThen);
         parameter.merge(envThen);
-      } else if (type == FALSE_TYPE) {
-        if (node.getElseStatement() != null) {
-          FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-          changeOperandsTypes(types.get(ConditionVisitor.FALSE_POSITION), (DartBinaryExpression) node.getCondition(), envElse);
-          accept(node.getElseStatement(), envElse);
-          parameter.merge(envElse);
-        }
-      } else {
-        FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-        changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) node.getCondition(), envThen);
-        accept(node.getThenStatement(), envThen);
-        parameter.merge(envThen);
-
+      }
+      if (type != TRUE_TYPE) {
         if (node.getElseStatement() != null) {
           FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
           changeOperandsTypes(types.get(ConditionVisitor.FALSE_POSITION), (DartBinaryExpression) node.getCondition(), envElse);

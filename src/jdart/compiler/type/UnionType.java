@@ -172,7 +172,6 @@ public class UnionType extends NullableType {
   @Override
   public Type commonValuesWith(final Type other) {
     return map(new TypeMapper() {
-
       @Override
       public Type transform(Type type) {
         return type.commonValuesWith(other);
@@ -186,6 +185,16 @@ public class UnionType extends NullableType {
       @Override
       public Type transform(Type type) {
         return type.invert();
+      }
+    });
+  }
+  
+  @Override
+  public Type LTEValues(final Type other) {
+    return map(new TypeMapper() {
+      @Override
+      public Type transform(Type type) {
+        return type.LTEValues(other);
       }
     });
   }

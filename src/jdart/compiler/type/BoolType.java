@@ -155,4 +155,9 @@ public class BoolType extends PrimitiveType {
     }
     return this;
   }
+  
+  @Override
+  public Type LTEValues(Type other) {
+    return null;
+  }
 }

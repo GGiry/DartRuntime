@@ -60,4 +60,9 @@ public class NullType implements Type {
   public Type invert() {
     return null;
   }
+  
+  @Override
+  public Type LTEValues(Type other) {
+    return null;
+  }
 }

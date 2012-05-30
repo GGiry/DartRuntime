@@ -58,4 +58,9 @@ public class VoidType implements Type {
   public Type invert() {
     throw new IllegalStateException("void type");
   }
+  
+  @Override
+  public Type LTEValues(Type other) {
+    return null;
+  }
 }

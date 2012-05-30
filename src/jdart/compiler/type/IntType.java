@@ -656,4 +656,72 @@ public class IntType extends PrimitiveType {
     
     return new IntType(isNullable(), maxBound.add(BigInteger.ONE), null);
   }
+  
+  @Override
+  public Type LTEValues(Type other) {
+    System.out.println("LTE:");
+    if (other instanceof IntType) {
+      System.out.println(this);
+      System.out.println(other);
+      IntType iType = (IntType) other;
+
+      BigInteger cst = asConstant();
+      BigInteger oCst = iType.asConstant();
+      
+      if (oCst != null) {
+        int diff = diff(this, iType);
+        
+        if (diff == 2 || diff == -2 || diff == 0) {
+          return this;
+        }
+        
+        if (diff == -3) {
+          return new IntType(isNullable(), minBound, oCst);
+        }
+        
+        throw new IllegalStateException();
+      }
+      
+      if (cst != null) {
+        int diff = diff(this, iType);
+        
+        if (diff == 2 || diff == -2 || diff == 0) {
+          return this;
+        }
+        
+        if (diff == 3) {
+          return new IntType(isNullable(), cst, iType.maxBound);
+        }
+        
+        throw new IllegalStateException();
+      }
+      
+      
+      // Here I don't know how to : In test If4.dart :
+      // What should be the value of 'a' and 'b' in the last block ? 
+      // Some possibilities :
+      // - a = [10; 20], b = [15; 25] (no change)
+      // - a = [10; 15], b = [20; 25]
+      // - a = [10; 15], b = [15; 25]
+      // - a = [10; 20], b = [20; 25]
+      throw new IllegalStateException("We need to implements the case when the two types are ranges");
+    }
+    
+    if (other instanceof DoubleType) {
+      BigInteger cst = (BigInteger) other.asConstant();
+      if (maxBound != null) {
+        if (maxBound.compareTo(cst) <= 0) {
+          return this;
+        }
+      }
+      return null;
+    }
+    
+    if (other instanceof  UnionType) {
+      System.err.println("Do uniontype GT!");
+      throw new IllegalStateException();
+      //return other.GTValues(this);
+    }
+    return null;
+  }
 }

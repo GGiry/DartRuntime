@@ -56,4 +56,9 @@ public class DynamicType extends NullableType {
   public Type invert() {
     return null;
   }
+  
+  @Override
+  public Type LTEValues(Type other) {
+    return null;
+  }
 }

@@ -2,6 +2,7 @@ package jdart.compiler.type;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
 
+import java.math.BigInteger;
 import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
@@ -131,5 +132,39 @@ public class DoubleType extends PrimitiveType {
   @Override
   public Type invert() {
     return DOUBLE_TYPE;
+  }
+
+  @Override
+  public Type LTEValues(Type other) {
+    if (other instanceof DoubleType) {
+      if (constant.compareTo((Double) other.asConstant()) <= 0) {
+        return this;
+      }
+      return null;
+    }
+
+    if (other instanceof IntType) {
+      BigInteger min = (BigInteger) ((IntType) other).getMinBound();
+      if (min != null) {
+        float floatValue = constant.floatValue();
+        if (floatValue == (int) floatValue) {
+          if (BigInteger.valueOf((int) floatValue).compareTo(min) <= 0) {
+            return this;
+          }
+        }
+        if (BigInteger.valueOf((int) floatValue).compareTo(min) < 0) {
+          return this;
+        }
+      }
+      return null;
+    }
+    
+    if (other instanceof  UnionType) {
+      System.err.println("Do uniontype GT!");
+      throw new IllegalStateException();
+      //return other.GTValues(this);
+    }
+
+    return null;
   }
 }
