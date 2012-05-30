@@ -132,14 +132,19 @@ public class FunctionType extends OwnerType {
     }
     return null;
   }
-  
+
   @Override
   public Type invert() {
     return null;
   }
-  
+
   @Override
   public Type LTEValues(Type other) {
+    return null;
+  }
+
+  @Override
+  public Type LTValues(Type other) {
     return null;
   }
 }

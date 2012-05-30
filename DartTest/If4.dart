@@ -15,11 +15,21 @@ void main() {
   var b2;
   var b3;
 
-  if (a <= 20) {
+  var c1;
+  var c2;
+
+  if (a != 17) {
+    c1 = a;
+    if (a <= 19) {
+      c2 = a;
+    }
+  }
+
+  if (a < 21) {
     a1 = a;
-    if (10 <= a) {
+    if (a > 9) {
       a2 = a;
-      if (b <= 25) {
+      if (25 >= b) {
         b1 = b;
         if (15 <= b) {
           b2 = b;

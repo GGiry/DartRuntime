@@ -109,42 +109,42 @@ public class BoolType extends PrimitiveType {
     // only true and false are accepted
     return BOOL_NON_NULL_TYPE;
   }
-  
+
   @Override
   public Type commonValuesWith(Type type) {
     if (type instanceof BoolType) {
       if (constant.equals(((BoolType) type).constant)) {
         return this;
       }
-      
+
       if (this == TRUE_TYPE) {
         if (type == FALSE_TYPE) {
           return null;
         }
         return this;
       }
-      
+
       if (this == FALSE_TYPE) {
         if (type == TRUE_TYPE) {
           return null;
         }
         return this;
       }
-      
+
       if (type == TRUE_TYPE || type == FALSE_TYPE) {
         return type;
       }
-      
+
       return BOOL_NON_NULL_TYPE;
     }
-    
+
     if (type instanceof UnionType) {
       return ((UnionType) type).commonValuesWith(this);
     }
-    
+
     return null;
   }
-  
+
   @Override
   public Type invert() {
     if (this == TRUE_TYPE) {
@@ -155,9 +155,14 @@ public class BoolType extends PrimitiveType {
     }
     return this;
   }
-  
+
   @Override
   public Type LTEValues(Type other) {
+    return null;
+  }
+
+  @Override
+  public Type LTValues(Type other) {
     return null;
   }
 }

@@ -272,7 +272,7 @@ public class IntType extends PrimitiveType {
       DoubleType dType = (DoubleType) type;
       double constant = dType.asConstant().doubleValue();
 
-      if  ( ((int)constant) == constant) {
+      if (((int) constant) == constant) {
         BigInteger valueOfCst = BigInteger.valueOf((long) constant);
         return intersect(new IntType(isNullable() && type.isNullable(), valueOfCst, valueOfCst), this);
       }
@@ -291,27 +291,28 @@ public class IntType extends PrimitiveType {
    * 
    * @param type1
    * @param type2
-   * @return The intersection of type1 and type2. Or null if two ranges doens't intersect.
+   * @return The intersection of type1 and type2. Or null if two ranges doens't
+   *         intersect.
    */
   public static IntType intersect(IntType type1, IntType type2) {
     int diff = diff(type1, type2);
-    
+
     if (diff == -2 || diff == 2) {
       return null;
     }
-    
+
     if (diff == -3) {
       return type2;
     }
-    
+
     if (diff == 3) {
       return type1;
     }
-    
+
     if (diff == 0) {
       return type1;
     }
-    
+
     BigInteger min;
     BigInteger max;
     if (diff == -1) {
@@ -325,13 +326,12 @@ public class IntType extends PrimitiveType {
     return new IntType(type1.isNullable() && type2.isNullable(), min, max);
   }
 
-
   private static int diff(IntType type1, IntType type2) {
     int tmp = diffHelper(type1, type2);
     if (tmp != 0) {
       return -tmp;
     }
-    
+
     tmp = diffHelper(type2, type1);
     if (tmp != 0) {
       return tmp;
@@ -636,7 +636,7 @@ public class IntType extends PrimitiveType {
       }
     }
   }
-  
+
   @Override
   public Type invert() {
     if (minBound == null) {
@@ -644,7 +644,7 @@ public class IntType extends PrimitiveType {
         return null;
       }
     }
-    
+
     Type result;
     if (minBound != null) {
       result = new IntType(isNullable(), null, minBound.subtract(BigInteger.ONE));
@@ -653,60 +653,55 @@ public class IntType extends PrimitiveType {
       }
       return result;
     }
-    
+
     return new IntType(isNullable(), maxBound.add(BigInteger.ONE), null);
   }
-  
+
   @Override
   public Type LTEValues(Type other) {
-    System.out.println("LTE:");
     if (other instanceof IntType) {
-      System.out.println(this);
-      System.out.println(other);
       IntType iType = (IntType) other;
-
       BigInteger cst = asConstant();
       BigInteger oCst = iType.asConstant();
-      
+
       if (oCst != null) {
         int diff = diff(this, iType);
-        
+
         if (diff == 2 || diff == -2 || diff == 0) {
           return this;
         }
-        
+
         if (diff == -3) {
           return new IntType(isNullable(), minBound, oCst);
         }
-        
+
         throw new IllegalStateException();
       }
-      
+
       if (cst != null) {
         int diff = diff(this, iType);
-        
+
         if (diff == 2 || diff == -2 || diff == 0) {
           return this;
         }
-        
+
         if (diff == 3) {
           return new IntType(isNullable(), cst, iType.maxBound);
         }
-        
+
         throw new IllegalStateException();
       }
-      
-      
-      // Here I don't know how to : In test If4.dart :
-      // What should be the value of 'a' and 'b' in the last block ? 
+
+      // Here I don't know how to do : In test If4.dart :
+      // What should be the value of 'a' and 'b' in the last block ?
       // Some possibilities :
       // - a = [10; 20], b = [15; 25] (no change)
       // - a = [10; 15], b = [20; 25]
       // - a = [10; 15], b = [15; 25]
       // - a = [10; 20], b = [20; 25]
-      throw new IllegalStateException("We need to implements the case when the two types are ranges");
+      throw new IllegalStateException("We need to implements the case when the two int types are ranges");
     }
-    
+
     if (other instanceof DoubleType) {
       BigInteger cst = (BigInteger) other.asConstant();
       if (maxBound != null) {
@@ -716,11 +711,70 @@ public class IntType extends PrimitiveType {
       }
       return null;
     }
+
+    if (other instanceof UnionType) {
+      return ((UnionType) other).GTEValues(this);
+    }
+    return null;
+  }
+
+  @Override
+  public Type LTValues(Type other) {
+    if (other instanceof IntType) {
+      IntType iType = (IntType) other;
+      BigInteger cst = asConstant();
+      BigInteger oCst = iType.asConstant();
+
+      if (oCst != null) {
+        int diff = diff(this, iType);
+
+        if (diff == 2 || diff == -2 || diff == 0) {
+          return this;
+        }
+
+        if (diff == -3) {
+          return new IntType(isNullable(), minBound, oCst.subtract(BigInteger.ONE));
+        }
+
+        throw new IllegalStateException();
+      }
+
+      if (cst != null) {
+        int diff = diff(this, iType);
+
+        if (diff == 2 || diff == -2 || diff == 0) {
+          return this;
+        }
+
+        if (diff == 3) {
+          return new IntType(isNullable(), cst.add(BigInteger.ONE), iType.maxBound);
+        }
+
+        throw new IllegalStateException();
+      }
+
+      // Here I don't know how to do : In test If4.dart :
+      // What should be the value of 'a' and 'b' in the last block ?
+      // Some possibilities :
+      // - a = [10; 20], b = [15; 25] (no change)
+      // - a = [10; 15], b = [20; 25]
+      // - a = [10; 15], b = [15; 25]
+      // - a = [10; 20], b = [20; 25]
+      throw new IllegalStateException("We need to implements the case when the two int types are ranges");
+    }
     
-    if (other instanceof  UnionType) {
-      System.err.println("Do uniontype GT!");
-      throw new IllegalStateException();
-      //return other.GTValues(this);
+    if (other instanceof DoubleType) {
+      BigInteger cst = (BigInteger) other.asConstant();
+      if (maxBound != null) {
+        if (maxBound.compareTo(cst) < 0) {
+          return this;
+        }
+      }
+      return null;
+    }
+
+    if (other instanceof UnionType) {
+      return ((UnionType) other).GTValues(this);
     }
     return null;
   }

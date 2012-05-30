@@ -74,4 +74,6 @@ public interface Type {
   Type invert();
 
   Type LTEValues(Type other);
+
+  Type LTValues(Type other);
 }

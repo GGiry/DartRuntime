@@ -79,16 +79,20 @@ public class UnionType extends NullableType {
   /**
    * Create a new union from a union and a collection of types.
    * 
-   * @param unionType an union type
-   * @param nullable  is the collection is nullable
-   * @param collection must have at least one element and each element must be non null.
+   * @param unionType
+   *          an union type
+   * @param nullable
+   *          is the collection is nullable
+   * @param collection
+   *          must have at least one element and each element must be non null.
    * @return the new union or one type if it can be reduced to one element
    */
   private static NullableType reduce(UnionType unionType, boolean nullable, Collection<NullableType> collection) {
-    // first filter out abstract type from collection that already exists in the union
+    // first filter out abstract type from collection that already exists in the
+    // union
     HashSet<NullableType> unionSet = unionType.types;
     ArrayList<NullableType> candidates = new ArrayList<>(collection.size());
-    for(NullableType type: collection) {
+    for (NullableType type : collection) {
       assert !type.isNullable();
       assert !(type instanceof UnionType);
 
@@ -99,7 +103,7 @@ public class UnionType extends NullableType {
     }
 
     if (candidates.isEmpty()) {
-      return (nullable)? unionType.asNullable(): unionType;
+      return (nullable) ? unionType.asNullable() : unionType;
     }
 
     // compute nullability
@@ -109,9 +113,9 @@ public class UnionType extends NullableType {
     Iterator<NullableType> candidateIt = candidates.iterator();
     NullableType candidate = candidateIt.next();
 
-    loop: for(;;) {
+    loop: for (;;) {
       Iterator<NullableType> it = newUnionSet.iterator();
-      while(it.hasNext()) {
+      while (it.hasNext()) {
         NullableType type = it.next();
         NullableType merge = candidate.merge(type);
 
@@ -133,7 +137,7 @@ public class UnionType extends NullableType {
 
       if (newUnionSet.size() == 1) {
         NullableType singleton = newUnionSet.iterator().next();
-        return (nullable)? singleton.asNullable(): singleton;
+        return (nullable) ? singleton.asNullable() : singleton;
       }
       return new UnionType(nullable, newUnionSet);
     }
@@ -152,8 +156,10 @@ public class UnionType extends NullableType {
   @Override
   public Type map(TypeMapper typeMapper) {
     Type resultType = null;
-    for(Type type: types) {
+    for (Type type : types) {
       Type mappedType = typeMapper.transform(type);
+      System.out.println("res: " + resultType);
+      System.out.println("map: " + mappedType);
       if (mappedType == null) {
         continue;
       }
@@ -162,6 +168,7 @@ public class UnionType extends NullableType {
         continue;
       }
       resultType = Types.union(resultType, mappedType);
+      System.out.println("union: " + resultType);
     }
     if (resultType != null) {
       return resultType;
@@ -181,20 +188,105 @@ public class UnionType extends NullableType {
 
   @Override
   public Type invert() {
+    /*
+    HashSet<Type> set = new HashSet<>();
+    HashSet<Type> finalSet = new HashSet<>();
+    boolean minNull = false;
+    boolean maxNull = false;
+    BigInteger min = null;
+    BigInteger max = null;
+    
+    for (Type type : types) {
+      if (type instanceof IntType) {
+        IntType iType = (IntType) type;
+        BigInteger minBound = iType.getMinBound();
+        BigInteger maxBound = iType.getMaxBound();
+        if (minBound != null) {
+          BigInteger minSubtract = minBound.subtract(BigInteger.ONE);
+          set.add(IntType.constant(minSubtract));
+          if (min == null || minSubtract.compareTo(min) < 0) {
+            min = minSubtract;
+          }
+        } else {
+          minNull = true;
+        }
+        if (maxBound != null) {
+          BigInteger maxAdd = maxBound.add(BigInteger.ONE);
+          set.add(IntType.constant(maxAdd));
+          if (max == null || maxAdd.compareTo(max) < 0) {
+            max = maxAdd;
+          }
+        } else {
+          maxNull = true;
+        }
+      } else {
+        set.add(type.invert());
+      }
+    }
+    
+    for (Type type : set) {
+      if (type instanceof IntType) {
+        IntType iType = (IntType) type;
+        
+        if (iType.getMinBound() == min) {
+          finalSet.add(new IntType(iType.isNullable(), minNull ? null : min, min));
+        }
+        if (iType.getMaxBound() == max) {
+          finalSet.add(new IntType(iType.isNullable(), max, maxNull ? null : max));
+        }
+        
+        
+      } else {
+        finalSet.add(type);
+      }
+    }
+    */
+    
+    
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        return type.invert();
+        Type invert = type.invert();
+        System.out.println("invert: " + type + " -> " + invert);
+        return invert;
       }
     });
   }
-  
+
   @Override
   public Type LTEValues(final Type other) {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
         return type.LTEValues(other);
+      }
+    });
+  }
+
+  @Override
+  public Type LTValues(final Type other) {
+    return map(new TypeMapper() {
+      @Override
+      public Type transform(Type type) {
+        return type.LTValues(other);
+      }
+    });
+  }
+
+  public Type GTEValues(final Type other) {
+    return map(new TypeMapper() {
+      @Override
+      public Type transform(Type type) {
+        return other.LTEValues(type);
+      }
+    });
+  }
+
+  public Type GTValues(final Type other) {
+    return map(new TypeMapper() {
+      @Override
+      public Type transform(Type type) {
+        return other.LTValues(type);
       }
     });
   }

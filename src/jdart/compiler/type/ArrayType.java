@@ -127,14 +127,19 @@ public class ArrayType extends NullableType {
 
     return null;
   }
-  
+
   @Override
   public Type invert() {
     return null;
   }
-  
+
   @Override
   public Type LTEValues(Type other) {
+    return null;
+  }
+
+  @Override
+  public Type LTValues(Type other) {
     return null;
   }
 }

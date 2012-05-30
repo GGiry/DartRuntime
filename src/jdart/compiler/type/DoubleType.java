@@ -158,11 +158,36 @@ public class DoubleType extends PrimitiveType {
       }
       return null;
     }
-    
-    if (other instanceof  UnionType) {
-      System.err.println("Do uniontype GT!");
-      throw new IllegalStateException();
-      //return other.GTValues(this);
+
+    if (other instanceof UnionType) {
+      return ((UnionType) other).GTEValues(this);
+    }
+
+    return null;
+  }
+
+  @Override
+  public Type LTValues(Type other) {
+    if (other instanceof DoubleType) {
+      if (constant.compareTo((Double) other.asConstant()) < 0) {
+        return this;
+      }
+      return null;
+    }
+
+    if (other instanceof IntType) {
+      BigInteger min = (BigInteger) ((IntType) other).getMinBound();
+      if (min != null) {
+        float floatValue = constant.floatValue();
+        if (BigInteger.valueOf((int) floatValue).compareTo(min) < 0) {
+          return this;
+        }
+      }
+      return null;
+    }
+
+    if (other instanceof UnionType) {
+      return ((UnionType) other).GTValues(this);
     }
 
     return null;

@@ -320,7 +320,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         Type type2 = visitor.accept(arg2, parameter);
         Token operator = node.getOperator();
         ArrayList<Type> list = new ArrayList<>(2);
-        Type typeTrue;
+        Type typeTrue = null;
         Type typeFalse = null;
         switch (operator) {
         case EQ:
@@ -331,15 +331,41 @@ public class FlowTypingPhase implements DartCompilationPhase {
           break;
         case NE:
           typeFalse = type1.commonValuesWith(type2);
-          typeTrue = typeFalse.invert();
+          if (typeFalse != null) {
+            typeTrue = typeFalse.invert();
+          }
           break;
         case LTE:
           typeTrue = type1.LTEValues(type2);
+          System.out.println("True LTE: " + typeTrue);
           if (typeTrue != null) {
             typeFalse = typeTrue.invert();
           }
-          System.out.println("True: " + typeTrue);
-          System.out.println("False: " + typeFalse);
+          System.out.println("False LTE: " + typeFalse);
+          break;
+        case GTE:
+          typeTrue = type2.LTEValues(type1); // a >= b <=> b <= a
+          System.out.println("True GTE: " + typeTrue);
+          if (typeTrue != null) {
+            typeFalse = typeTrue.invert();
+          }
+          System.out.println("False GTE: " + typeFalse);
+          break;
+        case LT:
+          typeTrue = type1.LTValues(type2);
+          System.out.println("True LT: " + typeTrue);
+          if (typeTrue != null) {
+            typeFalse = typeTrue.invert();
+          }
+          System.out.println("False LT: " + typeFalse);
+          break;
+        case GT:
+          typeTrue = type2.LTValues(type1); // a > b <=> b < a
+          System.out.println("True GT: " + typeTrue);
+          if (typeTrue != null) {
+            typeFalse = typeTrue.invert();
+          }
+          System.out.println("False GT: " + typeFalse);
           break;
 
         default:
@@ -372,6 +398,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
         }
         break;
       case LTE:
+      case GTE:
+      case LT:
+      case GT:
         if (element1 != null && type1.asConstant() == null) {
           parameter.register(element1, type);
         }
@@ -535,7 +564,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
           IntType iType2 = (IntType) type2;
           return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : FALSE_TYPE;
         }
-
 
       }
       case LT:
