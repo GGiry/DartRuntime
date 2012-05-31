@@ -762,7 +762,7 @@ public class IntType extends PrimitiveType {
       // - a = [10; 20], b = [20; 25]
       throw new IllegalStateException("We need to implements the case when the two int types are ranges");
     }
-    
+
     if (other instanceof DoubleType) {
       BigInteger cst = (BigInteger) other.asConstant();
       if (maxBound != null) {
@@ -777,5 +777,36 @@ public class IntType extends PrimitiveType {
       return ((UnionType) other).GTValues(this);
     }
     return null;
+  }
+
+  public boolean isStrictLT(IntType other) {
+    if (diff(this, other) == -2) {
+      return true;
+    }
+    return false;
+  }
+
+  public boolean isStrictLTE(IntType other) {
+    int diff = diff(this, other);
+
+    if (diff == -2) {
+      return true;
+    }
+
+    if (diff == 0) {
+      BigInteger constant = asConstant();
+      if (constant != null && constant.equals(other.asConstant())) {
+        return true;
+      }
+      return false;
+    }
+
+    if (diff == -1) {
+      if (other.minBound != null && maxBound != null && other.minBound.equals(maxBound)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }

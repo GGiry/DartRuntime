@@ -7,6 +7,7 @@ void main() {
   
   var a = aa.field; 
   var b = aa.field;
+  var c = 5;
   
   var a1;
   var a2;
@@ -17,6 +18,8 @@ void main() {
 
   var c1;
   var c2;
+  var c3;
+  var c4;
 
   if (a != 17) {
     c1 = a;
@@ -25,10 +28,15 @@ void main() {
     }
   }
 
-  if (a < 21) {
+  if (a <= 20) {
     a1 = a;
-    if (a > 9) {
+    if (a >= 10) {
       a2 = a;
+      if (c <= a) {
+        c3 = a;
+      } else {
+        c4 = a;
+      }
       if (25 >= b) {
         b1 = b;
         if (15 <= b) {

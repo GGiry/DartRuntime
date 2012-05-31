@@ -564,12 +564,39 @@ public class FlowTypingPhase implements DartCompilationPhase {
           IntType iType2 = (IntType) type2;
           return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : FALSE_TYPE;
         }
-
       }
-      case LT:
-      case LTE:
-      case GT:
-      case GTE:
+      case LT: {
+        if (type1 instanceof IntType && type2 instanceof IntType) {
+          IntType iType1 = (IntType) type1;
+          IntType iType2 = (IntType) type2;
+          
+          return iType1.isStrictLT(iType2) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
+        }
+      }
+      case LTE: {
+        if (type1 instanceof IntType && type2 instanceof IntType) {
+          IntType iType1 = (IntType) type1;
+          IntType iType2 = (IntType) type2;
+          
+          return iType1.isStrictLTE(iType2) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
+        }
+      }
+      case GT: {
+        if (type1 instanceof IntType && type2 instanceof IntType) {
+          IntType iType1 = (IntType) type1;
+          IntType iType2 = (IntType) type2;
+          
+          return iType2.isStrictLT(iType1) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
+        }
+      }
+      case GTE: {
+        if (type1 instanceof IntType && type2 instanceof IntType) {
+          IntType iType1 = (IntType) type1;
+          IntType iType2 = (IntType) type2;
+          
+          return iType2.isStrictLTE(iType1) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
+        }
+      }
       case AND:
       case OR:
         return BOOL_NON_NULL_TYPE;
