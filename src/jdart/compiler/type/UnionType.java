@@ -2,11 +2,13 @@ package jdart.compiler.type;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 
 public class UnionType extends NullableType {
   // each component type should be non nullable and not a union type
@@ -188,14 +190,14 @@ public class UnionType extends NullableType {
 
   @Override
   public Type invert() {
-    /*
-    HashSet<Type> set = new HashSet<>();
-    HashSet<Type> finalSet = new HashSet<>();
+
+    LinkedList<BigInteger> list = new LinkedList<>();
+    HashSet<NullableType> finalSet = new HashSet<>();
     boolean minNull = false;
     boolean maxNull = false;
     BigInteger min = null;
     BigInteger max = null;
-    
+
     for (Type type : types) {
       if (type instanceof IntType) {
         IntType iType = (IntType) type;
@@ -203,7 +205,7 @@ public class UnionType extends NullableType {
         BigInteger maxBound = iType.getMaxBound();
         if (minBound != null) {
           BigInteger minSubtract = minBound.subtract(BigInteger.ONE);
-          set.add(IntType.constant(minSubtract));
+          list.add(minSubtract);
           if (min == null || minSubtract.compareTo(min) < 0) {
             min = minSubtract;
           }
@@ -212,7 +214,7 @@ public class UnionType extends NullableType {
         }
         if (maxBound != null) {
           BigInteger maxAdd = maxBound.add(BigInteger.ONE);
-          set.add(IntType.constant(maxAdd));
+          list.add(maxAdd);
           if (max == null || maxAdd.compareTo(max) < 0) {
             max = maxAdd;
           }
@@ -220,37 +222,36 @@ public class UnionType extends NullableType {
           maxNull = true;
         }
       } else {
-        set.add(type.invert());
+        finalSet.add((NullableType) type.invert());
       }
     }
-    
-    for (Type type : set) {
-      if (type instanceof IntType) {
-        IntType iType = (IntType) type;
-        
-        if (iType.getMinBound() == min) {
-          finalSet.add(new IntType(iType.isNullable(), minNull ? null : min, min));
-        }
-        if (iType.getMaxBound() == max) {
-          finalSet.add(new IntType(iType.isNullable(), max, maxNull ? null : max));
-        }
-        
-        
+
+    Collections.sort(list);
+
+    int i = 0;
+    BigInteger last = null;
+    for (BigInteger value : list) {
+      i++;
+      if (!minNull) {
+        finalSet.add(new IntType(isNullable(), null, value));
+        minNull = true;
+        continue;
+      }
+      if (!maxNull && i == list.size()) {
+        finalSet.add(new IntType(isNullable(), value, null));
+        maxNull = true;
+        continue;
+      }
+
+      if (last == null) {
+        last = value;
       } else {
-        finalSet.add(type);
+        finalSet.add(new IntType(isNullable(), last, value));
+        last = null;
       }
     }
-    */
-    
-    
-    return map(new TypeMapper() {
-      @Override
-      public Type transform(Type type) {
-        Type invert = type.invert();
-        System.out.println("invert: " + type + " -> " + invert);
-        return invert;
-      }
-    });
+
+    return new UnionType(isNullable(), finalSet);
   }
 
   @Override
