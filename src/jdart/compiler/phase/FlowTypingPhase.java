@@ -337,35 +337,35 @@ public class FlowTypingPhase implements DartCompilationPhase {
           break;
         case LTE:
           typeTrue = type1.LTEValues(type2);
-          System.out.println("True LTE: " + typeTrue);
-          if (typeTrue != null) {
+          if (typeTrue != null && typeTrue != VOID_TYPE) {
             typeFalse = typeTrue.invert();
+          } else if (typeTrue == VOID_TYPE) {
+            typeFalse = VOID_TYPE;
           }
-          System.out.println("False LTE: " + typeFalse);
           break;
         case GTE:
           typeTrue = type2.LTEValues(type1); // a >= b <=> b <= a
-          System.out.println("True GTE: " + typeTrue);
-          if (typeTrue != null) {
+          if (typeTrue != null && typeTrue != VOID_TYPE) {
             typeFalse = typeTrue.invert();
+          } else if (typeTrue == VOID_TYPE) {
+            typeFalse = VOID_TYPE;
           }
-          System.out.println("False GTE: " + typeFalse);
           break;
         case LT:
           typeTrue = type1.LTValues(type2);
-          System.out.println("True LT: " + typeTrue);
-          if (typeTrue != null) {
+          if (typeTrue != null && typeTrue != VOID_TYPE) {
             typeFalse = typeTrue.invert();
+          } else if (typeTrue == VOID_TYPE) {
+            typeFalse = VOID_TYPE;
           }
-          System.out.println("False LT: " + typeFalse);
           break;
         case GT:
           typeTrue = type2.LTValues(type1); // a > b <=> b < a
-          System.out.println("True GT: " + typeTrue);
-          if (typeTrue != null) {
+          if (typeTrue != null && typeTrue != VOID_TYPE) {
             typeFalse = typeTrue.invert();
+          } else if (typeTrue == VOID_TYPE) {
+            typeFalse = VOID_TYPE;
           }
-          System.out.println("False GT: " + typeFalse);
           break;
 
         default:
@@ -378,6 +378,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     private void changeOperandsTypes(Type type, DartBinaryExpression node, FlowEnv parameter) {
+      if (type == VOID_TYPE) {
+        return;
+      }
+
       DartExpression arg1 = node.getArg1();
       DartExpression arg2 = node.getArg2();
       Type type1 = accept(arg1, parameter);
@@ -416,23 +420,27 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitIfStatement(DartIfStatement node, FlowEnv parameter) {
       // FIXME IfStatement doesn't work well.
-      Type type = accept(node.getCondition(), parameter);
+      DartExpression condition = node.getCondition();
+      Type type = accept(condition, parameter);
 
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
-      List<Type> types = conditionVisitor.accept(node.getCondition(), parameter);
+      List<Type> types = conditionVisitor.accept(condition, parameter);
 
       if (type != FALSE_TYPE) {
         FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-        changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) node.getCondition(), envThen);
+        changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, envThen);
         accept(node.getThenStatement(), envThen);
-        parameter.merge(envThen);
+
+        // FIXME merge doesn't work.
+        parameter.mergeWithoutUnion(envThen);
       }
       if (type != TRUE_TYPE) {
         if (node.getElseStatement() != null) {
           FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-          changeOperandsTypes(types.get(ConditionVisitor.FALSE_POSITION), (DartBinaryExpression) node.getCondition(), envElse);
+          changeOperandsTypes(types.get(ConditionVisitor.FALSE_POSITION), (DartBinaryExpression) condition, envElse);
           accept(node.getElseStatement(), envElse);
-          parameter.merge(envElse);
+          // FIXME merge doesn't work.
+          parameter.mergeWithoutUnion(envElse);
         }
       }
       return null;
@@ -569,7 +577,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         if (type1 instanceof IntType && type2 instanceof IntType) {
           IntType iType1 = (IntType) type1;
           IntType iType2 = (IntType) type2;
-          
+
           return iType1.isStrictLT(iType2) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
         }
       }
@@ -577,7 +585,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         if (type1 instanceof IntType && type2 instanceof IntType) {
           IntType iType1 = (IntType) type1;
           IntType iType2 = (IntType) type2;
-          
+
           return iType1.isStrictLTE(iType2) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
         }
       }
@@ -585,7 +593,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         if (type1 instanceof IntType && type2 instanceof IntType) {
           IntType iType1 = (IntType) type1;
           IntType iType2 = (IntType) type2;
-          
+
           return iType2.isStrictLT(iType1) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
         }
       }
@@ -593,7 +601,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         if (type1 instanceof IntType && type2 instanceof IntType) {
           IntType iType1 = (IntType) type1;
           IntType iType2 = (IntType) type2;
-          
+
           return iType2.isStrictLTE(iType1) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
         }
       }

@@ -295,49 +295,63 @@ public class IntType extends PrimitiveType {
    *         intersect.
    */
   public static IntType intersect(IntType type1, IntType type2) {
-    int diff = diff(type1, type2);
+    DiffResult diff = diff(type1, type2);
 
-    if (diff == -2 || diff == 2) {
+    switch (diff) {
+    case FIRST_IS_LEFT:
+    case SECOND_IS_LEFT:
       return null;
-    }
-
-    if (diff == -3) {
+    case FIRST_CONTAINS_SECOND:
       return type2;
-    }
-
-    if (diff == 3) {
+    case SECOND_CONTAINS_FIRST:
       return type1;
-    }
-
-    if (diff == 0) {
+    case EQUALS:
       return type1;
+    case FIRST_IS_LEFT_OVERLAP:
+      return new IntType(type1.isNullable() && type2.isNullable(), type2.minBound, type1.maxBound);
+    case SECOND_IS_LEFT_OVERLAP:
+      return new IntType(type1.isNullable() && type2.isNullable(), type1.minBound, type2.maxBound);
     }
-
-    BigInteger min;
-    BigInteger max;
-    if (diff == -1) {
-      min = type2.minBound;
-      max = type1.maxBound;
-    } else { // diff == 1
-      min = type1.minBound;
-      max = type2.maxBound;
-    }
-
-    return new IntType(type1.isNullable() && type2.isNullable(), min, max);
+    throw new IllegalStateException();
   }
 
-  private static int diff(IntType type1, IntType type2) {
+  private enum DiffResult {
+    FIRST_CONTAINS_SECOND(-3),
+    FIRST_IS_LEFT(-2),
+    FIRST_IS_LEFT_OVERLAP(-1),
+    EQUALS(0),
+    SECOND_IS_LEFT_OVERLAP(1),
+    SECOND_IS_LEFT(2),
+    SECOND_CONTAINS_FIRST(3);
+
+    private final int value;
+
+    private DiffResult(int value) {
+      this.value = value;
+    }
+
+    public static DiffResult getDiff(int value) {
+      for (DiffResult diffResult : values()) {
+        if (diffResult.value == value) {
+          return diffResult;
+        }
+      }
+      throw new IllegalArgumentException("Value must be in range (-3, 3)");
+    }
+  }
+
+  private static DiffResult diff(IntType type1, IntType type2) {
     int tmp = diffHelper(type1, type2);
     if (tmp != 0) {
-      return -tmp;
+      return DiffResult.getDiff(-tmp);
     }
 
     tmp = diffHelper(type2, type1);
     if (tmp != 0) {
-      return tmp;
+      return DiffResult.getDiff(tmp);
     }
     if (type1.minBound == null && type2.minBound == null && type1.maxBound == null && type2.maxBound == null) {
-      return 0;
+      return DiffResult.EQUALS;
     }
     throw new IllegalStateException();
   }
@@ -404,239 +418,6 @@ public class IntType extends PrimitiveType {
     }
   }
 
-  /**
-   * Remove type range to this range.
-   * 
-   * For example if this range is [10; 20] ad type range is [12; 17], the return
-   * range will be union([10; 12], [17; 20])
-   * 
-   * @param type
-   *          Element to remove
-   * @return A new type with the right range. Or null if the range is null.
-   */
-  public Type exclude(IntType type) {
-    BigInteger min = null;
-    BigInteger max = null;
-    boolean nullable = isNullable() || type.isNullable();
-
-    if (minBound == null) {
-      if (maxBound == null) {
-        if (type.minBound == null) {
-          if (type.maxBound == null) {
-            // [-inf;+inf] and [-inf;+inf]
-            return null;
-          }
-          // [-inf;+inf] and [-inf;i]
-          min = type.maxBound.add(BigInteger.ONE);
-          return new IntType(nullable, null, null);
-        }
-        // [-inf;+inf] and [i;?]
-        if (type.maxBound != null) {
-          // [-inf;+inf] and [i;j]
-          max = type.minBound.subtract(BigInteger.ONE);
-          IntType tmp1 = new IntType(nullable, null, max);
-
-          min = type.maxBound.add(BigInteger.ONE);
-          IntType tmp2 = new IntType(nullable, min, null);
-          return Types.union(tmp1, tmp2);
-        }
-        // [-inf;+inf] and [i;+inf]
-        max = type.minBound.subtract(BigInteger.ONE);
-        return new IntType(nullable, null, max);
-      }
-
-      return minBoundIsNull(type, nullable);
-    }
-    return minBoundIsNotNull(type, nullable);
-  }
-
-  private Type minBoundIsNull(IntType type, boolean nullable) {
-    BigInteger min;
-    BigInteger max;
-    // [-inf;i] and [?;?]
-    if (type.minBound == null && type.maxBound == null) {
-      // [-inf;i] and [-inf;+inf]
-      return null;
-    }
-
-    if (type.minBound != null) {
-      if (type.minBound.compareTo(maxBound) > 0) {
-        // [-inf;i] and [j;?] where j > i
-        return this;
-      }
-
-      if (type.minBound.compareTo(maxBound) <= 0) {
-        // [-inf;i] and [j;?] where j <= i
-        if (type.maxBound != null && type.maxBound.compareTo(maxBound) > 0) {
-          // [-inf;i] and [j;k] where j <= i and k > i
-          max = type.minBound.subtract(BigInteger.ONE);
-          return new IntType(nullable, null, max);
-        }
-        // [-inf;i] and [j;k] where j <= i and k <= i
-        max = type.minBound.subtract(BigInteger.ONE);
-        IntType tmp1 = new IntType(nullable, null, max);
-
-        min = type.maxBound.add(BigInteger.ONE);
-        max = maxBound;
-        IntType tmp2 = new IntType(nullable, min, max);
-        return Types.union(tmp1, tmp2);
-      }
-
-      if (type.maxBound == null) {
-        // [-inf;i] and [j;+inf]
-        max = type.minBound.subtract(BigInteger.ONE);
-        return new IntType(nullable, null, max);
-      }
-    }
-
-    // [-inf;i] and [-inf;j]
-    min = type.maxBound.add(BigInteger.ONE);
-    max = maxBound;
-    if (min.compareTo(max) == 0) {
-      // [-inf;i] and [-inf;j] where j > i
-      return null;
-    }
-    return new IntType(nullable, min, max);
-  }
-
-  private Type minBoundIsNotNull(IntType type, boolean nullable) {
-    BigInteger min;
-    BigInteger max;
-    // [i;?] [?;?]
-    if (maxBound == null) {
-      return minBoundNotNullMaxBoundNull(type, nullable);
-    }
-    // [i;j] [?;?]
-
-    if (type.minBound == null && type.maxBound == null) {
-      // [i;j] [-inf;+inf]
-      return null;
-    }
-
-    if (type.minBound != null && type.maxBound != null) {
-      // [i;j] [k;l]
-      if (type.maxBound.compareTo(minBound) < 0) {
-        // [i;j] [k;l] && l < i
-        return this;
-      }
-      if (type.minBound.compareTo(maxBound) > 0) {
-        // [i;j] [k;l] && j < k
-        return this;
-      }
-      if (type.maxBound.compareTo(minBound) > 0) {
-        // [i;j] [k;l] && l > i
-        if (type.minBound.compareTo(minBound) < 0) {
-          // [i;j] [k;l] && l > i && k < i
-          min = type.maxBound.add(BigInteger.ONE);
-          return new IntType(nullable, min, maxBound);
-        }
-      }
-      if (type.minBound.compareTo(maxBound) < 0) {
-        // [i;j] [k;l] && k < j
-        if (type.maxBound.compareTo(maxBound) < 0) {
-          // [i;j] [k;l] && k < j && l < j
-          max = type.minBound.subtract(BigInteger.ONE);
-          IntType tmp1 = new IntType(nullable, minBound, max);
-
-          min = type.maxBound.add(BigInteger.ONE);
-          IntType tmp2 = new IntType(nullable, min, maxBound);
-
-          return Types.union(tmp1, tmp2);
-        }
-        // [i;j] [k;l] && k < j && l >= j
-        max = type.maxBound.subtract(BigInteger.ONE);
-        return new IntType(nullable, minBound, max);
-      }
-      // [i;j] [k;l] && k >= j
-      return this;
-    }
-
-    if (type.minBound == null) {
-      // [i;j] [-inf;l]
-      if (type.maxBound.compareTo(minBound) < 0) {
-        // [i;j] [-inf;l] && l < i
-        return this;
-      }
-      if (type.maxBound.compareTo(maxBound) < 0) {
-        // [i;j] [-inf;l] & l < j
-        min = type.maxBound.add(BigInteger.ONE);
-        return new IntType(nullable, min, maxBound);
-      }
-      // [i;j] [-inf;l] && l >= j
-      return null;
-    }
-
-    if (type.maxBound == null) {
-      // [i;j] [k;+inf]
-      if (type.minBound.compareTo(maxBound) > 0) {
-        // [i;j] [k;+inf] && k > j
-        return this;
-      }
-      if (type.minBound.compareTo(minBound) > 0) {
-        // [i;j] [k;+inf] && k > i
-        max = type.minBound.subtract(BigInteger.ONE);
-        return new IntType(nullable, minBound, max);
-      }
-      // [i;j] [k;+inf] && k <= i
-      return null;
-    }
-    return type;
-  }
-
-  private Type minBoundNotNullMaxBoundNull(IntType type, boolean nullable) {
-    BigInteger min;
-    BigInteger max;
-    // [i;?+inf] [?;?]
-    if (type.minBound == null && type.maxBound == null) {
-      // [i;?+inf] [-inf;+inf]
-      return null;
-    }
-
-    if (type.minBound != null) {
-      // [i;+inf] [j;?]
-      if (type.minBound.compareTo(minBound) > 0) {
-        // [i;?+inf] [j;?] && i < j
-        if (type.maxBound != null) {
-          // [i;?+inf] [j;k]
-          max = type.minBound.subtract(BigInteger.ONE);
-          IntType tmp1 = new IntType(nullable, minBound, max);
-
-          min = type.maxBound.add(BigInteger.ONE);
-          IntType tmp2 = new IntType(nullable, min, null);
-          return Types.union(tmp1, tmp2);
-        }
-        // [i;?+inf] [j;+inf]
-        min = minBound;
-        max = type.minBound.subtract(BigInteger.ONE);
-        return new IntType(nullable, min, max);
-      } else {
-        // [i;?+inf] [j;?] && i >= j
-        if (type.maxBound == null) {
-          // [i;?+inf] [j;+inf] && i >= j
-          return null;
-        }
-        // [i;?+inf] [j;k] && i >= j
-        if (type.maxBound.compareTo(minBound) < 0) {
-          // [i;?+inf] [j;k] && i >= j && i > k
-          return this;
-        }
-        // [i;?+inf] [j;k] && i >= j && i <= k
-        min = type.maxBound.add(BigInteger.ONE);
-        return new IntType(nullable, min, null);
-      }
-    } else {
-      // [i;?+inf] [-inf;j]
-      if (type.maxBound.compareTo(minBound) > 0) {
-        // [i;?+inf] [-inf;j] && j > i
-        min = type.maxBound.add(BigInteger.ONE);
-        return new IntType(nullable, min, null);
-      } else {
-        // [i;?+inf] [-inf;j] && j <= i
-        return this;
-      }
-    }
-  }
-
   @Override
   public Type invert() {
     if (minBound == null) {
@@ -663,43 +444,37 @@ public class IntType extends PrimitiveType {
       IntType iType = (IntType) other;
       BigInteger cst = asConstant();
       BigInteger oCst = iType.asConstant();
-
+      
       if (oCst != null) {
-        int diff = diff(this, iType);
-
-        if (diff == 2 || diff == -2 || diff == 0) {
+        DiffResult diff = diff(this, iType);
+        switch (diff) {
+        case FIRST_IS_LEFT:
+        case SECOND_IS_LEFT:
+        case EQUALS:
           return this;
-        }
-
-        if (diff == -3) {
+        case FIRST_CONTAINS_SECOND:
           return new IntType(isNullable(), minBound, oCst);
+        default:
+          throw new IllegalStateException();
         }
-
-        throw new IllegalStateException();
       }
 
       if (cst != null) {
-        int diff = diff(this, iType);
-
-        if (diff == 2 || diff == -2 || diff == 0) {
+        DiffResult diff = diff(this, iType);
+        switch (diff) {
+        case FIRST_IS_LEFT:
+        case SECOND_IS_LEFT:
+        case EQUALS:
           return this;
-        }
-
-        if (diff == 3) {
+        case SECOND_CONTAINS_FIRST:
           return new IntType(isNullable(), cst, iType.maxBound);
+        default:
+          throw new IllegalStateException();
         }
-
-        throw new IllegalStateException();
       }
 
-      // Here I don't know how to do : In test If4.dart :
-      // What should be the value of 'a' and 'b' in the last block ?
-      // Some possibilities :
       // - a = [10; 20], b = [15; 25] (no change)
-      // - a = [10; 15], b = [20; 25]
-      // - a = [10; 15], b = [15; 25]
-      // - a = [10; 20], b = [20; 25]
-      throw new IllegalStateException("We need to implements the case when the two int types are ranges");
+      return VOID_TYPE;
     }
 
     if (other instanceof DoubleType) {
@@ -726,41 +501,36 @@ public class IntType extends PrimitiveType {
       BigInteger oCst = iType.asConstant();
 
       if (oCst != null) {
-        int diff = diff(this, iType);
+        DiffResult diff = diff(this, iType);
 
-        if (diff == 2 || diff == -2 || diff == 0) {
+        switch (diff) {
+        case FIRST_IS_LEFT:
+        case SECOND_IS_LEFT:
+        case EQUALS:
           return this;
-        }
-
-        if (diff == -3) {
+        case FIRST_CONTAINS_SECOND:
           return new IntType(isNullable(), minBound, oCst.subtract(BigInteger.ONE));
+        default:
+          throw new IllegalStateException();
         }
-
-        throw new IllegalStateException();
       }
 
       if (cst != null) {
-        int diff = diff(this, iType);
+        DiffResult diff = diff(this, iType);
 
-        if (diff == 2 || diff == -2 || diff == 0) {
+        switch (diff) {
+        case FIRST_IS_LEFT:
+        case SECOND_IS_LEFT:
+        case EQUALS:
           return this;
-        }
-
-        if (diff == 3) {
+        case SECOND_CONTAINS_FIRST:
           return new IntType(isNullable(), cst.add(BigInteger.ONE), iType.maxBound);
+        default:
+          throw new IllegalStateException();
         }
-
-        throw new IllegalStateException();
       }
 
-      // Here I don't know how to do : In test If4.dart :
-      // What should be the value of 'a' and 'b' in the last block ?
-      // Some possibilities :
-      // - a = [10; 20], b = [15; 25] (no change)
-      // - a = [10; 15], b = [20; 25]
-      // - a = [10; 15], b = [15; 25]
-      // - a = [10; 20], b = [20; 25]
-      throw new IllegalStateException("We need to implements the case when the two int types are ranges");
+      return VOID_TYPE;
     }
 
     if (other instanceof DoubleType) {
@@ -780,33 +550,29 @@ public class IntType extends PrimitiveType {
   }
 
   public boolean isStrictLT(IntType other) {
-    if (diff(this, other) == -2) {
+    if (diff(this, other) == DiffResult.FIRST_IS_LEFT) {
       return true;
     }
     return false;
   }
 
   public boolean isStrictLTE(IntType other) {
-    int diff = diff(this, other);
+    DiffResult diff = diff(this, other);
 
-    if (diff == -2) {
+    switch (diff) {
+    case FIRST_IS_LEFT:
       return true;
-    }
-
-    if (diff == 0) {
+    case EQUALS:
       BigInteger constant = asConstant();
       if (constant != null && constant.equals(other.asConstant())) {
         return true;
       }
       return false;
-    }
-
-    if (diff == -1) {
+    case FIRST_IS_LEFT_OVERLAP:
       if (other.minBound != null && maxBound != null && other.minBound.equals(maxBound)) {
         return true;
       }
     }
-
     return false;
   }
 }

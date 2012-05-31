@@ -19,11 +19,15 @@ public class UnionType extends NullableType {
     this.types = types;
   }
 
+  private static void sortedAdd(HashSet<NullableType> set, NullableType type) {
+    set.add(type);
+  }
+
   static UnionType createUnionType(NullableType type1, NullableType type2) {
     boolean nullable = type1.isNullable() || type2.isNullable();
     HashSet<NullableType> types = new HashSet<>();
-    types.add(type1.asNonNull());
-    types.add(type2.asNonNull());
+    sortedAdd(types, type1.asNonNull());
+    sortedAdd(types, type2.asNonNull());
     return new UnionType(nullable, types);
   }
 
@@ -190,7 +194,6 @@ public class UnionType extends NullableType {
 
   @Override
   public Type invert() {
-
     LinkedList<BigInteger> list = new LinkedList<>();
     HashSet<NullableType> finalSet = new HashSet<>();
     boolean minNull = false;
@@ -259,7 +262,11 @@ public class UnionType extends NullableType {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        return type.LTEValues(other);
+        Type lteValues = type.LTEValues(other);
+        if (lteValues == VOID_TYPE) {
+          return type;
+        }
+        return lteValues;
       }
     });
   }
@@ -269,7 +276,11 @@ public class UnionType extends NullableType {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        return type.LTValues(other);
+        Type ltValues = type.LTValues(other);
+        if (ltValues == VOID_TYPE) {
+          return type;
+        }
+        return ltValues;
       }
     });
   }
@@ -278,7 +289,11 @@ public class UnionType extends NullableType {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        return other.LTEValues(type);
+        Type lteValues = other.LTEValues(type);
+        if (lteValues == VOID_TYPE) {
+          return type;
+        }
+        return lteValues;
       }
     });
   }
@@ -287,7 +302,11 @@ public class UnionType extends NullableType {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        return other.LTValues(type);
+        Type ltValues = other.LTValues(type);
+        if (ltValues == VOID_TYPE) {
+          return type;
+        }
+        return ltValues;
       }
     });
   }

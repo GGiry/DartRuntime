@@ -1,5 +1,7 @@
 package jdart.compiler.phase;
 
+import static jdart.compiler.type.CoreTypeRepository.*;
+
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -171,15 +173,22 @@ public class FlowEnv {
   public void merge(FlowEnv env) {
     for (Entry<VariableElement, Type> entry : env.variableTypeMap.entrySet()) {
       VariableElement key = entry.getKey();
-      
-      if (getType(key) == null) {
-        continue;
+
+      if (getType(key) != null) {
+        Type type1 = entry.getValue();
+        Type type2 = getType(key);
+        Type unionType = Types.union(type1, type2);
+        register(key, unionType);
       }
-      
-      Type type1 = entry.getValue();
-      Type type2 = getType(key);
-      Type unionType = Types.union(type1, type2);
-      register(key, unionType);
+    }
+  }
+
+  public void mergeWithoutUnion(FlowEnv env) {
+    for (Entry<VariableElement, Type> entry : env.variableTypeMap.entrySet()) {
+      VariableElement key = entry.getKey();
+      if (getType(key) != null && getType(key) == NULL_TYPE) {
+        register(key, entry.getValue());
+      }
     }
   }
 }
