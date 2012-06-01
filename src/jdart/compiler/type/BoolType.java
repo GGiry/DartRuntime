@@ -165,4 +165,26 @@ public class BoolType extends PrimitiveType {
   public Type LTValues(Type other) {
     return null;
   }
+  
+  @Override
+  public Type exclude(Type other) {
+    if (other instanceof BoolType) {
+      if (other.equals(this)) {
+        return null;
+      }
+
+      if (this == TRUE_TYPE || this == FALSE_TYPE) {
+        if (other != BOOL_NON_NULL_TYPE && other != BOOL_TYPE) {
+          return this;
+        }
+        return null;
+      }
+    }
+    
+    if (other instanceof UnionType) {
+      return other.exclude(this);
+    }
+    
+    return null;
+  }
 }

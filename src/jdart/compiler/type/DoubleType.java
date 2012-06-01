@@ -192,4 +192,36 @@ public class DoubleType extends PrimitiveType {
 
     return null;
   }
+
+  public Type unarySub() {
+    return constant(-constant);
+  }
+  
+  @Override
+  public Type exclude(Type other) {
+    if (other instanceof DoubleType) {
+      if (Objects.equals(constant, other.asConstant())) {
+        return null;
+      }
+      return this;
+    }
+    
+    if (other instanceof IntType) {
+      IntType iType = (IntType) other;
+      BigInteger minBound = iType.getMinBound();
+      if (minBound == null || minBound.compareTo(BigInteger.valueOf((int) constant.floatValue())) <= 0) {
+        BigInteger maxBound = iType.getMaxBound();
+        if (maxBound == null || maxBound.compareTo(BigInteger.valueOf((int) constant.floatValue())) >= 0) {
+          return null;
+        }
+      }
+      return this;
+    }
+
+    if (other instanceof UnionType) {
+      return other.exclude(this);
+    }
+    
+    return null;
+  }
 }

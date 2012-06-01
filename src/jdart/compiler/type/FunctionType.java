@@ -147,4 +147,9 @@ public class FunctionType extends OwnerType {
   public Type LTValues(Type other) {
     return null;
   }
+  
+  @Override
+  public Type exclude(Type other) {
+    return null;
+  }
 }

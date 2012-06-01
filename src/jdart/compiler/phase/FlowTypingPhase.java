@@ -323,16 +323,18 @@ public class FlowTypingPhase implements DartCompilationPhase {
         Type typeTrue = null;
         Type typeFalse = null;
         switch (operator) {
+        case EQ_STRICT:
         case EQ:
           typeTrue = type1.commonValuesWith(type2);
           if (typeTrue != null) {
             typeFalse = typeTrue.invert();
           }
           break;
+        case NE_STRICT:
         case NE:
-          typeFalse = type1.commonValuesWith(type2);
-          if (typeFalse != null) {
-            typeTrue = typeFalse.invert();
+          typeTrue = type1.exclude(type2);
+          if (typeTrue != null) {
+            typeFalse = typeTrue.invert();
           }
           break;
         case LTE:
@@ -368,6 +370,15 @@ public class FlowTypingPhase implements DartCompilationPhase {
           }
           break;
 
+        case AND: {
+          List<Type> list1 = accept(arg1, parameter);
+          List<Type> list2 = accept(arg2, parameter);
+
+          typeTrue = list1.get(TRUE_POSITION).commonValuesWith(list2.get(TRUE_POSITION));
+          typeFalse = list1.get(FALSE_POSITION).commonValuesWith(list2.get(FALSE_POSITION));
+          break;
+        }
+
         default:
           throw new IllegalStateException("You have to implement ConditionVisitor.visitBinaryExpression() for " + operator + " (" + operator.name() + ")");
         }
@@ -378,7 +389,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     private void changeOperandsTypes(Type type, DartBinaryExpression node, FlowEnv parameter) {
-      if (type == VOID_TYPE) {
+      if (type == VOID_TYPE || type == null) {
         return;
       }
 
@@ -392,7 +403,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
       VariableElement element2 = (VariableElement) arg2.getElement();
 
       switch (operator) {
+      case EQ_STRICT:
       case EQ:
+      case NE_STRICT:
       case NE:
         if (element1 != null) {
           parameter.register(element1, type);
@@ -425,7 +438,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
       List<Type> types = conditionVisitor.accept(condition, parameter);
-      
+
       FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
       FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
 
@@ -679,6 +692,15 @@ public class FlowTypingPhase implements DartCompilationPhase {
         if (type instanceof DoubleType) {
           DoubleType dType = (DoubleType) type;
           return dType.add(DoubleType.constant(1.));
+        }
+      case SUB:
+        if (type instanceof IntType) {
+          IntType iType = (IntType) type;
+          return iType.unarySub();
+        }
+        if (type instanceof DoubleType) {
+          DoubleType dType = (DoubleType) type;
+          return dType.unarySub();
         }
       default:
         throw new UnsupportedOperationException("Unary Expr: " + operator + " (" + operator.name() + ") not implemented for " + type + ".");

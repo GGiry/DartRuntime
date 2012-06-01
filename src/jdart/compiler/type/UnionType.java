@@ -6,24 +6,35 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.LinkedHashSet;
 
 public class UnionType extends NullableType {
   // each component type should be non nullable and not a union type
-  private final HashSet<NullableType> types;
+  private final LinkedHashSet<NullableType> types;
 
-  private UnionType(boolean nullable, HashSet<NullableType> types) {
+  private UnionType(boolean nullable, LinkedHashSet<NullableType> types) {
     super(nullable);
     this.types = types;
   }
 
   static UnionType createUnionType(NullableType type1, NullableType type2) {
     boolean nullable = type1.isNullable() || type2.isNullable();
-    HashSet<NullableType> types = new HashSet<>();
-    types.add(type1.asNonNull());
-    types.add(type2.asNonNull());
+    LinkedHashSet<NullableType> types = new LinkedHashSet<>();
+    if (type1 instanceof IntType && type2 instanceof IntType) {
+      IntType iType1 = (IntType) type1;
+      IntType iType2 = (IntType) type2;
+      if (iType1.getMinBound() == null || iType1.getMinBound().compareTo(iType2.getMinBound()) < 0) {
+        types.add(type1.asNonNull());
+        types.add(type2.asNonNull());
+      } else {
+        types.add(type2.asNonNull());
+        types.add(type1.asNonNull());
+      }
+    } else {
+      types.add(type1.asNonNull());
+      types.add(type2.asNonNull());
+    }
     return new UnionType(nullable, types);
   }
 
@@ -92,7 +103,7 @@ public class UnionType extends NullableType {
   private static NullableType reduce(UnionType unionType, boolean nullable, Collection<NullableType> collection) {
     // first filter out abstract type from collection that already exists in the
     // union
-    HashSet<NullableType> unionSet = unionType.types;
+    LinkedHashSet<NullableType> unionSet = unionType.types;
     ArrayList<NullableType> candidates = new ArrayList<>(collection.size());
     for (NullableType type : collection) {
       assert !type.isNullable();
@@ -111,7 +122,7 @@ public class UnionType extends NullableType {
     // compute nullability
     nullable |= unionType.isNullable();
 
-    HashSet<NullableType> newUnionSet = new HashSet<>(unionSet);
+    LinkedHashSet<NullableType> newUnionSet = new LinkedHashSet<>(unionSet);
     Iterator<NullableType> candidateIt = candidates.iterator();
     NullableType candidate = candidateIt.next();
 
@@ -187,7 +198,7 @@ public class UnionType extends NullableType {
 
   @Override
   public Type invert() {    
-    HashSet<NullableType> result = new HashSet<>();
+    LinkedHashSet<NullableType> result = new LinkedHashSet<>();
     boolean minIsDone = false;
     boolean maxIsDone = false;
     BigInteger last = null;
@@ -197,7 +208,7 @@ public class UnionType extends NullableType {
         IntType iType = (IntType) type;
         BigInteger minBound = iType.getMinBound();
         BigInteger maxBound = iType.getMaxBound();
-        
+
         if (maxBound == null) {
           maxIsDone = true;
         }
@@ -227,7 +238,7 @@ public class UnionType extends NullableType {
         }
       }
     }
-    
+
     if (!maxIsDone) {
       result.add(new IntType(isNullable(), last, null));
     }
@@ -293,6 +304,17 @@ public class UnionType extends NullableType {
           return type;
         }
         return ltValues;
+      }
+    });
+  }
+  
+  @Override
+  public Type exclude(final Type other) {
+    return map(new TypeMapper() {
+      
+      @Override
+      public Type transform(Type type) {
+        return type.exclude(other);
       }
     });
   }

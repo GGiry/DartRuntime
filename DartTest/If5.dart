@@ -11,21 +11,19 @@ void main() {
   
   var a1;
   var a2;
+  var a3;
+  var a4;
 
-  var c3;
-  var c4;
-  var c5;
-
-  if (20 >= a) {
-    a1 = a; // a1=int? [-infinity,20]
-    if (a >= 10) {
-      a2 = a; // a2=int? [10,20]
-      if (c <= a) {
-        c3 = a; // c3=int? [5,5]
-      } else {
-        c4 = a; // c4=null
+  if (a != 0) {
+    a1 = a;
+    if (a != 2) {
+      a2 = a;
+      if (a != 56) {
+        a3 = a;
+        if (a != -82) {
+          a4 = a;
+        }
       }
-      c5 = a; // c5=int? [10,20]
     }
   }
 }

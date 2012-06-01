@@ -66,4 +66,9 @@ public class DynamicType extends NullableType {
   public Type LTValues(Type other) {
     return null;
   }
+
+  @Override
+  public Type exclude(Type other) {
+    return null;
+  }
 }

@@ -76,4 +76,6 @@ public interface Type {
   Type LTEValues(Type other);
 
   Type LTValues(Type other);
+
+  Type exclude(Type other);
 }

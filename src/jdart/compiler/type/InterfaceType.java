@@ -99,4 +99,9 @@ public class InterfaceType extends ElementType {
   public Type LTValues(Type other) {
     return null;
   }
+  
+  @Override
+  public Type exclude(Type other) {
+    return null;
+  }
 }
