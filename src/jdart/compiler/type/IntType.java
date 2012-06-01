@@ -23,11 +23,22 @@ public class IntType extends PrimitiveType {
     Objects.requireNonNull(constant);
     return new IntType(false, constant, constant);
   }
-
+  
   @Override
   public int hashCode() {
-    return (isNullable() ? 1 : 0) ^ Objects.hashCode(minBound) ^ Integer.rotateLeft(Objects.hashCode(maxBound), 16);
+    if (minBound == null) {
+      return Integer.MIN_VALUE;
+    }
+    if (maxBound == null) {
+      return Integer.MAX_VALUE;
+    }
+    return minBound.hashCode();
   }
+
+//  @Override
+//  public int hashCode() {
+//    return (isNullable() ? 1 : 0) ^ Objects.hashCode(minBound) ^ Integer.rotateLeft(Objects.hashCode(maxBound), 16);
+//  }
 
   @Override
   public boolean equals(Object obj) {

@@ -19,15 +19,11 @@ public class UnionType extends NullableType {
     this.types = types;
   }
 
-  private static void sortedAdd(HashSet<NullableType> set, NullableType type) {
-    set.add(type);
-  }
-
   static UnionType createUnionType(NullableType type1, NullableType type2) {
     boolean nullable = type1.isNullable() || type2.isNullable();
     HashSet<NullableType> types = new HashSet<>();
-    sortedAdd(types, type1.asNonNull());
-    sortedAdd(types, type2.asNonNull());
+    types.add(type1.asNonNull());
+    types.add(type2.asNonNull());
     return new UnionType(nullable, types);
   }
 
@@ -190,68 +186,61 @@ public class UnionType extends NullableType {
   }
 
   @Override
-  public Type invert() {
-    LinkedList<BigInteger> list = new LinkedList<>();
-    HashSet<NullableType> finalSet = new HashSet<>();
-    boolean minNull = false;
-    boolean maxNull = false;
-    BigInteger min = null;
-    BigInteger max = null;
+  public Type invert() {    
+    HashSet<NullableType> result = new HashSet<>();
+    boolean minIsDone = false;
+    boolean maxIsDone = false;
+    BigInteger last = null;
 
     for (Type type : types) {
       if (type instanceof IntType) {
         IntType iType = (IntType) type;
         BigInteger minBound = iType.getMinBound();
         BigInteger maxBound = iType.getMaxBound();
-        if (minBound != null) {
-          BigInteger minSubtract = minBound.subtract(BigInteger.ONE);
-          list.add(minSubtract);
-          if (min == null || minSubtract.compareTo(min) < 0) {
-            min = minSubtract;
-          }
-        } else {
-          minNull = true;
+        
+        if (maxBound == null) {
+          maxIsDone = true;
         }
-        if (maxBound != null) {
-          BigInteger maxAdd = maxBound.add(BigInteger.ONE);
-          list.add(maxAdd);
-          if (max == null || maxAdd.compareTo(max) < 0) {
-            max = maxAdd;
+
+        if (!minIsDone) {
+          last = maxBound.add(BigInteger.ONE);
+          if (minBound != null) {
+            result.add(new IntType(isNullable(), null, minBound.subtract(BigInteger.ONE)));
           }
+          minIsDone = true;
         } else {
-          maxNull = true;
+          if (last == null) {
+          } else {
+            result.add(new IntType(isNullable(), last, minBound.subtract(BigInteger.ONE)));
+            if (maxBound != null) {
+              last = maxBound.add(BigInteger.ONE);
+            } else {
+              last = null;
+            }
+          }
         }
+
       } else {
-        finalSet.add((NullableType) type.invert());
+        NullableType invert = (NullableType) type.invert();
+        if (invert != null) {
+          result.add(invert);
+        }
       }
     }
-
-    Collections.sort(list);
-
-    int i = 0;
-    BigInteger last = null;
-    for (BigInteger value : list) {
-      i++;
-      if (!minNull) {
-        finalSet.add(new IntType(isNullable(), null, value));
-        minNull = true;
-        continue;
-      }
-      if (!maxNull && i == list.size()) {
-        finalSet.add(new IntType(isNullable(), value, null));
-        maxNull = true;
-        continue;
-      }
-
-      if (last == null) {
-        last = value;
-      } else {
-        finalSet.add(new IntType(isNullable(), last, value));
-        last = null;
-      }
+    
+    if (!maxIsDone) {
+      result.add(new IntType(isNullable(), last, null));
     }
 
-    return new UnionType(isNullable(), finalSet);
+    if (result.isEmpty()) {
+      return null;
+    }
+    if (result.size() == 1) {
+      NullableType[] array = new NullableType[1];
+      result.toArray(array);
+      return array[0];
+    }
+    return new UnionType(isNullable(), result);
   }
 
   @Override

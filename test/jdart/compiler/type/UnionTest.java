@@ -105,4 +105,11 @@ public class UnionTest {
     Assert.assertEquals(UnionType.createUnionType(type1, DoubleType.constant(56.2)),
         Types.union(Types.union(type2, DoubleType.constant(56.2)), type1));
   }
+  
+  @Test
+  public void unionInvert() {
+    NullableType type1 = INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ZERO).asTypeLessOrEqualsThan(BigInteger.TEN);
+    Type doubleInvert = type1.invert().invert();
+    Assert.assertEquals(type1, doubleInvert);
+  }
 }
