@@ -164,8 +164,6 @@ public class UnionType extends NullableType {
     Type resultType = null;
     for (Type type : types) {
       Type mappedType = typeMapper.transform(type);
-      System.out.println("res: " + resultType);
-      System.out.println("map: " + mappedType);
       if (mappedType == null) {
         continue;
       }
@@ -174,7 +172,6 @@ public class UnionType extends NullableType {
         continue;
       }
       resultType = Types.union(resultType, mappedType);
-      System.out.println("union: " + resultType);
     }
     if (resultType != null) {
       return resultType;
