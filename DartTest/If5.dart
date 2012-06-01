@@ -20,7 +20,7 @@ void main() {
     a1 = a; // a1=int? [-infinity,20]
     if (a >= 10) {
       a2 = a; // a2=int? [10,20]
-      if (c >= a) {
+      if (c <= a) {
         c3 = a; // c3=int? [5,5]
       } else {
         c4 = a; // c4=null

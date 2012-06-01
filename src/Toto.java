@@ -64,8 +64,8 @@ public class Toto {
     String sdkPath = "../../dart-sdk/";
 
     String[] paths = { 
-        "DartTest/If5.dart",
         "DartTest/If4.dart",
+        "DartTest/If5.dart",
         "DartTest/If2.dart",
         "DartTest/If3.dart",
         // "DartTest/Array.dart",

@@ -425,21 +425,19 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
       List<Type> types = conditionVisitor.accept(condition, parameter);
+      
+      FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
+      FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
 
       if (type != FALSE_TYPE) {
-        FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, envThen);
         accept(node.getThenStatement(), envThen);
-
-        // FIXME merge doesn't work.
         parameter.mergeWithoutUnion(envThen);
       }
       if (type != TRUE_TYPE) {
         if (node.getElseStatement() != null) {
-          FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
           changeOperandsTypes(types.get(ConditionVisitor.FALSE_POSITION), (DartBinaryExpression) condition, envElse);
           accept(node.getElseStatement(), envElse);
-          // FIXME merge doesn't work.
           parameter.mergeWithoutUnion(envElse);
         }
       }
