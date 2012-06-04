@@ -3,11 +3,12 @@ package jdart.compiler.type;
 import static jdart.compiler.type.CoreTypeRepository.*;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 
 public class UnionType extends NullableType {
   // each component type should be non nullable and not a union type
@@ -104,13 +105,18 @@ public class UnionType extends NullableType {
     // first filter out abstract type from collection that already exists in the
     // union
     LinkedHashSet<NullableType> unionSet = unionType.types;
-    ArrayList<NullableType> candidates = new ArrayList<>(collection.size());
+    LinkedList<NullableType> candidates = new LinkedList<>();
+    //ArrayList<NullableType> candidates = new ArrayList<>(collection.size());
     for (NullableType type : collection) {
       assert !type.isNullable();
       assert !(type instanceof UnionType);
 
       if (unionSet.contains(type)) {
-        continue;
+        if (!(type instanceof IntType)) {
+          continue;
+        } else {
+          unionSet.remove(type);
+        }
       }
       candidates.add(type);
     }
@@ -152,8 +158,46 @@ public class UnionType extends NullableType {
         NullableType singleton = newUnionSet.iterator().next();
         return (nullable) ? singleton.asNullable() : singleton;
       }
+      newUnionSet = sortUnionSet(newUnionSet);
       return new UnionType(nullable, newUnionSet);
     }
+  }
+
+  /**
+   * Sort unionSet for reduce method.
+   * 
+   * Only sort the {@link IntType} instances.
+   * 
+   * @param newUnionSet Set to sort.
+   * @return Sorted set.
+   */
+  private static LinkedHashSet<NullableType> sortUnionSet(LinkedHashSet<NullableType> unionSet) {
+    LinkedList<IntType> intTypes = new LinkedList<>();
+    LinkedHashSet<NullableType> result = new LinkedHashSet<>();
+    
+    for (NullableType candidate : unionSet) {
+      if (candidate instanceof IntType) {
+        intTypes.add((IntType) candidate);
+      } else {
+        result.add(candidate);
+      }
+    }
+    
+    Collections.sort(intTypes, new Comparator<IntType>() {
+      @Override
+      public int compare(IntType o1, IntType o2) {
+        if (o1.getMinBound() == null || o2.getMaxBound() == null) {
+          return -1;
+        }
+        if (o2.getMinBound() == null || o1.getMaxBound() == null) {
+          return 1;
+        }
+        return o1.getMinBound().compareTo(o2.getMinBound());
+      }
+    });
+    
+    result.addAll(intTypes);
+    return result;
   }
 
   @Override
@@ -307,11 +351,11 @@ public class UnionType extends NullableType {
       }
     });
   }
-  
+
   @Override
   public Type exclude(final Type other) {
     return map(new TypeMapper() {
-      
+
       @Override
       public Type transform(Type type) {
         return type.exclude(other);
