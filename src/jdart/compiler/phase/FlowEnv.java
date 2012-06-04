@@ -18,6 +18,7 @@ public class FlowEnv {
   private final Type returnType;
   private final Type expectedType;
   private final/* maybenull */ HashMap<VariableElement, Type> variableTypeMap;
+  private boolean inLoop;
 
   private FlowEnv(/* maybenull */FlowEnv parent, /* maybenull */Type thisType, Type returnType, Type expectedType,
       /* maybenull */HashMap<VariableElement, Type> variableTypeMap) {
@@ -26,6 +27,9 @@ public class FlowEnv {
     this.returnType = Objects.requireNonNull(returnType);
     this.expectedType = Objects.requireNonNull(expectedType);
     this.variableTypeMap = variableTypeMap;
+    if (parent != null) {
+      this.inLoop = parent.inLoop;
+    }
   }
 
   public FlowEnv(Type thisType) {
@@ -190,5 +194,19 @@ public class FlowEnv {
         register(key, entry.getValue());
       }
     }
+  }
+
+  /**
+   * @return the inLoop state.
+   */
+  public boolean inLoop() {
+    return inLoop;
+  }
+
+  /**
+   * @param inLoop the new inLoop state to set.
+   */
+  public void setInLoop(boolean inLoop) {
+    this.inLoop = inLoop;
   }
 }

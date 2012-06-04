@@ -440,6 +440,7 @@ public class IntType extends PrimitiveType {
 
   @Override
   public Type LTEValues(Type other) {
+    // TODO check constant cases.
     if (other instanceof IntType) {
       IntType iType = (IntType) other;
       BigInteger cst = asConstant();
@@ -504,10 +505,11 @@ public class IntType extends PrimitiveType {
         DiffResult diff = diff(this, iType);
 
         switch (diff) {
-        case FIRST_IS_LEFT:
-        case SECOND_IS_LEFT:
         case EQUALS:
           return this;
+        case SECOND_IS_LEFT:
+          return iType;
+        case FIRST_IS_LEFT:
         case FIRST_CONTAINS_SECOND:
           return new IntType(isNullable(), minBound, oCst.subtract(BigInteger.ONE));
         default:
@@ -519,10 +521,11 @@ public class IntType extends PrimitiveType {
         DiffResult diff = diff(this, iType);
 
         switch (diff) {
-        case FIRST_IS_LEFT:
-        case SECOND_IS_LEFT:
         case EQUALS:
           return this;
+        case SECOND_IS_LEFT:
+          return null;
+        case FIRST_IS_LEFT:
         case SECOND_CONTAINS_FIRST:
           return new IntType(isNullable(), cst.add(BigInteger.ONE), iType.maxBound);
         default:
