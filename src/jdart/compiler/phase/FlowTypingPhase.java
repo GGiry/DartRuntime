@@ -468,7 +468,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
       env.setInLoop(true);
       accept(node.getInit(), env);
-      
+
       boolean firsTime = true;
       while((firsTime || !env.isStable()) && conditionType == TRUE_TYPE) {
         env = new FlowEnv(env, env.getReturnType(), env.getExpectedType());
@@ -508,7 +508,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       parameter.update(env);
       return null;
     }
-    
+
     @Override
     public Type visitDoWhileStatement(DartDoWhileStatement node, FlowEnv parameter) {
       DartExpression condition = node.getCondition();
@@ -675,8 +675,17 @@ public class FlowTypingPhase implements DartCompilationPhase {
         }
       }
       case AND:
+        if (type1 == TRUE_TYPE && type2 == TRUE_TYPE) {
+          return TRUE_TYPE;
+        } else {
+          return BOOL_TYPE;
+        }
       case OR:
-        return BOOL_NON_NULL_TYPE;
+        if (type1 == TRUE_TYPE || type2 == TRUE_TYPE) {
+          return TRUE_TYPE;
+        } else {
+          return BOOL_TYPE;
+        }
 
       case ADD:
       case SUB:
@@ -719,7 +728,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
         // it's not a primitive operation, so it's a method call
         break;
-
       default:
         throw new AssertionError("Binary Expr: " + operator + " (" + operator.name() + ") not implemented");
       }
@@ -728,7 +736,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       if (node.getElement() == null) {
         // FIXME A setter with a dynamic parameter will make the field dynamic.
         // (see PropertyAccess2.dart)
-        System.err.println("NoSuchMethodExcpetion: " + node.getOperator() + " for type: " + type1 + ", " + type2);
+        System.err.println("NoSuchMethodException: " + node.getOperator() + " for type: " + type1 + ", " + type2);
         return DYNAMIC_TYPE;
       }
       return typeHelper.asType(true, node.getElement().getFunctionType().getReturnType());
@@ -795,33 +803,36 @@ public class FlowTypingPhase implements DartCompilationPhase {
         argumentTypes.add(accept(argument, flowEnv));
       }
 
-      switch (node.getTarget().getElement().getKind()) {
-      case CLASS: // static field or method
-      case SUPER: // super field or method
-      case LIBRARY: // library call
+      Element targetElement = node.getTarget().getElement();
+      if (targetElement != null) {
+        switch (targetElement.getKind()) {
+        case CLASS: // static field or method
+        case SUPER: // super field or method
+        case LIBRARY: // library call
 
-        NodeElement nodeElement = node.getElement();
-        switch (nodeElement.getKind()) {
-        case FIELD: // field access
-          return Types.getReturnType(typeHelper.asType(true, ((FieldElement) nodeElement).getType()));
+          NodeElement nodeElement = node.getElement();
+          switch (nodeElement.getKind()) {
+          case FIELD: // field access
+            return Types.getReturnType(typeHelper.asType(true, ((FieldElement) nodeElement).getType()));
 
-        case METHOD: { // statically resolved method call
-          /*
-           * emulate a call FIXME FlowEnv newFlowEnv = new FlowEnv(null);
-           * for(Type argumentType: argumentTypes) {
-           * newFlowEnv.register(variable, argumentType); } return new
-           * FTVisitor(
-           * typeRepository).accept(((MethodNodeElement)element).getNode(),
-           * newFlowEnv);
-           */
-          return typeHelper.asType(true, ((MethodElement) nodeElement).getReturnType());
+          case METHOD: { // statically resolved method call
+            /*
+             * emulate a call FIXME FlowEnv newFlowEnv = new FlowEnv(null);
+             * for(Type argumentType: argumentTypes) {
+             * newFlowEnv.register(variable, argumentType); } return new
+             * FTVisitor(
+             * typeRepository).accept(((MethodNodeElement)element).getNode(),
+             * newFlowEnv);
+             */
+            return typeHelper.asType(true, ((MethodElement) nodeElement).getReturnType());
+          }
+
+          default:
+            throw new UnsupportedOperationException();
+          }
+
+        default: // polymorphic method call
         }
-
-        default:
-          throw new UnsupportedOperationException();
-        }
-
-      default: // polymorphic method call
       }
 
       Type receiverType = accept(node.getTarget(), flowEnv);
