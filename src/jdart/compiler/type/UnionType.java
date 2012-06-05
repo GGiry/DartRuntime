@@ -299,11 +299,11 @@ public class UnionType extends NullableType {
   }
 
   @Override
-  public Type LTEValues(final Type other) {
+  public Type lessThanOrEqualsValues(final Type other, final boolean inLoop) {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        Type lteValues = type.LTEValues(other);
+        Type lteValues = type.lessThanOrEqualsValues(other, inLoop);
         if (lteValues == VOID_TYPE) {
           return type;
         }
@@ -313,11 +313,11 @@ public class UnionType extends NullableType {
   }
 
   @Override
-  public Type LTValues(final Type other) {
+  public Type lessThanValues(final Type other, final boolean inLoop) {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        Type ltValues = type.LTValues(other);
+        Type ltValues = type.lessThanValues(other, inLoop);
         if (ltValues == VOID_TYPE) {
           return type;
         }
@@ -326,11 +326,11 @@ public class UnionType extends NullableType {
     });
   }
 
-  public Type GTEValues(final Type other) {
+  public Type greaterThanOrEqualsValues(final Type other, final boolean inLoop) {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        Type lteValues = other.LTEValues(type);
+        Type lteValues = other.lessThanOrEqualsValues(type, inLoop);
         if (lteValues == VOID_TYPE) {
           return type;
         }
@@ -339,11 +339,11 @@ public class UnionType extends NullableType {
     });
   }
 
-  public Type GTValues(final Type other) {
+  public Type greaterThanValues(final Type other, final boolean inLoop) {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        Type ltValues = other.LTValues(type);
+        Type ltValues = other.lessThanValues(type, inLoop);
         if (ltValues == VOID_TYPE) {
           return type;
         }

@@ -135,7 +135,7 @@ public class DoubleType extends PrimitiveType {
   }
 
   @Override
-  public Type LTEValues(Type other) {
+  public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
     if (other instanceof DoubleType) {
       if (constant.compareTo((Double) other.asConstant()) <= 0) {
         return this;
@@ -160,14 +160,14 @@ public class DoubleType extends PrimitiveType {
     }
 
     if (other instanceof UnionType) {
-      return ((UnionType) other).GTEValues(this);
+      return ((UnionType) other).greaterThanOrEqualsValues(this, inLoop);
     }
 
     return null;
   }
 
   @Override
-  public Type LTValues(Type other) {
+  public Type lessThanValues(Type other, boolean inLoop) {
     if (other instanceof DoubleType) {
       if (constant.compareTo((Double) other.asConstant()) < 0) {
         return this;
@@ -187,7 +187,7 @@ public class DoubleType extends PrimitiveType {
     }
 
     if (other instanceof UnionType) {
-      return ((UnionType) other).GTValues(this);
+      return ((UnionType) other).greaterThanValues(this, inLoop);
     }
 
     return null;

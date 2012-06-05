@@ -12,12 +12,10 @@ void main() {
   var a1;
   var a2;
   var a3;
-  var a4;
   
   var b1;
   var b2;
   var b3;
-  var b4;
 
   var c1;
   var c2;
@@ -53,10 +51,5 @@ void main() {
         }
       }
     }
-  } else {
-    // do nothing
   }
-  
-  a4 = a;
-  b4 = b;
 }

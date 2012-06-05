@@ -73,9 +73,9 @@ public interface Type {
 
   Type invert();
 
-  Type LTEValues(Type other);
+  Type lessThanOrEqualsValues(Type other, boolean inLoop);
 
-  Type LTValues(Type other);
+  Type lessThanValues(Type other, boolean inLoop);
 
   Type exclude(Type other);
 }

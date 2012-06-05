@@ -139,12 +139,12 @@ public class FunctionType extends OwnerType {
   }
 
   @Override
-  public Type LTEValues(Type other) {
+  public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
     return null;
   }
 
   @Override
-  public Type LTValues(Type other) {
+  public Type lessThanValues(Type other, boolean inLoop) {
     return null;
   }
   

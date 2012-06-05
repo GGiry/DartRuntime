@@ -340,7 +340,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
           }
           break;
         case LTE:
-          typeTrue = type1.LTEValues(type2);
+          typeTrue = type1.lessThanOrEqualsValues(type2, parameter.inLoop());
           if (typeTrue != null && typeTrue != VOID_TYPE) {
             typeFalse = typeTrue.invert();
           } else if (typeTrue == VOID_TYPE) {
@@ -348,7 +348,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
           }
           break;
         case GTE:
-          typeTrue = type2.LTEValues(type1); // a >= b <=> b <= a
+          typeTrue = type2.lessThanOrEqualsValues(type1, parameter.inLoop()); // a >= b <=> b <= a
           if (typeTrue != null && typeTrue != VOID_TYPE) {
             typeFalse = typeTrue.invert();
           } else if (typeTrue == VOID_TYPE) {
@@ -356,7 +356,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
           }
           break;
         case LT:
-          typeTrue = type1.LTValues(type2);
+          typeTrue = type1.lessThanValues(type2, parameter.inLoop());
           if (typeTrue != null && typeTrue != VOID_TYPE) {
             typeFalse = typeTrue.invert();
           } else if (typeTrue == VOID_TYPE) {
@@ -364,7 +364,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
           }
           break;
         case GT:
-          typeTrue = type2.LTValues(type1); // a > b <=> b < a
+          typeTrue = type2.lessThanValues(type1, parameter.inLoop()); // a > b <=> b < a
           if (typeTrue != null && typeTrue != VOID_TYPE) {
             typeFalse = typeTrue.invert();
           } else if (typeTrue == VOID_TYPE) {
@@ -470,7 +470,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
       accept(node.getInit(), env);
 
       boolean firsTime = true;
-      while((firsTime || !env.isStable()) && conditionType == TRUE_TYPE) {
+      //TODO do while
+      while(firsTime || !env.isStable()) {
         env = new FlowEnv(env, env.getReturnType(), env.getExpectedType());
         List<Type> types = conditionVisitor.accept(condition, env);
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, env);

@@ -316,64 +316,222 @@ public class IntType extends PrimitiveType {
   }
 
   private enum DiffResult {
-    FIRST_CONTAINS_SECOND(-3),
-    FIRST_IS_LEFT(-2),
-    FIRST_IS_LEFT_OVERLAP(-1),
-    EQUALS(0),
-    SECOND_IS_LEFT_OVERLAP(1),
-    SECOND_IS_LEFT(2),
-    SECOND_CONTAINS_FIRST(3);
+    FIRST_CONTAINS_SECOND(-3), FIRST_IS_LEFT(-2), FIRST_IS_LEFT_OVERLAP(-1), EQUALS(0), SECOND_IS_LEFT_OVERLAP(1), SECOND_IS_LEFT(2), SECOND_CONTAINS_FIRST(3);
 
     private final int value;
 
     private DiffResult(int value) {
       this.value = value;
     }
-
-    public static DiffResult getDiff(int value) {
-      for (DiffResult diffResult : values()) {
-        if (diffResult.value == value) {
-          return diffResult;
-        }
-      }
-      throw new IllegalArgumentException("Value must be in range (-3, 3)");
-    }
   }
 
   private static DiffResult diff(IntType type1, IntType type2) {
-    int tmp = diffHelper(type1, type2);
-    if (tmp != 0) {
-      return DiffResult.getDiff(-tmp);
-    }
+    BigInteger minBound1 = type1.minBound;
+    BigInteger maxBound1 = type1.maxBound;
+    BigInteger minBound2 = type2.minBound;
+    BigInteger maxBound2 = type2.maxBound;
 
-    tmp = diffHelper(type2, type1);
-    if (tmp != 0) {
-      return DiffResult.getDiff(tmp);
-    }
-    if (type1.minBound == null && type2.minBound == null && type1.maxBound == null && type2.maxBound == null) {
-      return DiffResult.EQUALS;
-    }
-    throw new IllegalStateException();
-  }
-
-  private static int diffHelper(IntType type1, IntType type2) {
-    if (type2.minBound != null) {
-      if (type2.maxBound != null) {
-        if (type1.minBound == null || type1.minBound.compareTo(type2.minBound) < 0) {
-          if (type1.maxBound == null || type1.maxBound.compareTo(type2.maxBound) > 0) {
-            return 3;
+    if (minBound1 == null) {
+      // ]-inf; ?] & [?; ?]
+      if (minBound2 == null) {
+        // ]-inf; ?] & ]-inf; ?]
+        if (maxBound1 == null) {
+          // ]-inf; +inf[ & ]-inf; ?]
+          if (maxBound2 == null) {
+            // ]-inf; +inf[ & ]-inf; +inf[
+            return DiffResult.EQUALS;
           }
+          // ]-inf; +inf[ & ]-inf; l[
+          return DiffResult.FIRST_CONTAINS_SECOND;
+        }
+        // ]-inf; j] & ]-inf; ?]
+        if (maxBound2 == null) {
+          // ]-inf; j] & ]-inf; +inf[
+          return DiffResult.SECOND_CONTAINS_FIRST;
+        }
+        // ]-inf; j] & ]-inf; l]
+        int max1CompareToMax2 = maxBound1.compareTo(maxBound2);
+        if (max1CompareToMax2 < 0) {
+          // ]-inf; j] & ]-inf; l] with j < l
+          return DiffResult.SECOND_CONTAINS_FIRST;
+        } else if (max1CompareToMax2 == 0) {
+          // ]-inf; j] & ]-inf; l] with j == l
+          return DiffResult.EQUALS;
+        } else {
+          // ]-inf; j] & ]-inf; l] with j > l
+          return DiffResult.FIRST_CONTAINS_SECOND;
         }
       }
-      if (type1.maxBound != null) {
-        if (type1.maxBound.compareTo(type2.minBound) < 0) {
-          return 2;
-        } else if (type1.minBound == null || type1.minBound.compareTo(type2.minBound) < 0) {
-          return 1;
+      // ]-inf; ?] & [k; ?]
+      if (maxBound1 == null) {
+        // ]-inf; +inf[ & [k; ?]
+        return DiffResult.FIRST_CONTAINS_SECOND;
+      }
+      // ]-inf; j] & [k; ?]
+      if (maxBound2 == null) {
+        // ]-inf; j] & [k; +inf[
+        int max1CompareToMin2 = maxBound1.compareTo(minBound2);
+        if (max1CompareToMin2 < 0) {
+          return DiffResult.FIRST_IS_LEFT;
+        } else  {
+          return DiffResult.FIRST_IS_LEFT_OVERLAP;
+        }
+      }
+      // ]-inf; j] & [k; l]
+      int max1CompareToMin2 = maxBound1.compareTo(minBound2);
+      int max1CompareToMax2 = maxBound1.compareTo(maxBound2);
+      if (max1CompareToMin2 > 0) {
+        // ]-inf; j] & [k; l] && j > l
+        return DiffResult.FIRST_CONTAINS_SECOND;
+      } else if (max1CompareToMax2 == 0) {
+        // ]-inf; j] & [k; l] && j == l
+        return DiffResult.FIRST_IS_LEFT_OVERLAP;
+      }
+      // ]-inf; j] & [k; l] && j < l
+      if (max1CompareToMin2 < 0) {
+        // ]-inf; j] & [k; l] && j < k && j < l
+        return DiffResult.FIRST_IS_LEFT;
+      } else if (max1CompareToMin2 == 0) {
+        // ]-inf; j] & [k; l] && j == k && j < l
+        return DiffResult.FIRST_IS_LEFT_OVERLAP;
+      }
+      // ]-inf; j] & [k; l] && j > k && j < l
+      return DiffResult.FIRST_IS_LEFT_OVERLAP;
+    }
+    // [i; ?] & [?; ?]
+    if (maxBound1 == null) {
+      // [i; +inf[ & [?; ?]
+      if (minBound2 == null) {
+        // [i; +inf[ & ]-inf; ?]
+        if (maxBound2 == null) {
+          // [i; +inf[ & ]-inf; +inf[
+          return DiffResult.SECOND_CONTAINS_FIRST;
+        }
+        // [i; +inf[ & ]-inf; l]
+        int min1CompareToMax2 = minBound1.compareTo(maxBound2);
+        if (min1CompareToMax2 <= 0) {
+          // [i; +inf[ & ]-inf; l] && i <= j
+          return DiffResult.SECOND_IS_LEFT_OVERLAP;
+        } else {
+          // [i; +inf[ & ]-inf; l] && i > j
+          return DiffResult.SECOND_IS_LEFT;
+        }
+      }
+      // [i; +inf[ & [k; ?]
+      int min1CompareToMin2 = minBound1.compareTo(minBound2);
+      if (min1CompareToMin2 <= 0) {
+        // [i; +inf[ & [k; ?] && i <= k
+        return DiffResult.FIRST_CONTAINS_SECOND;
+      } else {
+        // [i; +inf[ & [k; ?] && i > k
+        if (maxBound2 == null) {
+          // [i; +inf[ & [k; +inf[ && i > k
+          return DiffResult.SECOND_CONTAINS_FIRST;
+        }
+        // [i; +inf[ & [k; l] && i > k
+        int min1CompareToMax2 = minBound1.compareTo(maxBound2);
+        if (min1CompareToMax2 <= 0) {
+          // [i; +inf[ & [k; l] && i > k && i <= l
+          return DiffResult.SECOND_IS_LEFT_OVERLAP;
+        } else {
+          // [i; +inf[ & [k; l] && i > k && i > l
+          return DiffResult.SECOND_IS_LEFT;
         }
       }
     }
-    return 0;
+    // [i; j] & [?; ?]
+    if (minBound2 == null) {
+      // [i; j] & ]-inf; ?]
+      if (maxBound2 == null) {
+        // [i; j] & ]-inf; +inf[
+        return DiffResult.SECOND_CONTAINS_FIRST;
+      }
+      // [i; j] & ]-inf; l]
+      int min1CompareToMax2 = minBound1.compareTo(maxBound2);
+      if (min1CompareToMax2 > 0) {
+        // [i; j] & ]-inf; l] && i > l
+        return DiffResult.SECOND_IS_LEFT;
+      } else if (min1CompareToMax2 == 0) {
+        // [i; j] & ]-inf; l] && i == l
+        return DiffResult.SECOND_IS_LEFT_OVERLAP;
+      } else {
+        // [i; j] & ]-inf; l] && i < l
+        int max1CompareToMax2 = maxBound1.compareTo(maxBound2);
+        if (max1CompareToMax2 <= 0) {
+          // [i; j] & ]-inf; l] && i < l && j <= l
+          return DiffResult.SECOND_CONTAINS_FIRST;
+        } else {
+          // [i; j] & ]-inf; l] && i < l && j > l
+          return DiffResult.SECOND_IS_LEFT_OVERLAP;
+        }
+      }
+    }
+    // [i; j] & [k; ?]
+    if (maxBound2 == null) {
+      int min1CompareToMin2 = minBound1.compareTo(minBound2);
+      int max1CompareToMin2 = maxBound1.compareTo(minBound2);
+
+      if (max1CompareToMin2 < 0) {
+        // [i; j] & [k; +inf[ && j < k
+        return DiffResult.FIRST_IS_LEFT;
+      } else if (max1CompareToMin2 == 0) {
+        // [i; j] & [k; +inf[ && j == k
+        return DiffResult.FIRST_IS_LEFT_OVERLAP;
+      } else {
+        // [i; j] & [k; +inf[ && j > k
+        if (min1CompareToMin2 < 0) {
+          // [i; j] & [k; +inf[ && j > k && i < k
+          return DiffResult.FIRST_IS_LEFT_OVERLAP;
+        } else {
+          // [i; j] & [k; +inf[ && j > k && i >= k
+          return DiffResult.SECOND_CONTAINS_FIRST;
+        }
+      }
+    }
+    // [i; j] & [k; l]
+    int min1CompareToMin2 = minBound1.compareTo(minBound2);
+    int min1CompareToMax2 = minBound1.compareTo(maxBound2);
+    int max1CompareToMin2 = maxBound1.compareTo(minBound2);
+    int max1CompareToMax2 = maxBound1.compareTo(maxBound2);
+    if (max1CompareToMin2 < 0) {
+      // [i; j] & [k; l] && j < k
+      return DiffResult.FIRST_IS_LEFT;
+    } else if (max1CompareToMin2 == 0) {
+      // [i; j] & [k; l] j == k
+      if (min1CompareToMin2 < 0) {
+        // [i; j] & [k; l] && j == k && i < k
+        return DiffResult.FIRST_IS_LEFT_OVERLAP;
+      } else {
+        throw new IllegalStateException();
+      }
+    } else {
+      // [i; j] & [k; l] j > k
+      if (min1CompareToMin2 < 0) {
+        // [i; j] & [k; l] j > k && i < k
+        return DiffResult.FIRST_IS_LEFT_OVERLAP;
+      } else if (max1CompareToMin2 == 0) {
+        // [i; j] & [k; l] j > k && i == k
+        if (max1CompareToMax2 == 0) {
+          // [i; j] & [k; l] && i == k && j == l
+          return DiffResult.EQUALS;
+        } else if (max1CompareToMax2 < 0) {
+          // [i; j] & [k; l] && i == k && j < l
+          return DiffResult.SECOND_CONTAINS_FIRST;
+        } else {
+          // [i; j] & [k; l] && i == k && j > l
+          return DiffResult.FIRST_CONTAINS_SECOND;
+        }
+      } else {
+        // [i; j] & [k; l] j > k && i > k
+        if (min1CompareToMax2 > 0) {
+          // [i; j] & [k; l] i > l
+          return DiffResult.SECOND_IS_LEFT;
+        } else {
+          // [i; j] & [k; l] j > k && i > k && i <= l
+          return DiffResult.SECOND_CONTAINS_FIRST;
+        }
+      }
+    }
   }
 
   /**
@@ -439,20 +597,27 @@ public class IntType extends PrimitiveType {
   }
 
   @Override
-  public Type LTEValues(Type other) {
-    // TODO check constant cases.
+  public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
     if (other instanceof IntType) {
+      System.out.println(this + ", " + other);
       IntType iType = (IntType) other;
       BigInteger cst = asConstant();
       BigInteger oCst = iType.asConstant();
 
+      DiffResult diff = diff(this, iType);
+      
+      System.out.println(diff);
+      
       if (oCst != null) {
-        DiffResult diff = diff(this, iType);
         switch (diff) {
-        case FIRST_IS_LEFT:
-        case SECOND_IS_LEFT:
         case EQUALS:
-          return this;
+        case SECOND_IS_LEFT:
+          return null;
+        case FIRST_IS_LEFT:
+          if (!inLoop) {
+            return this;
+          }
+        case FIRST_IS_LEFT_OVERLAP:
         case FIRST_CONTAINS_SECOND:
           return new IntType(isNullable(), minBound, oCst);
         default:
@@ -461,20 +626,41 @@ public class IntType extends PrimitiveType {
       }
 
       if (cst != null) {
-        DiffResult diff = diff(this, iType);
         switch (diff) {
-        case FIRST_IS_LEFT:
-        case SECOND_IS_LEFT:
         case EQUALS:
-          return this;
+        case SECOND_IS_LEFT:
+        case SECOND_IS_LEFT_OVERLAP:
+        case FIRST_IS_LEFT_OVERLAP:
+          return null;
+        case FIRST_IS_LEFT:
+          if (!inLoop) {
+            return this;
+          }
         case SECOND_CONTAINS_FIRST:
+          System.out.println("return: " + new IntType(isNullable(), cst, iType.maxBound));
           return new IntType(isNullable(), cst, iType.maxBound);
         default:
           throw new IllegalStateException();
         }
       }
+      
+      switch (diff) {
+      case EQUALS:
+        return null;
+      case FIRST_IS_LEFT:
+        if (inLoop) {
+          return new IntType(isNullable(), minBound, iType.minBound);
+        } else {
+          return VOID_TYPE;
+        }
+      case SECOND_IS_LEFT:
+      case SECOND_IS_LEFT_OVERLAP:
+      case SECOND_CONTAINS_FIRST:
+        return null;
+      case FIRST_CONTAINS_SECOND:
+        return new IntType(isNullable(), minBound, iType.minBound);
+      }
 
-      // - a = [10; 20], b = [15; 25] (no change)
       return VOID_TYPE;
     }
 
@@ -489,27 +675,30 @@ public class IntType extends PrimitiveType {
     }
 
     if (other instanceof UnionType) {
-      return ((UnionType) other).GTEValues(this);
+      return ((UnionType) other).greaterThanOrEqualsValues(this, inLoop);
     }
     return null;
   }
 
   @Override
-  public Type LTValues(Type other) {
+  public Type lessThanValues(Type other, boolean inLoop) {
     if (other instanceof IntType) {
       IntType iType = (IntType) other;
       BigInteger cst = asConstant();
       BigInteger oCst = iType.asConstant();
 
+      DiffResult diff = diff(this, iType);
+      
       if (oCst != null) {
-        DiffResult diff = diff(this, iType);
-
         switch (diff) {
         case EQUALS:
-          return this;
         case SECOND_IS_LEFT:
-          return iType;
+          return null;
         case FIRST_IS_LEFT:
+          if (!inLoop) {
+            return this;
+          }
+        case FIRST_IS_LEFT_OVERLAP:
         case FIRST_CONTAINS_SECOND:
           return new IntType(isNullable(), minBound, oCst.subtract(BigInteger.ONE));
         default:
@@ -518,19 +707,38 @@ public class IntType extends PrimitiveType {
       }
 
       if (cst != null) {
-        DiffResult diff = diff(this, iType);
-
         switch (diff) {
         case EQUALS:
-          return this;
         case SECOND_IS_LEFT:
+        case SECOND_CONTAINS_FIRST:
+        case SECOND_IS_LEFT_OVERLAP:
+        case FIRST_IS_LEFT_OVERLAP:
           return null;
         case FIRST_IS_LEFT:
-        case SECOND_CONTAINS_FIRST:
-          return new IntType(isNullable(), cst.add(BigInteger.ONE), iType.maxBound);
+          if (!inLoop) {
+            return this;
+          }
+          return new IntType(isNullable(), cst, iType.minBound.subtract(BigInteger.ONE));
         default:
           throw new IllegalStateException();
         }
+      }
+      
+      switch (diff) {
+      case EQUALS:
+        return null;
+      case FIRST_IS_LEFT:
+        if (inLoop) {
+          return new IntType(isNullable(), minBound, iType.minBound.subtract(BigInteger.ONE));
+        } else {
+          return VOID_TYPE;
+        }
+      case SECOND_IS_LEFT:
+      case SECOND_IS_LEFT_OVERLAP:
+      case SECOND_CONTAINS_FIRST:
+        return null;
+      case FIRST_CONTAINS_SECOND:
+        return new IntType(isNullable(), minBound, iType.minBound.subtract(BigInteger.ONE));
       }
 
       return VOID_TYPE;
@@ -547,7 +755,7 @@ public class IntType extends PrimitiveType {
     }
 
     if (other instanceof UnionType) {
-      return ((UnionType) other).GTValues(this);
+      return ((UnionType) other).greaterThanValues(this, inLoop);
     }
     return null;
   }
@@ -582,13 +790,13 @@ public class IntType extends PrimitiveType {
   public Type unarySub() {
     return new IntType(isNullable(), minBound.subtract(minBound).subtract(minBound), maxBound.subtract(maxBound).subtract(maxBound));
   }
-  
+
   @Override
   public Type exclude(Type other) {
     if (other instanceof IntType) {
       return excludeInt((IntType) other);
     }
-    
+
     if (other instanceof DoubleType) {
       DoubleType dType = (DoubleType) other;
       float floatValue = dType.asConstant().floatValue();
@@ -596,14 +804,14 @@ public class IntType extends PrimitiveType {
         return excludeInt(constant(BigInteger.valueOf((int) floatValue)));
       }
     }
-    
+
     if (other instanceof UnionType) {
       return other.exclude(this);
     }
-    
+
     return null;
   }
-  
+
   /**
    * Remove type range to this range.
    * 
