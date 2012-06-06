@@ -26,7 +26,7 @@ public class NullType implements Type {
   public Type asNonNull() {
     throw new IllegalStateException("null type");
   }
-  
+
   @Override
   public Type asNullable(boolean nullable) {
     return (nullable)?asNullable(): asNonNull();
@@ -41,13 +41,13 @@ public class NullType implements Type {
   public Object asConstant() {
     return NULL_VALUE;
   }
-  
+
   @Override
   public Type map(TypeMapper typeMapper) {
     Type resultType = typeMapper.transform(this);
     return (resultType == null)? DYNAMIC_NON_NULL_TYPE: resultType;
   }
-  
+
   @Override
   public Type commonValuesWith(Type type) {
     if (type.isNullable()) {
@@ -60,19 +60,34 @@ public class NullType implements Type {
   public Type invert() {
     return null;
   }
-  
+
   @Override
   public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
     return null;
   }
-  
+
   @Override
   public Type lessThanValues(Type other, boolean inLoop) {
     return null;
   }
-  
+
   @Override
   public Type exclude(Type other) {
+    return null;
+  }
+
+  @Override
+  public Type add(Type other) {
+    return null;
+  }
+
+  @Override
+  public Type mod(Type other) {
+    return null;
+  }
+
+  @Override
+  public Type sub(Type other) {
     return null;
   }
 }

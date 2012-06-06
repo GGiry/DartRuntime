@@ -174,7 +174,7 @@ public class UnionType extends NullableType {
   private static LinkedHashSet<NullableType> sortUnionSet(LinkedHashSet<NullableType> unionSet) {
     LinkedList<IntType> intTypes = new LinkedList<>();
     LinkedHashSet<NullableType> result = new LinkedHashSet<>();
-    
+
     for (NullableType candidate : unionSet) {
       if (candidate instanceof IntType) {
         intTypes.add((IntType) candidate);
@@ -182,7 +182,7 @@ public class UnionType extends NullableType {
         result.add(candidate);
       }
     }
-    
+
     Collections.sort(intTypes, new Comparator<IntType>() {
       @Override
       public int compare(IntType o1, IntType o2) {
@@ -195,7 +195,7 @@ public class UnionType extends NullableType {
         return o1.getMinBound().compareTo(o2.getMinBound());
       }
     });
-    
+
     result.addAll(intTypes);
     return result;
   }
@@ -361,5 +361,64 @@ public class UnionType extends NullableType {
         return type.exclude(other);
       }
     });
+  }
+
+  public Type add(final Type other) {
+    return map(new TypeMapper() {
+
+      @Override
+      public Type transform(Type type) {
+        return type.add(other);
+      }
+    });
+  }
+
+  public Type sub(final Type other) {
+    return map(new TypeMapper() {
+
+      @Override
+      public Type transform(Type type) {
+        return type.sub(other);
+      }
+    });
+  }
+
+  public Type mod(final Type other) {
+    return map(new TypeMapper() {
+
+      @Override
+      public Type transform(Type type) {
+        return type.mod(other);
+      }
+    });
+  }
+
+  public Type reverseSub(final Type other) {
+    return map(new TypeMapper() {
+
+      @Override
+      public Type transform(Type type) {
+        return other.sub(type);
+      }
+    });
+  }
+
+  public Type reverseMod(final Type other) {
+    return map(new TypeMapper() {
+
+      @Override
+      public Type transform(Type type) {
+        return other.mod(type);
+      }
+    });
+  }
+
+  public boolean containsType(Type parentWidening) {
+    for (NullableType type : types) {
+      if (type.equals(parentWidening)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

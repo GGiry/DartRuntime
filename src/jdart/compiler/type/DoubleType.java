@@ -196,7 +196,7 @@ public class DoubleType extends PrimitiveType {
   public Type unarySub() {
     return constant(-constant);
   }
-  
+
   @Override
   public Type exclude(Type other) {
     if (other instanceof DoubleType) {
@@ -205,7 +205,7 @@ public class DoubleType extends PrimitiveType {
       }
       return this;
     }
-    
+
     if (other instanceof IntType) {
       IntType iType = (IntType) other;
       BigInteger minBound = iType.getMinBound();
@@ -221,12 +221,64 @@ public class DoubleType extends PrimitiveType {
     if (other instanceof UnionType) {
       return other.exclude(this);
     }
-    
+
     return null;
   }
 
   public Type mod(DoubleType other) {
     Double value = new Double(constant.floatValue() % other.constant.floatValue());
     return new DoubleType(false, value);
+  }
+
+  @Override
+  public Type add(Type other) {
+    if (other instanceof IntType) {
+      DoubleType dType = ((IntType) other).asDouble();
+      return add(dType);
+    }
+
+    if (other instanceof UnionType) {
+      return other.add(this);
+    }
+
+    return null;
+  }
+
+  @Override
+  public Type sub(Type other) {
+    if (other instanceof IntType) {
+      DoubleType dType = ((IntType) other).asDouble();
+      return sub(dType);
+    }
+
+    if (other instanceof UnionType) {
+      return ((UnionType) other).reverseSub(this);
+    }
+
+    return null;
+  }
+
+  @Override
+  public Type mod(Type other) {
+    if (other instanceof IntType) {
+      DoubleType dType = ((IntType) other).asDouble();
+      return mod(dType);
+    }
+
+    if (other instanceof UnionType) {
+      return ((UnionType) other).reverseMod(this);
+    }
+
+    return null;
+  }
+
+  public Type reverseMod(IntType other) {
+    DoubleType dType = other.asDouble();
+    return mod(dType);
+  }
+
+  public Type reverseSub(IntType other) {
+    DoubleType dType = other.asDouble();
+    return sub(dType);
   }
 }

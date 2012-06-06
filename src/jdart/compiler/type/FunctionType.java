@@ -152,4 +152,19 @@ public class FunctionType extends OwnerType {
   public Type exclude(Type other) {
     return null;
   }
+  
+  @Override
+  public Type add(Type other) {
+    return null;
+  }
+  
+  @Override
+  public Type mod(Type other) {
+    return null;
+  }
+  
+  @Override
+  public Type sub(Type other) {
+    return null;
+  }
 }

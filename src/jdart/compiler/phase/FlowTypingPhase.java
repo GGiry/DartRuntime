@@ -702,6 +702,28 @@ public class FlowTypingPhase implements DartCompilationPhase {
             return itype1.mod(itype2);
           }
         }
+        if (type1 instanceof UnionType) {
+          UnionType utype = (UnionType) type1;
+          switch (operator) {
+          case ADD:
+            return utype.add(type2);
+          case SUB:
+            return utype.sub(type2);
+          case MOD:
+            return utype.mod(type2);
+          }
+        }
+        if (type2 instanceof UnionType) {
+          UnionType utype = (UnionType) type2;
+          switch (operator) {
+          case ADD:
+            return utype.add(type1);
+          case SUB:
+            return utype.sub(type1);
+          case MOD:
+            return utype.mod(type1);
+          }
+        }
         if (type1 instanceof DoubleType || type2 instanceof DoubleType) {
           operandIsNonNull(arg2, flowEnv);
           DoubleType dtype1, dtype2;

@@ -1044,4 +1044,43 @@ public class IntType extends PrimitiveType {
   public Type mod(IntType other) {
     return INT_NON_NULL_TYPE;
   }
+  
+  @Override
+  public Type add(Type other) {
+    if (other instanceof DoubleType) {
+      return other.add(this);
+    }
+    
+    if (other instanceof UnionType) {
+      return other.add(this);
+    }
+    
+    return null;
+  }
+  
+  @Override
+  public Type mod(Type other) {
+    if (other instanceof DoubleType) {
+      return ((DoubleType) other).reverseMod(this);
+    }
+    
+    if (other instanceof UnionType) {
+      return ((UnionType) other).reverseMod(this);
+    }
+    
+    return null;
+  }
+  
+  @Override
+  public Type sub(Type other) {
+    if (other instanceof DoubleType) {
+      return ((DoubleType) other).reverseSub(this);
+    }
+    
+    if (other instanceof UnionType) {
+      return ((UnionType) other).reverseSub(this);
+    }
+    
+    return null;
+  }
 }

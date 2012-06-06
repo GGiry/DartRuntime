@@ -9,6 +9,7 @@ import java.util.Objects;
 import jdart.compiler.type.CoreTypeRepository;
 import jdart.compiler.type.Type;
 import jdart.compiler.type.Types;
+import jdart.compiler.type.UnionType;
 
 import com.google.dart.compiler.resolver.VariableElement;
 
@@ -146,8 +147,20 @@ public class FlowEnv {
       if (parentType == null) { // ignore an unknown variable.
         continue;
       }
-
-      if (!Types.widening(entry.getValue()).equals(Types.widening(parentType))) {
+      Type widening = Types.widening(entry.getValue());
+      Type parentWidening = Types.widening(parentType);
+      
+      if (widening instanceof UnionType) {
+        UnionType uType = (UnionType) widening;
+        return uType.containsType(parentWidening);
+      }
+      
+      if (parentWidening instanceof UnionType) {
+        UnionType uType = (UnionType) parentWidening;
+        return uType.containsType(widening);
+      }
+      
+      if (!widening.equals(parentWidening)) {
         return false;
       }
     }

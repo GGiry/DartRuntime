@@ -78,4 +78,10 @@ public interface Type {
   Type lessThanValues(Type other, boolean inLoop);
 
   Type exclude(Type other);
+
+  Type add(Type other);
+
+  Type sub(Type other);
+
+  Type mod(Type other);
 }

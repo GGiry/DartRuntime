@@ -165,7 +165,7 @@ public class BoolType extends PrimitiveType {
   public Type lessThanValues(Type other, boolean inLoop) {
     return null;
   }
-  
+
   @Override
   public Type exclude(Type other) {
     if (other instanceof BoolType) {
@@ -180,11 +180,26 @@ public class BoolType extends PrimitiveType {
         return null;
       }
     }
-    
+
     if (other instanceof UnionType) {
       return other.exclude(this);
     }
-    
+
+    return null;
+  }
+
+  @Override
+  public Type add(Type other) {
+    return null;
+  }
+
+  @Override
+  public Type mod(Type other) {
+    return null;
+  }
+
+  @Override
+  public Type sub(Type other) {
     return null;
   }
 }
