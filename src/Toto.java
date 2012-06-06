@@ -63,10 +63,11 @@ public class Toto {
   public static void main(String[] args) throws IOException {
     String sdkPath = "../../dart-sdk/";
 
-    String[] paths = {
-         "DartTest/If4.dart",
-        "DartTest/While.dart"
+    String[] paths = { 
+        "DartTest/For2.dart",
         // "DartTest/For.dart",
+        // "DartTest/If4.dart",
+        // "DartTest/While.dart"
         // "DartTest/If6.dart",
         // "DartTest/If5.dart",
         // "DartTest/If3.dart",

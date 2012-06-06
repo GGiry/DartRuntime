@@ -599,14 +599,11 @@ public class IntType extends PrimitiveType {
   @Override
   public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
     if (other instanceof IntType) {
-      System.out.println(this + ", " + other);
       IntType iType = (IntType) other;
       BigInteger cst = asConstant();
       BigInteger oCst = iType.asConstant();
 
       DiffResult diff = diff(this, iType);
-      
-      System.out.println(diff);
       
       if (oCst != null) {
         switch (diff) {
@@ -615,11 +612,11 @@ public class IntType extends PrimitiveType {
           return null;
         case FIRST_IS_LEFT:
           if (!inLoop) {
-            return this;
+            return this.asNonNull();
           }
         case FIRST_IS_LEFT_OVERLAP:
         case FIRST_CONTAINS_SECOND:
-          return new IntType(isNullable(), minBound, oCst);
+          return new IntType(false, minBound, oCst);
         default:
           throw new IllegalStateException();
         }
@@ -634,11 +631,10 @@ public class IntType extends PrimitiveType {
           return null;
         case FIRST_IS_LEFT:
           if (!inLoop) {
-            return this;
+            return this.asNonNull();
           }
         case SECOND_CONTAINS_FIRST:
-          System.out.println("return: " + new IntType(isNullable(), cst, iType.maxBound));
-          return new IntType(isNullable(), cst, iType.maxBound);
+          return new IntType(false, cst, iType.maxBound);
         default:
           throw new IllegalStateException();
         }
@@ -649,7 +645,7 @@ public class IntType extends PrimitiveType {
         return null;
       case FIRST_IS_LEFT:
         if (inLoop) {
-          return new IntType(isNullable(), minBound, iType.minBound);
+          return new IntType(false, minBound, iType.minBound);
         } else {
           return VOID_TYPE;
         }
@@ -658,7 +654,7 @@ public class IntType extends PrimitiveType {
       case SECOND_CONTAINS_FIRST:
         return null;
       case FIRST_CONTAINS_SECOND:
-        return new IntType(isNullable(), minBound, iType.minBound);
+        return new IntType(false, minBound, iType.minBound);
       }
 
       return VOID_TYPE;
@@ -668,7 +664,7 @@ public class IntType extends PrimitiveType {
       BigInteger cst = (BigInteger) other.asConstant();
       if (maxBound != null) {
         if (maxBound.compareTo(cst) <= 0) {
-          return this;
+          return this.asNonNull();
         }
       }
       return null;
@@ -696,11 +692,11 @@ public class IntType extends PrimitiveType {
           return null;
         case FIRST_IS_LEFT:
           if (!inLoop) {
-            return this;
+            return this.asNonNull();
           }
         case FIRST_IS_LEFT_OVERLAP:
         case FIRST_CONTAINS_SECOND:
-          return new IntType(isNullable(), minBound, oCst.subtract(BigInteger.ONE));
+          return new IntType(false, minBound, oCst.subtract(BigInteger.ONE));
         default:
           throw new IllegalStateException();
         }
@@ -716,9 +712,9 @@ public class IntType extends PrimitiveType {
           return null;
         case FIRST_IS_LEFT:
           if (!inLoop) {
-            return this;
+            return this.asNonNull();
           }
-          return new IntType(isNullable(), cst, iType.minBound.subtract(BigInteger.ONE));
+          return new IntType(false, cst, iType.minBound.subtract(BigInteger.ONE));
         default:
           throw new IllegalStateException();
         }
@@ -729,7 +725,7 @@ public class IntType extends PrimitiveType {
         return null;
       case FIRST_IS_LEFT:
         if (inLoop) {
-          return new IntType(isNullable(), minBound, iType.minBound.subtract(BigInteger.ONE));
+          return new IntType(false, minBound, iType.minBound.subtract(BigInteger.ONE));
         } else {
           return VOID_TYPE;
         }
@@ -738,7 +734,7 @@ public class IntType extends PrimitiveType {
       case SECOND_CONTAINS_FIRST:
         return null;
       case FIRST_CONTAINS_SECOND:
-        return new IntType(isNullable(), minBound, iType.minBound.subtract(BigInteger.ONE));
+        return new IntType(false, minBound, iType.minBound.subtract(BigInteger.ONE));
       }
 
       return VOID_TYPE;
@@ -748,7 +744,7 @@ public class IntType extends PrimitiveType {
       BigInteger cst = (BigInteger) other.asConstant();
       if (maxBound != null) {
         if (maxBound.compareTo(cst) < 0) {
-          return this;
+          return this.asNonNull();
         }
       }
       return null;
@@ -1043,5 +1039,9 @@ public class IntType extends PrimitiveType {
         return this;
       }
     }
+  }
+
+  public Type mod(IntType other) {
+    return INT_NON_NULL_TYPE;
   }
 }

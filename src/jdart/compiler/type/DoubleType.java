@@ -224,4 +224,9 @@ public class DoubleType extends PrimitiveType {
     
     return null;
   }
+
+  public Type mod(DoubleType other) {
+    Double value = new Double(constant.floatValue() % other.constant.floatValue());
+    return new DoubleType(false, value);
+  }
 }

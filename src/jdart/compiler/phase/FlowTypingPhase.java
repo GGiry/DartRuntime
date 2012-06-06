@@ -449,12 +449,12 @@ public class FlowTypingPhase implements DartCompilationPhase {
       if (conditionType != FALSE_TYPE) {
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, envThen);
         accept(node.getThenStatement(), envThen);
-        parameter.mergeWithoutUnion(envThen);
+        parameter.merge(envThen);
       }
       if (conditionType != TRUE_TYPE && node.getElseStatement() != null) {
         changeOperandsTypes(types.get(ConditionVisitor.FALSE_POSITION), (DartBinaryExpression) condition, envElse);
         accept(node.getElseStatement(), envElse);
-        parameter.mergeWithoutUnion(envElse);
+        parameter.merge(envElse);
       }
       return null;
     }
@@ -462,25 +462,22 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitForStatement(DartForStatement node, FlowEnv parameter) {
       DartExpression condition = node.getCondition();
-      Type conditionType = accept(condition, parameter);
+      accept(condition, parameter);
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
 
       FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
       env.setInLoop(true);
       accept(node.getInit(), env);
 
-      boolean firsTime = true;
-      //TODO do while
-      while(firsTime || !env.isStable()) {
+      do {
         env = new FlowEnv(env, env.getReturnType(), env.getExpectedType());
         List<Type> types = conditionVisitor.accept(condition, env);
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, env);
 
         accept(node.getBody(), env);
         accept(node.getIncrement(), env);
-        conditionType = accept(condition, env);
-        firsTime = false;
-      }
+        accept(condition, env);
+      } while(!env.isStable());
 
       parameter.update(env);
       return null;
@@ -489,22 +486,20 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitWhileStatement(DartWhileStatement node, FlowEnv parameter) {
       DartExpression condition = node.getCondition();
-      Type conditionType = accept(condition, parameter);
+      accept(condition, parameter);
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
 
       FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
       env.setInLoop(true);
 
-      boolean firsTime = true;
-      while((firsTime || !env.isStable()) && conditionType == TRUE_TYPE) {
+      do {
         env = new FlowEnv(env, env.getReturnType(), env.getExpectedType());
         List<Type> types = conditionVisitor.accept(condition, env);
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, env);
 
         accept(node.getBody(), env);
-        conditionType = accept(condition, env);
-        firsTime = false;
-      }
+        accept(condition, env);
+      } while(!env.isStable());
 
       parameter.update(env);
       return null;
@@ -690,6 +685,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       case ADD:
       case SUB:
+      case MOD:
         operandIsNonNull(arg1, flowEnv);
         if (type1 instanceof IntType && type2 instanceof IntType) {
           operandIsNonNull(arg2, flowEnv);
@@ -702,6 +698,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
             return itype1.add(itype2);
           case SUB:
             return itype1.sub(itype2);
+          case MOD:
+            return itype1.mod(itype2);
           }
         }
         if (type1 instanceof DoubleType || type2 instanceof DoubleType) {
@@ -724,6 +722,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
             return dtype1.add(dtype2);
           case SUB:
             return dtype1.sub(dtype2);
+          case MOD:
+            return dtype1.mod(dtype2);
           }
         }
 
