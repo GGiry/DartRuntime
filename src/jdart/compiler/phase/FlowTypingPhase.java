@@ -54,6 +54,7 @@ import com.google.dart.compiler.ast.DartNewExpression;
 import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.ast.DartNullLiteral;
 import com.google.dart.compiler.ast.DartParameter;
+import com.google.dart.compiler.ast.DartParenthesizedExpression;
 import com.google.dart.compiler.ast.DartPropertyAccess;
 import com.google.dart.compiler.ast.DartReturnStatement;
 import com.google.dart.compiler.ast.DartStatement;
@@ -686,20 +687,25 @@ public class FlowTypingPhase implements DartCompilationPhase {
       case ADD:
       case SUB:
       case MOD:
+      case BIT_AND:
+      case BIT_OR:
         operandIsNonNull(arg1, flowEnv);
         if (type1 instanceof IntType && type2 instanceof IntType) {
           operandIsNonNull(arg2, flowEnv);
           IntType iType1 = (IntType) type1;
           IntType iType2 = (IntType) type2;
-          IntType itype1 = iType1;
-          IntType itype2 = iType2;
+
           switch (operator) {
           case ADD:
-            return itype1.add(itype2);
+            return iType1.add(iType2);
           case SUB:
-            return itype1.sub(itype2);
+            return iType1.sub(iType2);
           case MOD:
-            return itype1.mod(itype2);
+            return iType1.mod(iType2);
+          case BIT_AND:
+            return iType1.bitAnd(iType2);
+          case BIT_OR:
+            return iType1.bitOr(iType2);
           }
         }
         if (type1 instanceof UnionType) {
@@ -815,6 +821,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       Type type = ((OwnerType) parameter.getThisType()).getSuperType();
       return type;
+    }
+    
+    @Override
+    public Type visitParenthesizedExpression(DartParenthesizedExpression node, FlowEnv parameter) {
+      return accept(node.getExpression(), parameter);
     }
 
     // --- Invocation

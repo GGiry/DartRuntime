@@ -1083,4 +1083,20 @@ public class IntType extends PrimitiveType {
     
     return null;
   }
+
+  public Type bitAnd(IntType other) {
+    if (asConstant() != null && other.asConstant() != null) {
+      BigInteger value = asConstant().and(other.asConstant());
+      return IntType.constant(value);
+    }
+    return INT_NON_NULL_TYPE;
+  }
+
+  public Type bitOr(IntType other) {
+    if (asConstant() != null && other.asConstant() != null) {
+      BigInteger value = asConstant().or(other.asConstant());
+      return IntType.constant(value);
+    }
+    return INT_NON_NULL_TYPE;
+  }
 }
