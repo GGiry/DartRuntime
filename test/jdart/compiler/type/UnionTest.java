@@ -15,14 +15,14 @@ public class UnionTest {
     Assert.assertEquals(INT_TYPE, Types.union(INT_NON_NULL_TYPE, INT_TYPE));
     Assert.assertEquals(INT_NON_NULL_TYPE, Types.union(INT_NON_NULL_TYPE, INT_NON_NULL_TYPE));
   }
-  
+
   @Test
   public void intRangeUnion() {
     Assert.assertEquals(INT_TYPE, Types.union(INT_TYPE, IntType.constant(BigInteger.ONE)));
     Assert.assertEquals(INT_TYPE, Types.union(IntType.constant(BigInteger.ONE), INT_TYPE));
     Assert.assertEquals(INT_NON_NULL_TYPE, Types.union(INT_NON_NULL_TYPE, IntType.constant(BigInteger.ONE)));
     Assert.assertEquals(INT_NON_NULL_TYPE, Types.union(IntType.constant(BigInteger.ONE), INT_NON_NULL_TYPE));
-    
+
     Assert.assertEquals(IntType.constant(BigInteger.ONE), Types.union(IntType.constant(BigInteger.ONE), IntType.constant(BigInteger.ONE)));
     Assert.assertEquals(UnionType.createUnionType(IntType.constant(BigInteger.ONE), IntType.constant(BigInteger.TEN)),
         Types.union(IntType.constant(BigInteger.ONE), IntType.constant(BigInteger.TEN)));
@@ -39,7 +39,7 @@ public class UnionTest {
     Assert.assertEquals(INT_NON_NULL_TYPE,
         Types.union(INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ZERO), INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.ZERO)));
   }
-  
+
   @Test
   public void intCloseBoundsInclusion() {
     IntType ten = IntType.constant(BigInteger.TEN);
@@ -49,7 +49,7 @@ public class UnionTest {
     Assert.assertEquals(range, Types.union(ten, eleven));
     Assert.assertEquals(range, Types.union(eleven, ten));
   }
-  
+
   @Test
   public void doubleUnion() {
     Assert.assertEquals(DOUBLE_TYPE, Types.union(DOUBLE_TYPE, DOUBLE_TYPE));
@@ -57,7 +57,7 @@ public class UnionTest {
     Assert.assertEquals(DOUBLE_TYPE, Types.union(DOUBLE_NON_NULL_TYPE, DOUBLE_TYPE));
     Assert.assertEquals(DOUBLE_NON_NULL_TYPE, Types.union(DOUBLE_NON_NULL_TYPE, DOUBLE_NON_NULL_TYPE));
   }
-  
+
   @Test
   public void doubleConstUnion() {
     Assert.assertEquals(DoubleType.constant(134.0), Types.union(DoubleType.constant(134.0), DoubleType.constant(134.0)));
@@ -68,7 +68,7 @@ public class UnionTest {
     Assert.assertEquals(UnionType.createUnionType(DoubleType.constant(77.0), DoubleType.constant(134.0)),
         Types.union(DoubleType.constant(77.0), DoubleType.constant(134.0)));
   }
-  
+
   @Test
   public void booleanUnion() {
     Assert.assertEquals(BOOL_TYPE, Types.union(BOOL_TYPE, BOOL_TYPE));
@@ -76,7 +76,7 @@ public class UnionTest {
     Assert.assertEquals(BOOL_TYPE, Types.union(BOOL_NON_NULL_TYPE, BOOL_TYPE));
     Assert.assertEquals(BOOL_NON_NULL_TYPE, Types.union(BOOL_NON_NULL_TYPE, BOOL_NON_NULL_TYPE));
   }
-  
+
   @Test
   public void booleanConstUnion() {
     Assert.assertEquals(BOOL_NON_NULL_TYPE, Types.union(TRUE_TYPE, FALSE_TYPE));
@@ -91,7 +91,7 @@ public class UnionTest {
     Assert.assertEquals(TRUE_TYPE.asNullable(), Types.union(TRUE_TYPE, TRUE_TYPE.asNullable()));
     Assert.assertEquals(FALSE_TYPE.asNullable(), Types.union(FALSE_TYPE, FALSE_TYPE.asNullable()));
   }
-  
+
   @Test
   public void unionMerge() {
     NullableType type1 = INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ZERO);
@@ -105,11 +105,64 @@ public class UnionTest {
     Assert.assertEquals(UnionType.createUnionType(type1, DoubleType.constant(56.2)),
         Types.union(Types.union(type2, DoubleType.constant(56.2)), type1));
   }
-  
+
+  @Test
+  public void unionDoubleInvert() {
+    NullableType type1 = INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ZERO).asTypeLessOrEqualsThan(BigInteger.TEN);
+    Assert.assertEquals(type1, type1.invert().invert());
+  }
+
   @Test
   public void unionInvert() {
-    NullableType type1 = INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ZERO).asTypeLessOrEqualsThan(BigInteger.TEN);
-    Type doubleInvert = type1.invert().invert();
-    Assert.assertEquals(type1, doubleInvert);
+    IntType int1 = INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.valueOf(10));
+    IntType int2 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(15)).asTypeLessOrEqualsThan(BigInteger.valueOf(20));
+    IntType int3 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(30));
+
+    IntType int4 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(11)).asTypeLessOrEqualsThan(BigInteger.valueOf(14));
+    IntType int5 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(21)).asTypeLessOrEqualsThan(BigInteger.valueOf(29));
+
+    UnionType unionType1 = UnionType.createUnionType(int1, int2);
+    unionType1 = (UnionType) unionType1.merge(int3);
+
+    UnionType unionType2 = UnionType.createUnionType(int4, int5);
+
+    Assert.assertEquals(unionType2, unionType1.invert());
+    Assert.assertEquals(unionType1, unionType2.invert());
+  }
+
+  @Test
+  public void unionLessOrEqualsThanValues() {
+    IntType int1 = INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.valueOf(10));
+    IntType int2 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(15)).asTypeLessOrEqualsThan(BigInteger.valueOf(20));
+
+    IntType int3 = IntType.constant(BigInteger.valueOf(17));
+    IntType int4 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(15)).asTypeLessOrEqualsThan(BigInteger.valueOf(17));
+
+    IntType int5 = IntType.constant(BigInteger.valueOf(7));
+    IntType int6 = INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.valueOf(7));
+
+    UnionType unionType1 = UnionType.createUnionType(int1, int2);
+    UnionType unionType2 = UnionType.createUnionType(int1, int4);
+
+    Assert.assertEquals(unionType2, unionType1.lessThanOrEqualsValues(int3, false));
+    Assert.assertEquals(int6, unionType1.lessThanOrEqualsValues(int5, false));
+  }
+
+  @Test
+  public void unionGreaterOrEqualsThanValues() {
+    IntType int1 = INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.valueOf(10));
+    IntType int2 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(15)).asTypeLessOrEqualsThan(BigInteger.valueOf(20));
+
+    IntType int3 = IntType.constant(BigInteger.valueOf(5));
+    IntType int4 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(5)).asTypeLessOrEqualsThan(BigInteger.valueOf(10));
+
+    IntType int5 = IntType.constant(BigInteger.valueOf(17));
+    IntType int6 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(17)).asTypeLessOrEqualsThan(BigInteger.valueOf(20));
+
+    UnionType unionType1 = UnionType.createUnionType(int1, int2);
+    UnionType unionType2 = UnionType.createUnionType(int2, int4);
+
+    Assert.assertEquals(unionType2, unionType1.greaterThanOrEqualsValues(int3, false));
+    Assert.assertEquals(int6, unionType1.greaterThanOrEqualsValues(int5, false));
   }
 }

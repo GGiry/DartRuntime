@@ -10,6 +10,7 @@ import static jdart.compiler.type.CoreTypeRepository.VOID_TYPE;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 import jdart.compiler.type.ArrayType;
@@ -459,6 +460,45 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
       return null;
     }
+    
+    static class LoopVisitor extends ASTVisitor2<List<VariableElement>, FlowEnv> {
+      private final FTVisitor visitor;
+
+      public LoopVisitor(FTVisitor visitor) {
+        super();
+        this.visitor = visitor;
+      }
+      
+      @Override
+      protected List<VariableElement> accept(DartNode node, FlowEnv parameter) {
+        return super.accept(node, parameter);
+      }
+      
+      @Override
+      public List<VariableElement> visitBlock(DartBlock node, FlowEnv parameter) {
+        LinkedList<VariableElement> list = new LinkedList<>();
+        for (DartStatement statement : node.getStatements()) {
+          System.out.println(statement + " -> " + accept(statement, parameter));
+          list.addAll(accept(statement, parameter));
+        }
+        return list;
+      }
+      
+      @Override
+      public List<VariableElement> visitIfStatement(DartIfStatement node, FlowEnv parameter) {
+        LinkedList<VariableElement> list = new LinkedList<>();
+        list.addAll(accept(node.getThenStatement(), parameter));
+        list.addAll(accept(node.getElseStatement(), parameter));
+        return list;
+      }
+      
+      @Override
+      public List<VariableElement> visitExprStmt(DartExprStmt node, FlowEnv parameter) {
+        LinkedList<VariableElement> list = new LinkedList<>();
+        list.addAll(accept(node.getExpression(), parameter));
+        return list;
+      }
+    }
 
     @Override
     public Type visitForStatement(DartForStatement node, FlowEnv parameter) {
@@ -469,6 +509,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
       FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
       env.setInLoop(true);
       accept(node.getInit(), env);
+      
+      LoopVisitor loopVisitor = new LoopVisitor(this);
+      loopVisitor.accept(node.getBody(), parameter);
 
       do {
         env = new FlowEnv(env, env.getReturnType(), env.getExpectedType());

@@ -258,7 +258,11 @@ public class UnionType extends NullableType {
         }
 
         if (!minIsDone) {
-          last = maxBound.add(BigInteger.ONE);
+          if (maxBound != null) {
+            last = maxBound.add(BigInteger.ONE);
+          } else {
+            last = null;
+          }
           if (minBound != null) {
             result.add(new IntType(isNullable(), null, minBound.subtract(BigInteger.ONE)));
           }
