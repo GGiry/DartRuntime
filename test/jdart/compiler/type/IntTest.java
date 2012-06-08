@@ -125,4 +125,52 @@ public class IntTest {
     Assert.assertEquals(expected4, int7.greaterThanOrEqualsValues(int6, true));
     Assert.assertEquals(expected4, int7.greaterThanOrEqualsValues(int6, false));
   }
+  
+  @Test
+  public void intGreaterThanOrEqualsTest5() {
+    IntType int1 = range(3, 6);
+    IntType int2 = range(4, 4);
+    IntType int3 = range(4, 5);
+
+    IntType expected1 = range(4, 6);
+    IntType expected2 = range(5, 6);
+
+    Assert.assertEquals(expected1, int1.greaterThanOrEqualsValues(int2, true));
+    Assert.assertEquals(expected1, int1.greaterThanOrEqualsValues(int2, false));
+
+    Assert.assertEquals(expected2, int1.greaterThanOrEqualsValues(int3, true));
+    Assert.assertEquals(expected2, int1.greaterThanOrEqualsValues(int3, false));
+  }
+  
+  @Test
+  public void intGreaterThanOrEqualsTest6() {
+    IntType int1 = range(3, 3);
+    IntType int2 = range(1, 6);
+    IntType int3 = range(3, 5);
+
+    IntType expected = null;
+    
+    Assert.assertEquals(expected, int1.greaterThanOrEqualsValues(int2, true));
+    Assert.assertEquals(expected, int1.greaterThanOrEqualsValues(int2, false));
+
+    Assert.assertEquals(expected, int3.greaterThanOrEqualsValues(int2, true));
+    Assert.assertEquals(expected, int3.greaterThanOrEqualsValues(int2, false));
+  }
+
+  @Test
+  public void intGreaterThanOrEqualsTest7() {
+    IntType int1 = range(3, 3);
+    IntType int2 = range(3, 5);
+
+    IntType expected1 = range(3, 3);
+    IntType expected2 = range(5, 5);
+    
+    Assert.assertEquals(expected1, int1.greaterThanOrEqualsValues(int1, true));
+    Assert.assertEquals(expected1, int1.greaterThanOrEqualsValues(int1, false));
+
+    Assert.assertEquals(expected2, int2.greaterThanOrEqualsValues(int2, true));
+    Assert.assertEquals(expected2, int2.greaterThanOrEqualsValues(int2, false));
+  }
+  
+  
 }

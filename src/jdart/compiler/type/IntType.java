@@ -495,6 +495,11 @@ public class IntType extends PrimitiveType {
     int min1CompareToMax2 = minBound1.compareTo(maxBound2);
     int max1CompareToMin2 = maxBound1.compareTo(minBound2);
     int max1CompareToMax2 = maxBound1.compareTo(maxBound2);
+    
+    if (min1CompareToMin2 == 0 && max1CompareToMax2 == 0) {
+      return DiffResult.EQUALS;
+    }
+    
     if (max1CompareToMin2 < 0) {
       // [i; j] & [k; l] && j < k
       return DiffResult.FIRST_IS_LEFT;
@@ -789,8 +794,6 @@ public class IntType extends PrimitiveType {
       BigInteger oCst = iType.asConstant();
 
       DiffResult diff = diff(this, iType);
-
-      System.out.println(this + " >= " + other + " -> " + diff);
 
       if (oCst != null) {
         switch (diff) {
