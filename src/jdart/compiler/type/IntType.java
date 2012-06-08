@@ -5,8 +5,6 @@ import static jdart.compiler.type.CoreTypeRepository.*;
 import java.math.BigInteger;
 import java.util.Objects;
 
-import javax.xml.ws.handler.MessageContext.Scope;
-
 import com.google.dart.compiler.resolver.ClassElement;
 
 public class IntType extends PrimitiveType {
@@ -317,17 +315,20 @@ public class IntType extends PrimitiveType {
     throw new IllegalStateException();
   }
 
-  private enum DiffResult {
-    FIRST_CONTAINS_SECOND(-3), FIRST_IS_LEFT(-2), FIRST_IS_LEFT_OVERLAP(-1), EQUALS(0), SECOND_IS_LEFT_OVERLAP(1), SECOND_IS_LEFT(2), SECOND_CONTAINS_FIRST(3);
-
-    private final int value;
+  enum DiffResult {
+    FIRST_CONTAINS_SECOND(-3),
+    FIRST_IS_LEFT(-2),
+    FIRST_IS_LEFT_OVERLAP(-1),
+    EQUALS(0),
+    SECOND_IS_LEFT_OVERLAP(1),
+    SECOND_IS_LEFT(2),
+    SECOND_CONTAINS_FIRST(3);
 
     private DiffResult(int value) {
-      this.value = value;
     }
   }
 
-  private static DiffResult diff(IntType type1, IntType type2) {
+  static DiffResult diff(IntType type1, IntType type2) {
     BigInteger minBound1 = type1.minBound;
     BigInteger maxBound1 = type1.maxBound;
     BigInteger minBound2 = type2.minBound;
@@ -367,6 +368,9 @@ public class IntType extends PrimitiveType {
       // ]-inf; ?] & [k; ?]
       if (maxBound1 == null) {
         // ]-inf; +inf[ & [k; ?]
+        if (maxBound2 == null) {
+          return DiffResult.FIRST_IS_LEFT_OVERLAP;
+        }
         return DiffResult.FIRST_CONTAINS_SECOND;
       }
       // ]-inf; j] & [k; ?]
@@ -374,15 +378,17 @@ public class IntType extends PrimitiveType {
         // ]-inf; j] & [k; +inf[
         int max1CompareToMin2 = maxBound1.compareTo(minBound2);
         if (max1CompareToMin2 < 0) {
+          // ]-inf; j] & [k; +inf[ && j < k
           return DiffResult.FIRST_IS_LEFT;
-        } else  {
+        } else {
+          // ]-inf; j] & [k; +inf[ && j >= k
           return DiffResult.FIRST_IS_LEFT_OVERLAP;
         }
       }
       // ]-inf; j] & [k; l]
       int max1CompareToMin2 = maxBound1.compareTo(minBound2);
       int max1CompareToMax2 = maxBound1.compareTo(maxBound2);
-      if (max1CompareToMin2 > 0) {
+      if (max1CompareToMax2 > 0) {
         // ]-inf; j] & [k; l] && j > l
         return DiffResult.FIRST_CONTAINS_SECOND;
       } else if (max1CompareToMax2 == 0) {
@@ -407,7 +413,7 @@ public class IntType extends PrimitiveType {
         // [i; +inf[ & ]-inf; ?]
         if (maxBound2 == null) {
           // [i; +inf[ & ]-inf; +inf[
-          return DiffResult.SECOND_CONTAINS_FIRST;
+          return DiffResult.SECOND_IS_LEFT_OVERLAP;
         }
         // [i; +inf[ & ]-inf; l]
         int min1CompareToMax2 = minBound1.compareTo(maxBound2);
@@ -421,8 +427,20 @@ public class IntType extends PrimitiveType {
       }
       // [i; +inf[ & [k; ?]
       int min1CompareToMin2 = minBound1.compareTo(minBound2);
-      if (min1CompareToMin2 <= 0) {
-        // [i; +inf[ & [k; ?] && i <= k
+      if (min1CompareToMin2 < 0) {
+        // [i; +inf[ & [k; ?] && i < k
+        return DiffResult.FIRST_CONTAINS_SECOND;
+      } else if (min1CompareToMin2 == 0) {
+        // [i; +inf[ & [k; ?] && i == k
+        if (maxBound2 == null) {
+          // [i; +inf[ & [k; +inf[ && i == k
+          return DiffResult.EQUALS;
+        }
+        if (minBound1.compareTo(maxBound2) == 0) {
+          // [i; +inf[ & [k; ?] && i == k && i == l
+          return DiffResult.SECOND_IS_LEFT_OVERLAP;
+        }
+        // [i; +inf[ & [k; l] && i == k
         return DiffResult.FIRST_CONTAINS_SECOND;
       } else {
         // [i; +inf[ & [k; ?] && i > k
@@ -495,11 +513,11 @@ public class IntType extends PrimitiveType {
     int min1CompareToMax2 = minBound1.compareTo(maxBound2);
     int max1CompareToMin2 = maxBound1.compareTo(minBound2);
     int max1CompareToMax2 = maxBound1.compareTo(maxBound2);
-    
+
     if (min1CompareToMin2 == 0 && max1CompareToMax2 == 0) {
       return DiffResult.EQUALS;
     }
-    
+
     if (max1CompareToMin2 < 0) {
       // [i; j] & [k; l] && j < k
       return DiffResult.FIRST_IS_LEFT;
