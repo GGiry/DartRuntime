@@ -10,17 +10,27 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class IntTest {
-  private IntType range(Integer min, Integer max) {
+  static IntType setNullable(IntType type, boolean nullable) {
+    return nullable ? type.asNullable() : type.asNonNull();
+  }
+  
+  static IntType range(boolean nullable, Integer min, Integer max) {
+    IntType res;
     if (min != null && max != null) {
-      return INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(min)).asTypeLessOrEqualsThan(BigInteger.valueOf(max));
+      res =  INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(min)).asTypeLessOrEqualsThan(BigInteger.valueOf(max));
+    } else if (min != null) {
+      res =  INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(min));
+    } else if (max != null) {
+      res =  INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.valueOf(max));
+    } else {
+      res = INT_NON_NULL_TYPE;
     }
-    if (min != null) {
-      return INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(min));
-    }
-    if (max != null) {
-      return INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.valueOf(max));
-    }
-    return INT_NON_NULL_TYPE;
+    
+    return setNullable(res, nullable);
+  }
+
+  private static IntType range(Integer min, Integer max) {
+    return range(false, min, max);
   }
 
   @Test

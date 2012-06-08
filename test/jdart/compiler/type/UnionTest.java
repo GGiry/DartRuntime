@@ -1,6 +1,7 @@
 package jdart.compiler.type;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
+import static jdart.compiler.type.IntTest.range;
 
 import java.math.BigInteger;
 
@@ -108,18 +109,18 @@ public class UnionTest {
 
   @Test
   public void unionDoubleInvert() {
-    NullableType type1 = INT_TYPE.asTypeGreaterOrEqualsThan(BigInteger.ZERO).asTypeLessOrEqualsThan(BigInteger.TEN);
+    NullableType type1 = range(false, 0, 10);
     Assert.assertEquals(type1, type1.invert().invert());
   }
 
   @Test
   public void unionInvert() {
-    IntType int1 = INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.valueOf(10));
-    IntType int2 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(15)).asTypeLessOrEqualsThan(BigInteger.valueOf(20));
-    IntType int3 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(30));
+    IntType int1 = range(false, null, 10);
+    IntType int2 = range(false, 15, 20);
+    IntType int3 = range(false, 30, null);
 
-    IntType int4 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(11)).asTypeLessOrEqualsThan(BigInteger.valueOf(14));
-    IntType int5 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(21)).asTypeLessOrEqualsThan(BigInteger.valueOf(29));
+    IntType int4 = range(false, 11, 14);
+    IntType int5 = range(false, 21, 29);
 
     UnionType unionType1 = UnionType.createUnionType(int1, int2);
     unionType1 = (UnionType) unionType1.merge(int3);
@@ -132,14 +133,14 @@ public class UnionTest {
 
   @Test
   public void unionLessOrEqualsThanValues() {
-    IntType int1 = INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.valueOf(10));
-    IntType int2 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(15)).asTypeLessOrEqualsThan(BigInteger.valueOf(20));
+    IntType int1 = range(false, null, 10);
+    IntType int2 = range(false, 15, 20);
 
-    IntType int3 = IntType.constant(BigInteger.valueOf(17));
-    IntType int4 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(15)).asTypeLessOrEqualsThan(BigInteger.valueOf(17));
+    IntType int3 = range(false, 17, 17);
+    IntType int4 = range(false, 15, 17);
 
-    IntType int5 = IntType.constant(BigInteger.valueOf(7));
-    IntType int6 = INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.valueOf(7));
+    IntType int5 = range(false, 7, 7);
+    IntType int6 = range(false, null, 7);
 
     UnionType unionType1 = UnionType.createUnionType(int1, int2);
     UnionType unionType2 = UnionType.createUnionType(int1, int4);
@@ -150,14 +151,14 @@ public class UnionTest {
 
   @Test
   public void unionGreaterOrEqualsThanValues() {
-    IntType int1 = INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.valueOf(10));
-    IntType int2 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(15)).asTypeLessOrEqualsThan(BigInteger.valueOf(20));
+    IntType int1 = range(false, null, 10);
+    IntType int2 = range(false, 15, 20);
 
-    IntType int3 = IntType.constant(BigInteger.valueOf(5));
-    IntType int4 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(5)).asTypeLessOrEqualsThan(BigInteger.valueOf(10));
+    IntType int3 = range(false, 5, 5);
+    IntType int4 = range(false, 5, 10);
 
-    IntType int5 = IntType.constant(BigInteger.valueOf(17));
-    IntType int6 = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(17)).asTypeLessOrEqualsThan(BigInteger.valueOf(20));
+    IntType int5 = range(false, 17, 17);
+    IntType int6 = range(false, 17, 20);
 
     UnionType unionType1 = UnionType.createUnionType(int1, int2);
     UnionType unionType2 = UnionType.createUnionType(int2, int4);

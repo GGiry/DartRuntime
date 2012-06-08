@@ -640,8 +640,6 @@ public class IntType extends PrimitiveType {
   @Override
   public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
     if (other instanceof IntType) {
-      System.out.println(this + " <= " + other);
-
       IntType iType = (IntType) other;
       BigInteger cst = asConstant();
       BigInteger oCst = iType.asConstant();
