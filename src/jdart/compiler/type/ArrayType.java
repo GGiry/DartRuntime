@@ -152,6 +152,11 @@ public class ArrayType extends NullableType {
   public Type greaterThanOrEqualsValues(Type other, boolean inLoop) {
     return null;
   }
+  
+  @Override
+  public Type greaterThanValues(Type other, boolean inLoop) {
+    return null;
+  }
 
   @Override
   public Type add(Type other) {

@@ -79,6 +79,8 @@ public interface Type {
 
   Type greaterThanOrEqualsValues(Type other, boolean inLoop);
 
+  Type greaterThanValues(Type other, boolean inLoop);
+
   Type exclude(Type other);
 
   Type add(Type other);

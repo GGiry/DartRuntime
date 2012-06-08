@@ -878,6 +878,84 @@ public class IntType extends PrimitiveType {
     }
     return null;
   }
+  
+  @Override
+  public Type greaterThanValues(Type other, boolean inLoop) {
+    if (other instanceof IntType) {
+      IntType iType = (IntType) other;
+      BigInteger cst = asConstant();
+      BigInteger oCst = iType.asConstant();
+
+      DiffResult diff = diff(this, iType);
+
+      if (oCst != null) {
+        switch (diff) {
+        case EQUALS:
+        case FIRST_IS_LEFT:
+        case FIRST_IS_LEFT_OVERLAP:
+          return null;
+        case FIRST_CONTAINS_SECOND:
+          return new IntType(false, oCst.add(BigInteger.ONE), maxBound);
+        case SECOND_IS_LEFT:
+          if (inLoop) {
+            return new IntType(false, oCst.add(BigInteger.ONE), maxBound);
+          } else {
+            return this;
+          }
+        case SECOND_IS_LEFT_OVERLAP:
+          return new IntType(false, oCst.add(BigInteger.ONE), maxBound);
+        }
+      }
+
+      if (cst != null) {
+        switch (diff) {
+        case FIRST_IS_LEFT:
+        case FIRST_IS_LEFT_OVERLAP:
+        case SECOND_CONTAINS_FIRST:
+        case SECOND_IS_LEFT_OVERLAP:
+        case EQUALS:
+          return null;
+        case SECOND_IS_LEFT:
+          if (inLoop) {
+            return new IntType(false, iType.maxBound.add(BigInteger.ONE), cst);
+          } else {
+            return this;
+          }
+        }
+      }
+
+      switch (diff) {
+      case FIRST_IS_LEFT:
+      case FIRST_IS_LEFT_OVERLAP:
+      case SECOND_CONTAINS_FIRST:
+      case EQUALS:
+        return null;
+      case SECOND_IS_LEFT:
+        if (!inLoop) {
+          return this;
+        }
+      case FIRST_CONTAINS_SECOND:
+      case SECOND_IS_LEFT_OVERLAP:
+        return new IntType(false, iType.maxBound.add(BigInteger.ONE), maxBound);
+      }
+      return VOID_TYPE;
+    }
+
+    if (other instanceof DoubleType) {
+      BigInteger cst = (BigInteger) other.asConstant();
+      if (maxBound != null) {
+        if (maxBound.compareTo(cst) <= 0) {
+          return this.asNonNull();
+        }
+      }
+      return null;
+    }
+
+    if (other instanceof UnionType) {
+      return ((UnionType) other).greaterThanOrEqualsValues(this, inLoop);
+    }
+    return null;
+  }
 
   public boolean isStrictLT(IntType other) {
     if (diff(this, other) == DiffResult.FIRST_IS_LEFT) {

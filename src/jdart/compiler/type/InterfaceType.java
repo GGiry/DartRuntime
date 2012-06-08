@@ -106,6 +106,11 @@ public class InterfaceType extends ElementType {
   }
   
   @Override
+  public Type greaterThanValues(Type other, boolean inLoop) {
+    return null;
+  }
+  
+  @Override
   public Type exclude(Type other) {
     return null;
   }
