@@ -70,6 +70,11 @@ public class NullType implements Type {
   public Type lessThanValues(Type other, boolean inLoop) {
     return null;
   }
+  
+  @Override
+  public Type greaterThanOrEqualsValues(Type other, boolean inLoop) {
+    return null;
+  }
 
   @Override
   public Type exclude(Type other) {

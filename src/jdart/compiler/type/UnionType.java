@@ -334,11 +334,11 @@ public class UnionType extends NullableType {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        Type lteValues = other.lessThanOrEqualsValues(type, inLoop);
-        if (lteValues == VOID_TYPE) {
+        Type gteValues = type.greaterThanOrEqualsValues(other, inLoop);
+        if (gteValues == VOID_TYPE) {
           return type;
         }
-        return lteValues;
+        return gteValues;
       }
     });
   }

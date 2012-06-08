@@ -498,7 +498,7 @@ public class IntType extends PrimitiveType {
       return DiffResult.FIRST_IS_LEFT;
     } else if (max1CompareToMin2 == 0) {
       // [i; j] & [k; l] j == k
-      if (min1CompareToMin2 < 0) {
+      if (min1CompareToMin2 <= 0) {
         // [i; j] & [k; l] && j == k && i < k
         return DiffResult.FIRST_IS_LEFT_OVERLAP;
       } else {
@@ -508,7 +508,12 @@ public class IntType extends PrimitiveType {
       // [i; j] & [k; l] j > k
       if (min1CompareToMin2 < 0) {
         // [i; j] & [k; l] j > k && i < k
-        return DiffResult.FIRST_IS_LEFT_OVERLAP;
+        if (max1CompareToMax2 <= 0) {
+          // [i; j] & [k; l] j > k && i < k && j <= l
+          return DiffResult.FIRST_IS_LEFT_OVERLAP;
+        }
+        // [i; j] & [k; l] j > k && i < k && j > l
+        return DiffResult.FIRST_CONTAINS_SECOND;
       } else if (max1CompareToMin2 == 0) {
         // [i; j] & [k; l] j > k && i == k
         if (max1CompareToMax2 == 0) {
@@ -599,15 +604,18 @@ public class IntType extends PrimitiveType {
   @Override
   public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
     if (other instanceof IntType) {
+      System.out.println(this + " <= " + other);
+
       IntType iType = (IntType) other;
       BigInteger cst = asConstant();
       BigInteger oCst = iType.asConstant();
 
       DiffResult diff = diff(this, iType);
-      
+
       if (oCst != null) {
         switch (diff) {
         case EQUALS:
+          return this.asNonNull();
         case SECOND_IS_LEFT:
           return null;
         case FIRST_IS_LEFT:
@@ -625,36 +633,39 @@ public class IntType extends PrimitiveType {
       if (cst != null) {
         switch (diff) {
         case EQUALS:
+        case FIRST_IS_LEFT_OVERLAP:
+          return this.asNonNull();
         case SECOND_IS_LEFT:
         case SECOND_IS_LEFT_OVERLAP:
-        case FIRST_IS_LEFT_OVERLAP:
+        case SECOND_CONTAINS_FIRST:
           return null;
         case FIRST_IS_LEFT:
           if (!inLoop) {
             return this.asNonNull();
           }
-        case SECOND_CONTAINS_FIRST:
           return new IntType(false, cst, iType.maxBound);
         default:
           throw new IllegalStateException();
         }
       }
-      
+
       switch (diff) {
       case EQUALS:
-        return null;
+        return constant(this.minBound).asNonNull();
       case FIRST_IS_LEFT:
         if (inLoop) {
           return new IntType(false, minBound, iType.minBound);
         } else {
-          return VOID_TYPE;
+          return this;
         }
       case SECOND_IS_LEFT:
       case SECOND_IS_LEFT_OVERLAP:
       case SECOND_CONTAINS_FIRST:
         return null;
       case FIRST_CONTAINS_SECOND:
+      case FIRST_IS_LEFT_OVERLAP:
         return new IntType(false, minBound, iType.minBound);
+
       }
 
       return VOID_TYPE;
@@ -684,7 +695,7 @@ public class IntType extends PrimitiveType {
       BigInteger oCst = iType.asConstant();
 
       DiffResult diff = diff(this, iType);
-      
+
       if (oCst != null) {
         switch (diff) {
         case EQUALS:
@@ -719,7 +730,7 @@ public class IntType extends PrimitiveType {
           throw new IllegalStateException();
         }
       }
-      
+
       switch (diff) {
       case EQUALS:
         return null;
@@ -727,13 +738,14 @@ public class IntType extends PrimitiveType {
         if (inLoop) {
           return new IntType(false, minBound, iType.minBound.subtract(BigInteger.ONE));
         } else {
-          return VOID_TYPE;
+          return this;
         }
       case SECOND_IS_LEFT:
       case SECOND_IS_LEFT_OVERLAP:
       case SECOND_CONTAINS_FIRST:
         return null;
       case FIRST_CONTAINS_SECOND:
+      case FIRST_IS_LEFT_OVERLAP:
         return new IntType(false, minBound, iType.minBound.subtract(BigInteger.ONE));
       }
 
@@ -752,6 +764,83 @@ public class IntType extends PrimitiveType {
 
     if (other instanceof UnionType) {
       return ((UnionType) other).greaterThanValues(this, inLoop);
+    }
+    return null;
+  }
+
+  @Override
+  public Type greaterThanOrEqualsValues(Type other, boolean inLoop) {
+    if (other instanceof IntType) {
+      IntType iType = (IntType) other;
+      BigInteger cst = asConstant();
+      BigInteger oCst = iType.asConstant();
+
+      DiffResult diff = diff(this, iType);
+      
+      if (oCst != null) {
+        switch (diff) {
+        case FIRST_IS_LEFT:
+          return null;
+        case FIRST_IS_LEFT_OVERLAP:
+          return iType;
+        case FIRST_CONTAINS_SECOND:
+          return new IntType(false, oCst, maxBound);
+        case SECOND_IS_LEFT:
+          if (inLoop) {
+            return new IntType(false, oCst, maxBound);
+          }
+        case SECOND_IS_LEFT_OVERLAP:
+        case EQUALS:
+          return this;
+        }
+      }
+
+      if (cst != null) {
+        switch (diff) {
+        case FIRST_IS_LEFT:
+        case FIRST_IS_LEFT_OVERLAP:
+        case SECOND_CONTAINS_FIRST:
+          return null;
+        case SECOND_IS_LEFT:
+          if (inLoop) {
+            return new IntType(false, iType.maxBound, cst);
+          }
+        case SECOND_IS_LEFT_OVERLAP:
+        case EQUALS:
+          return this;
+        }
+      }
+
+      switch (diff) {
+      case FIRST_IS_LEFT:
+      case FIRST_IS_LEFT_OVERLAP:
+      case SECOND_CONTAINS_FIRST:
+        return null;
+      case EQUALS:
+        return constant(maxBound).asNonNull();
+      case SECOND_IS_LEFT:
+        if (!inLoop) {
+          return this;
+        }
+      case FIRST_CONTAINS_SECOND:
+      case SECOND_IS_LEFT_OVERLAP:
+        return new IntType(false, iType.maxBound, maxBound);
+      }
+      return VOID_TYPE;
+    }
+
+    if (other instanceof DoubleType) {
+      BigInteger cst = (BigInteger) other.asConstant();
+      if (maxBound != null) {
+        if (maxBound.compareTo(cst) <= 0) {
+          return this.asNonNull();
+        }
+      }
+      return null;
+    }
+
+    if (other instanceof UnionType) {
+      return ((UnionType) other).greaterThanOrEqualsValues(this, inLoop);
     }
     return null;
   }
@@ -1044,43 +1133,43 @@ public class IntType extends PrimitiveType {
   public Type mod(IntType other) {
     return INT_NON_NULL_TYPE;
   }
-  
+
   @Override
   public Type add(Type other) {
     if (other instanceof DoubleType) {
       return other.add(this);
     }
-    
+
     if (other instanceof UnionType) {
       return other.add(this);
     }
-    
+
     return null;
   }
-  
+
   @Override
   public Type mod(Type other) {
     if (other instanceof DoubleType) {
       return ((DoubleType) other).reverseMod(this);
     }
-    
+
     if (other instanceof UnionType) {
       return ((UnionType) other).reverseMod(this);
     }
-    
+
     return null;
   }
-  
+
   @Override
   public Type sub(Type other) {
     if (other instanceof DoubleType) {
       return ((DoubleType) other).reverseSub(this);
     }
-    
+
     if (other instanceof UnionType) {
       return ((UnionType) other).reverseSub(this);
     }
-    
+
     return null;
   }
 

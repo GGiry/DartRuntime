@@ -165,6 +165,11 @@ public class BoolType extends PrimitiveType {
   public Type lessThanValues(Type other, boolean inLoop) {
     return null;
   }
+  
+  @Override
+  public Type greaterThanOrEqualsValues(Type other, boolean inLoop) {
+    return null;
+  }
 
   @Override
   public Type exclude(Type other) {

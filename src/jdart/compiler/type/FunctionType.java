@@ -149,6 +149,11 @@ public class FunctionType extends OwnerType {
   }
   
   @Override
+  public Type greaterThanOrEqualsValues(Type other, boolean inLoop) {
+    return null;
+  }
+  
+  @Override
   public Type exclude(Type other) {
     return null;
   }
