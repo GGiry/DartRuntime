@@ -5,6 +5,8 @@ import static jdart.compiler.type.CoreTypeRepository.*;
 import java.math.BigInteger;
 import java.util.Objects;
 
+import javax.xml.ws.handler.MessageContext.Scope;
+
 import com.google.dart.compiler.resolver.ClassElement;
 
 public class IntType extends PrimitiveType {
@@ -514,16 +516,19 @@ public class IntType extends PrimitiveType {
         }
         // [i; j] & [k; l] j > k && i < k && j > l
         return DiffResult.FIRST_CONTAINS_SECOND;
-      } else if (max1CompareToMin2 == 0) {
+      } else if (min1CompareToMin2 == 0) {
         // [i; j] & [k; l] j > k && i == k
         if (max1CompareToMax2 == 0) {
-          // [i; j] & [k; l] && i == k && j == l
+          // [i; j] & [k; l] j > k && i == k && j == l
           return DiffResult.EQUALS;
         } else if (max1CompareToMax2 < 0) {
-          // [i; j] & [k; l] && i == k && j < l
+          // [i; j] & [k; l] j > k && i == k && j < l
           return DiffResult.SECOND_CONTAINS_FIRST;
         } else {
-          // [i; j] & [k; l] && i == k && j > l
+          // [i; j] & [k; l] j > k && i == k && j > l
+          if (min1CompareToMax2 == 0) {
+            return DiffResult.SECOND_IS_LEFT_OVERLAP;
+          }
           return DiffResult.FIRST_CONTAINS_SECOND;
         }
       } else {
@@ -531,10 +536,18 @@ public class IntType extends PrimitiveType {
         if (min1CompareToMax2 > 0) {
           // [i; j] & [k; l] i > l
           return DiffResult.SECOND_IS_LEFT;
-        } else {
-          // [i; j] & [k; l] j > k && i > k && i <= l
-          return DiffResult.SECOND_CONTAINS_FIRST;
+        } else if (min1CompareToMax2 < 0) {
+          // [i; j] & [k; l] j > k && i > k && i < l
+          if (max1CompareToMax2 < 0) {
+            // [i; j] & [k; l] j > k && i > k && i < l && j < l
+            return DiffResult.SECOND_CONTAINS_FIRST;
+          } else {
+            // [i; j] & [k; l] j > k && i > k && i < l && j >= l
+            return DiffResult.SECOND_IS_LEFT_OVERLAP;
+          }
         }
+        // [i; j] & [k; l] j > k && i > k && i == l
+        return DiffResult.SECOND_IS_LEFT_OVERLAP;
       }
     }
   }
@@ -776,7 +789,9 @@ public class IntType extends PrimitiveType {
       BigInteger oCst = iType.asConstant();
 
       DiffResult diff = diff(this, iType);
-      
+
+      System.out.println(this + " >= " + other + " -> " + diff);
+
       if (oCst != null) {
         switch (diff) {
         case FIRST_IS_LEFT:
