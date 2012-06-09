@@ -144,7 +144,7 @@ public class DoubleType extends PrimitiveType {
     }
 
     if (other instanceof IntType) {
-      BigInteger min = (BigInteger) ((IntType) other).getMinBound();
+      BigInteger min = ((IntType) other).getMinBound();
       if (min != null) {
         float floatValue = constant.floatValue();
         if (floatValue == (int) floatValue) {
@@ -176,7 +176,7 @@ public class DoubleType extends PrimitiveType {
     }
 
     if (other instanceof IntType) {
-      BigInteger min = (BigInteger) ((IntType) other).getMinBound();
+      BigInteger min = ((IntType) other).getMinBound();
       if (min != null) {
         float floatValue = constant.floatValue();
         if (BigInteger.valueOf((int) floatValue).compareTo(min) < 0) {
@@ -203,7 +203,7 @@ public class DoubleType extends PrimitiveType {
     }
 
     if (other instanceof IntType) {
-      BigInteger min = (BigInteger) ((IntType) other).getMinBound();
+      BigInteger min = ((IntType) other).getMinBound();
       if (min != null) {
         float floatValue = constant.floatValue();
         if (floatValue == (int) floatValue) {
@@ -235,7 +235,7 @@ public class DoubleType extends PrimitiveType {
     }
 
     if (other instanceof IntType) {
-      BigInteger min = (BigInteger) ((IntType) other).getMinBound();
+      BigInteger min = ((IntType) other).getMinBound();
       if (min != null) {
         float floatValue = constant.floatValue();
         if (BigInteger.valueOf((int) floatValue).compareTo(min) > 0) {

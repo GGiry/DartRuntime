@@ -210,7 +210,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       Type returnType = ((FunctionType) typeHelper.asType(false, element.getType())).getReturnType();
 
       // propagate thisType or null
-      FlowEnv env = new FlowEnv(flowEnv, returnType, VOID_TYPE);
+      FlowEnv env = new FlowEnv(flowEnv, returnType, VOID_TYPE, false);
       for (DartParameter parameter : node.getParameters()) {
         Type parameterType = accept(parameter, null);
         env.register(parameter.getElement(), parameterType);
@@ -445,9 +445,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
       List<Type> types = conditionVisitor.accept(condition, parameter);
 
-      FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-      FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
+      FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
+      FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
 
+      //FIXME, Geoffrey the condition can be something different from a DartBinaryExpression
+      // by example if (!true) is not a binary expression
       if (conditionType != FALSE_TYPE) {
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, envThen);
         accept(node.getThenStatement(), envThen);
@@ -462,11 +464,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
     
     static class LoopVisitor extends ASTVisitor2<List<VariableElement>, FlowEnv> {
-      private final FTVisitor visitor;
-
-      public LoopVisitor(FTVisitor visitor) {
+      public LoopVisitor() {
         super();
-        this.visitor = visitor;
       }
       
       @Override
@@ -500,21 +499,21 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
     }
 
+    // FIXME, Geoffrey, for, while and do/while should share code
     @Override
     public Type visitForStatement(DartForStatement node, FlowEnv parameter) {
       DartExpression condition = node.getCondition();
       accept(condition, parameter);
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
 
-      FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-      env.setInLoop(true);
+      FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
       accept(node.getInit(), env);
       
-      LoopVisitor loopVisitor = new LoopVisitor(this);
+      LoopVisitor loopVisitor = new LoopVisitor();
       loopVisitor.accept(node.getBody(), parameter);
 
       do {
-        env = new FlowEnv(env, env.getReturnType(), env.getExpectedType());
+        env = new FlowEnv(env, env.getReturnType(), env.getExpectedType(), true);
         List<Type> types = conditionVisitor.accept(condition, env);
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, env);
 
@@ -533,11 +532,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
       accept(condition, parameter);
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
 
-      FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-      env.setInLoop(true);
-
+      FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
+      
       do {
-        env = new FlowEnv(env, env.getReturnType(), env.getExpectedType());
+        env = new FlowEnv(env, env.getReturnType(), env.getExpectedType(), true);
         List<Type> types = conditionVisitor.accept(condition, env);
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, env);
 
@@ -555,11 +553,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
       Type conditionType = accept(condition, parameter);
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
 
-      FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType());
-      env.setInLoop(true);
+      FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
 
       do {
-        env = new FlowEnv(env, env.getReturnType(), env.getExpectedType());
+        env = new FlowEnv(env, env.getReturnType(), env.getExpectedType(), true);
         List<Type> types = conditionVisitor.accept(condition, env);
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, env);
 
@@ -681,6 +678,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
           IntType iType2 = (IntType) type2;
           return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : FALSE_TYPE;
         }
+        throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
       }
       case LT: {
         if (type1 instanceof IntType && type2 instanceof IntType) {
@@ -689,6 +687,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
           return iType1.isStrictLT(iType2) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
         }
+        throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
       }
       case LTE: {
         if (type1 instanceof IntType && type2 instanceof IntType) {
@@ -697,6 +696,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
           return iType1.isStrictLTE(iType2) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
         }
+        throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
       }
       case GT: {
         if (type1 instanceof IntType && type2 instanceof IntType) {
@@ -705,6 +705,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
           return iType2.isStrictLT(iType1) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
         }
+        throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
       }
       case GTE: {
         if (type1 instanceof IntType && type2 instanceof IntType) {
@@ -713,19 +714,18 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
           return iType2.isStrictLTE(iType1) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
         }
+        throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
       }
       case AND:
         if (type1 == TRUE_TYPE && type2 == TRUE_TYPE) {
           return TRUE_TYPE;
-        } else {
-          return BOOL_TYPE;
         }
+        return BOOL_TYPE;
       case OR:
         if (type1 == TRUE_TYPE || type2 == TRUE_TYPE) {
           return TRUE_TYPE;
-        } else {
-          return BOOL_TYPE;
-        }
+        } 
+        return BOOL_TYPE;
 
       case ADD:
       case SUB:

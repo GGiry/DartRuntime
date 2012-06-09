@@ -114,9 +114,8 @@ public class UnionType extends NullableType {
       if (unionSet.contains(type)) {
         if (!(type instanceof IntType)) {
           continue;
-        } else {
-          unionSet.remove(type);
         }
+        unionSet.remove(type);
       }
       candidates.add(type);
     }
@@ -268,8 +267,7 @@ public class UnionType extends NullableType {
           }
           minIsDone = true;
         } else {
-          if (last == null) {
-          } else {
+          if (last != null) {
             result.add(new IntType(isNullable(), last, minBound.subtract(BigInteger.ONE)));
             if (maxBound != null) {
               last = maxBound.add(BigInteger.ONE);
@@ -330,6 +328,7 @@ public class UnionType extends NullableType {
     });
   }
 
+  @Override
   public Type greaterThanOrEqualsValues(final Type other, final boolean inLoop) {
     return map(new TypeMapper() {
       @Override
@@ -343,6 +342,7 @@ public class UnionType extends NullableType {
     });
   }
 
+  @Override
   public Type greaterThanValues(final Type other, final boolean inLoop) {
     return map(new TypeMapper() {
       @Override
@@ -367,6 +367,7 @@ public class UnionType extends NullableType {
     });
   }
 
+  @Override
   public Type add(final Type other) {
     return map(new TypeMapper() {
 

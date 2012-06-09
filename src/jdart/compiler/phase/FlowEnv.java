@@ -19,32 +19,32 @@ public class FlowEnv {
   private final Type returnType;
   private final Type expectedType;
   private final/* maybenull */ HashMap<VariableElement, Type> variableTypeMap;
-  private boolean inLoop;
+  private final boolean inLoop;
 
   private FlowEnv(/* maybenull */FlowEnv parent, /* maybenull */Type thisType, Type returnType, Type expectedType,
-      /* maybenull */HashMap<VariableElement, Type> variableTypeMap) {
+      /* maybenull */HashMap<VariableElement, Type> variableTypeMap, boolean inLoop) {
     this.parent = parent;
     this.thisType = thisType;
     this.returnType = Objects.requireNonNull(returnType);
     this.expectedType = Objects.requireNonNull(expectedType);
     this.variableTypeMap = variableTypeMap;
-    if (parent != null) {
-      this.inLoop = parent.inLoop;
-    }
+    this.inLoop = inLoop;
   }
 
   public FlowEnv(Type thisType) {
-    this(null, thisType, CoreTypeRepository.VOID_TYPE, CoreTypeRepository.VOID_TYPE, null);
+    this(null, thisType, CoreTypeRepository.VOID_TYPE, CoreTypeRepository.VOID_TYPE, null, false);
   }
 
   /**
    * Create a new flow environment with a parent and an expected type.
    * 
    * @param parent
+   * @param returnType 
    * @param expectedType
+   * @param inLoop 
    */
-  public FlowEnv(/* maybenull */FlowEnv parent, Type returnType, Type expectedType) {
-    this(parent, parent.thisType, returnType, expectedType, new HashMap<VariableElement, Type>());
+  public FlowEnv(FlowEnv parent, Type returnType, Type expectedType, boolean inLoop) {
+    this(parent, parent.thisType, returnType, expectedType, new HashMap<VariableElement, Type>(), inLoop);
   }
 
   /**
@@ -114,7 +114,7 @@ public class FlowEnv {
     if (expectedType.equals(this.expectedType)) { // implicit null check
       return this;
     }
-    return new FlowEnv(parent, thisType, returnType, expectedType, variableTypeMap);
+    return new FlowEnv(parent, thisType, returnType, expectedType, variableTypeMap, inLoop);
   }
 
   /**
@@ -124,6 +124,13 @@ public class FlowEnv {
    */
   public Type getExpectedType() {
     return expectedType;
+  }
+  
+  /**
+   * @return the inLoop state.
+   */
+  public boolean inLoop() {
+    return inLoop;
   }
 
   @Override
@@ -207,19 +214,5 @@ public class FlowEnv {
         register(key, entry.getValue());
       }
     }
-  }
-
-  /**
-   * @return the inLoop state.
-   */
-  public boolean inLoop() {
-    return inLoop;
-  }
-
-  /**
-   * @param inLoop the new inLoop state to set.
-   */
-  public void setInLoop(boolean inLoop) {
-    this.inLoop = inLoop;
   }
 }

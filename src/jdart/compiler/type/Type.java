@@ -71,8 +71,16 @@ public interface Type {
    */
   Type commonValuesWith(Type type);
 
+  /**
+   * This call may return null.
+   * 
+   * @return
+   */
+  //FIXME Geoffrey, add documentation !
   Type invert();
 
+  Type exclude(Type other);
+  
   Type lessThanOrEqualsValues(Type other, boolean inLoop);
 
   Type lessThanValues(Type other, boolean inLoop);
@@ -81,8 +89,8 @@ public interface Type {
 
   Type greaterThanValues(Type other, boolean inLoop);
 
-  Type exclude(Type other);
-
+  // FIXME, Geoffrey, there is no point to do add on something
+  // which is not an int or a double
   Type add(Type other);
 
   Type sub(Type other);
