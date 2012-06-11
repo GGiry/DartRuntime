@@ -58,26 +58,27 @@ public class IntTest {
 
   @Test
   public void intGreaterThanOrEqualsTest2() {
-    IntType int1 = range(2, 3);
+    IntType int1 = range(2, 5);
     IntType int2 = range(5, 5);
     IntType int3 = range(4, 7);
     IntType int4 = range(1, 6);
     IntType int5 = range(3, 5);
     IntType int6 = range(1, 1);
 
-    IntType expected = null;
+    IntType expectedNull = null;
+    IntType expected1 = range(5, 5);
 
-    Assert.assertEquals(expected, int1.greaterThanOrEqualsValues(int2, true));
-    Assert.assertEquals(expected, int1.greaterThanOrEqualsValues(int2, false));
+    Assert.assertEquals(expected1, int1.greaterThanOrEqualsValues(int2, true));
+    Assert.assertEquals(expected1, int1.greaterThanOrEqualsValues(int2, false));
 
-    Assert.assertEquals(expected, int1.greaterThanOrEqualsValues(int3, true));
-    Assert.assertEquals(expected, int1.greaterThanOrEqualsValues(int3, false));
+    Assert.assertEquals(expectedNull, int1.greaterThanOrEqualsValues(int3, true));
+    Assert.assertEquals(expectedNull, int1.greaterThanOrEqualsValues(int3, false));
 
-    Assert.assertEquals(expected, int6.greaterThanOrEqualsValues(int4, true));
-    Assert.assertEquals(expected, int6.greaterThanOrEqualsValues(int4, false));
+    Assert.assertEquals(expectedNull, int6.greaterThanOrEqualsValues(int4, true));
+    Assert.assertEquals(expectedNull, int6.greaterThanOrEqualsValues(int4, false));
 
-    Assert.assertEquals(expected, int1.greaterThanOrEqualsValues(int5, true));
-    Assert.assertEquals(expected, int1.greaterThanOrEqualsValues(int5, false));
+    Assert.assertEquals(expectedNull, int1.greaterThanOrEqualsValues(int5, true));
+    Assert.assertEquals(expectedNull, int1.greaterThanOrEqualsValues(int5, false));
   }
 
   @Test
@@ -283,7 +284,7 @@ public class IntTest {
 
   @Test
   public void intGreaterThanTest2() {
-    IntType int1 = range(2, 3);
+    IntType int1 = range(2, 5);
     IntType int2 = range(5, 5);
     IntType int3 = range(4, 7);
     IntType int4 = range(1, 6);
@@ -406,5 +407,160 @@ public class IntTest {
 
     Assert.assertEquals(expected, int2.greaterThanValues(int2, true));
     Assert.assertEquals(expected, int2.greaterThanValues(int2, false));
+  }
+
+  @Test
+  public void intLessThanTest1() {
+    IntType int1 = range(2, 3);
+    IntType int2 = range(1, 1);
+    IntType int3 = range(2, 2);
+    IntType int4 = range(4, 5);
+    IntType int5 = range(4, 4);
+
+    IntType expectedTrue1 = range(1, 1);
+    IntType expectedFalse1 = range(1, 1);
+
+    IntType expectedTrue2 = range(2, 3);
+    IntType expectedFalse2 = range(2, 2);
+
+    IntType expectedTrue3 = range(2, 3);
+    IntType expectedFalse3 = range(2, 3);
+
+    IntType expectedTrue4 = range(2, 3);
+    IntType expectedFalse4 = range(2, 2);
+
+    Assert.assertEquals(expectedTrue1, int2.lessThanValues(int1, true));
+    Assert.assertEquals(expectedFalse1, int2.lessThanValues(int1, false));
+
+    Assert.assertEquals(expectedTrue2, int3.lessThanValues(int4, true));
+    Assert.assertEquals(expectedFalse2, int3.lessThanValues(int4, false));
+
+    Assert.assertEquals(expectedTrue3, int1.lessThanValues(int4, true));
+    Assert.assertEquals(expectedFalse3, int1.lessThanValues(int4, false));
+
+    Assert.assertEquals(expectedTrue4, int3.lessThanValues(int5, true));
+    Assert.assertEquals(expectedFalse4, int3.lessThanValues(int5, false));
+  }
+
+  @Test
+  public void intLessThanTest2() {
+    IntType int1 = range(2, 5);
+    IntType int2 = range(5, 5);
+    IntType int3 = range(4, 7);
+    IntType int4 = range(1, 6);
+    IntType int5 = range(3, 5);
+    IntType int6 = range(1, 1);
+
+    IntType expected1 = range(2, 4);
+
+    IntType expected2 = range(2, 3);
+
+    IntType expected3 = null;
+
+    IntType expected4 = range(2, 2);
+
+    Assert.assertEquals(expected1, int1.lessThanValues(int2, true));
+    Assert.assertEquals(expected1, int1.lessThanValues(int2, false));
+
+    Assert.assertEquals(expected2, int1.lessThanValues(int3, true));
+    Assert.assertEquals(expected2, int1.lessThanValues(int3, false));
+
+    Assert.assertEquals(expected3, int6.lessThanValues(int4, true));
+    Assert.assertEquals(expected3, int6.lessThanValues(int4, false));
+
+    Assert.assertEquals(expected4, int1.lessThanValues(int5, true));
+    Assert.assertEquals(expected4, int1.lessThanValues(int5, false));
+  }
+
+  @Test
+  public void intLessThanTest3() {
+    IntType int1 = range(5, 7);
+    IntType int2 = range(2, 2);
+    IntType int3 = range(-6, -3);
+    IntType int4 = range(0, 0);
+    IntType int5 = range(0, 3);
+
+    IntType expected = null;
+
+    Assert.assertEquals(expected, int1.lessThanValues(int2, true));
+    Assert.assertEquals(expected, int1.lessThanValues(int2, false));
+
+    Assert.assertEquals(expected, int2.lessThanValues(int3, true));
+    Assert.assertEquals(expected, int2.lessThanValues(int3, false));
+
+    Assert.assertEquals(expected, int2.lessThanValues(int4, true));
+    Assert.assertEquals(expected, int2.lessThanValues(int4, false));
+
+    Assert.assertEquals(expected, int1.lessThanValues(int5, true));
+    Assert.assertEquals(expected, int1.lessThanValues(int5, false));
+  }
+
+  @Test
+  public void intLessThanTest4() {
+    IntType int1 = range(3, 4);
+    IntType int2 = range(3, 3);
+    IntType int3 = range(5, 5);
+    IntType int4 = range(1, 5);
+    IntType int5 = range(6, 9);
+    IntType int6 = range(1, 7);
+    IntType int7 = range(5, 7);
+
+    IntType expected = null;
+
+    Assert.assertEquals(expected, int1.lessThanValues(int2, true));
+    Assert.assertEquals(expected, int1.lessThanValues(int2, false));
+
+    Assert.assertEquals(expected, int3.lessThanValues(int4, true));
+    Assert.assertEquals(expected, int3.lessThanValues(int4, false));
+
+    Assert.assertEquals(expected, int5.lessThanValues(int6, true));
+    Assert.assertEquals(expected, int5.lessThanValues(int6, false));
+
+    Assert.assertEquals(expected, int7.lessThanValues(int6, true));
+    Assert.assertEquals(expected, int7.lessThanValues(int6, false));
+  }
+
+  @Test
+  public void intLessThanTest5() {
+    IntType int1 = range(3, 6);
+    IntType int2 = range(4, 4);
+    IntType int3 = range(4, 5);
+
+    IntType expected = range(3, 3);
+
+    Assert.assertEquals(expected, int1.lessThanValues(int2, true));
+    Assert.assertEquals(expected, int1.lessThanValues(int2, false));
+
+    Assert.assertEquals(expected, int1.lessThanValues(int3, true));
+    Assert.assertEquals(expected, int1.lessThanValues(int3, false));
+  }
+
+  @Test
+  public void intLessThanTest6() {
+    IntType int1 = range(3, 3);
+    IntType int2 = range(1, 6);
+    IntType int3 = range(3, 5);
+
+    IntType expected = null;
+
+    Assert.assertEquals(expected, int1.lessThanValues(int2, true));
+    Assert.assertEquals(expected, int1.lessThanValues(int2, false));
+
+    Assert.assertEquals(expected, int3.lessThanValues(int2, true));
+    Assert.assertEquals(expected, int3.lessThanValues(int2, false));
+  }
+
+  @Test
+  public void intLessThanTest7() {
+    IntType int1 = range(3, 3);
+    IntType int2 = range(3, 5);
+
+    IntType expected = null;
+
+    Assert.assertEquals(expected, int1.lessThanValues(int1, true));
+    Assert.assertEquals(expected, int1.lessThanValues(int1, false));
+
+    Assert.assertEquals(expected, int2.lessThanValues(int2, true));
+    Assert.assertEquals(expected, int2.lessThanValues(int2, false));
   }
 }

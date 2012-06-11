@@ -702,6 +702,7 @@ public class IntType extends PrimitiveType implements NumType {
         switch (diff) {
         case EQUALS:
         case SECOND_IS_LEFT:
+        case SECOND_IS_LEFT_OVERLAP:
           return null;
         case FIRST_IS_LEFT:
           if (!inLoop) {
