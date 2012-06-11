@@ -883,7 +883,7 @@ public class IntType extends PrimitiveType {
       BigInteger oCst = iType.asConstant();
 
       DiffResult diff = diff(this, iType);
-
+      
       if (oCst != null) {
         switch (diff) {
         case EQUALS:
@@ -933,6 +933,9 @@ public class IntType extends PrimitiveType {
         //$FALL-THROUGH$
       case FIRST_CONTAINS_SECOND:
       case SECOND_IS_LEFT_OVERLAP:
+        if (maxBound.equals(iType.maxBound)) {
+          return null;
+        }
         return new IntType(false, iType.maxBound.add(BigInteger.ONE), maxBound);
       default:
         return VOID_TYPE;  
