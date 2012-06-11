@@ -317,17 +317,13 @@ public class IntType extends PrimitiveType implements NumType {
   }
 
   enum DiffResult {
-    FIRST_CONTAINS_SECOND(-3),
-    FIRST_IS_LEFT(-2),
-    FIRST_IS_LEFT_OVERLAP(-1),
-    EQUALS(0),
-    SECOND_IS_LEFT_OVERLAP(1),
-    SECOND_IS_LEFT(2),
-    SECOND_CONTAINS_FIRST(3);
-
-    //FIXME, Geoffrey unused code ??
-    private DiffResult(int value) {
-    }
+    FIRST_CONTAINS_SECOND,
+    FIRST_IS_LEFT,
+    FIRST_IS_LEFT_OVERLAP,
+    EQUALS,
+    SECOND_IS_LEFT_OVERLAP,
+    SECOND_IS_LEFT,
+    SECOND_CONTAINS_FIRST;
   }
 
   static DiffResult diff(IntType type1, IntType type2) {
