@@ -1,5 +1,7 @@
 package jdart.compiler.type;
 
+import jdart.compiler.phase.FlowEnv;
+
 public interface Type {
   /**
    * Returns whenever or not the current type allows null.
@@ -72,20 +74,71 @@ public interface Type {
   Type commonValuesWith(Type type);
 
   /**
-   * This call may return null.
+   * Returns the invert of this type. This call may return null.
    * 
-   * @return
+   * The results varies according to this {@link Type} instance.
+   * For example if this is an IntType like int[3;5], 
+   * the result will be an UnionType like union[int[-inf;2], int[6;+inf]]
+   * 
+   * DoubleType will always return DOUBLE_NON_NULL_TYPE.
+   * 
+   * BoolType will return its negation or BOOL_NON_NULL_TYPE.
+   * 
+   * Other types will return null.
+   * 
+   * @return Returns the invert of this type. Return null if the type is not invertible.
    */
-  //FIXME Geoffrey, add documentation !
   Type invert();
 
+  /**
+   * Returns the result 
+   * 
+   * @param other
+   * @return
+   */
   Type exclude(Type other);
   
+  /**
+   * Returns the values of this type which are less or equals than specified Type.
+   * 
+   * For example (int[5;20]).lessThanOrEqualsValues(int[10; 30]) will return int[5;10].
+   * 
+   * @param other Type to use.
+   * @param inLoop InLoop state of the {@link FlowEnv environment}.
+   * @return The values of this type which are less or equals than other Type. Return null if types are not computable.
+   */
   Type lessThanOrEqualsValues(Type other, boolean inLoop);
 
+  /**
+   * Returns the values of this type which are less than specified Type.
+   * 
+   * For example (int[5;20]).lessThanValues(int[10; 30]) will return int[5;9].
+   * 
+   * @param other Type to use.
+   * @param inLoop InLoop state of the {@link FlowEnv environment}.
+   * @return The values of this type which are less than other Type. Return null if types are not computable.
+   */
   Type lessThanValues(Type other, boolean inLoop);
 
+  /**
+   * Returns the values of this type which are greater or equals than specified Type.
+   * 
+   * For example (int[5;20]).greaterThanOrEqualsValues(int[10; 15]) will return int[15;20].
+   * 
+   * @param other Type to use.
+   * @param inLoop InLoop state of the {@link FlowEnv environment}.
+   * @return The values of this type which are greater or equals than other Type. Return null if types are not computable.
+   */
   Type greaterThanOrEqualsValues(Type other, boolean inLoop);
 
+  /**
+   * Returns the values of this type which are greater than specified Type.
+   * 
+   * For example (int[5;20]).greaterThanValues(int[10; 15]) will return int[16;20].
+   * 
+   * @param other Type to use.
+   * @param inLoop InLoop state of the {@link FlowEnv environment}.
+   * @return The values of this type which are greater than other Type. Return null if types are not computable.
+   */
   Type greaterThanValues(Type other, boolean inLoop);
 }

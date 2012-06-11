@@ -153,7 +153,7 @@ public class BoolType extends PrimitiveType {
     if (this == FALSE_TYPE) {
       return TRUE_TYPE;
     }
-    return this;
+    return BOOL_NON_NULL_TYPE;
   }
 
   @Override
