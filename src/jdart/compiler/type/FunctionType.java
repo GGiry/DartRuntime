@@ -134,11 +134,6 @@ public class FunctionType extends OwnerType {
   }
 
   @Override
-  public Type invert() {
-    return null;
-  }
-
-  @Override
   public Type exclude(Type other) {
     return null;
   }

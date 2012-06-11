@@ -53,11 +53,6 @@ public class DynamicType extends NullableType {
   }
 
   @Override
-  public Type invert() {
-    return null;
-  }
-
-  @Override
   public Type exclude(Type other) {
     return null;
   }

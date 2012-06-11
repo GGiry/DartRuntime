@@ -607,23 +607,6 @@ public class IntType extends PrimitiveType implements NumType {
   }
 
   @Override
-  public Type invert() {
-    if (minBound == null && maxBound == null) {
-      return null;
-    }
-
-    if (minBound != null) {
-      Type result = new IntType(isNullable(), null, minBound.subtract(BigInteger.ONE));
-      if (maxBound != null) {
-        result = Types.union(result, new IntType(isNullable(), maxBound.add(BigInteger.ONE), null));
-      }
-      return result;
-    }
-
-    return new IntType(isNullable(), maxBound.add(BigInteger.ONE), null);
-  }
-
-  @Override
   public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
     if (other instanceof IntType) {
       IntType iType = (IntType) other;

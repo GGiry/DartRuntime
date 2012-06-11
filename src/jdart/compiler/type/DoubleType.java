@@ -130,11 +130,6 @@ public class DoubleType extends PrimitiveType implements NumType {
   }
 
   @Override
-  public Type invert() {
-    return DOUBLE_TYPE;
-  }
-
-  @Override
   public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
     if (other instanceof DoubleType) {
       if (constant.compareTo((Double) other.asConstant()) <= 0) {

@@ -55,11 +55,6 @@ public class VoidType implements Type {
   }
 
   @Override
-  public Type invert() {
-    throw new IllegalStateException("void type");
-  }
-
-  @Override
   public Type exclude(Type other) {
     return null;
   }

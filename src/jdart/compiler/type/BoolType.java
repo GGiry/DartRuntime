@@ -146,17 +146,6 @@ public class BoolType extends PrimitiveType {
   }
 
   @Override
-  public Type invert() {
-    if (this == TRUE_TYPE) {
-      return FALSE_TYPE;
-    }
-    if (this == FALSE_TYPE) {
-      return TRUE_TYPE;
-    }
-    return BOOL_NON_NULL_TYPE;
-  }
-
-  @Override
   public Type exclude(Type other) {
     if (other instanceof BoolType) {
       if (other.equals(this)) {

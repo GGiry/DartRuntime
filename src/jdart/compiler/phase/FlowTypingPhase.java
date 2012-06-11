@@ -317,7 +317,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       @Override
       public List<Type> visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
-        // TODO WIP
         DartExpression arg1 = node.getArg1();
         DartExpression arg2 = node.getArg2();
         Type type1 = visitor.accept(arg1, parameter);
@@ -330,48 +329,28 @@ public class FlowTypingPhase implements DartCompilationPhase {
         case EQ_STRICT:
         case EQ:
           typeTrue = type1.commonValuesWith(type2);
-          if (typeTrue != null) {
-            typeFalse = typeTrue.invert();
-          }
+          typeFalse = type1.exclude(type2);
           break;
         case NE_STRICT:
         case NE:
           typeTrue = type1.exclude(type2);
-          if (typeTrue != null) {
-            typeFalse = typeTrue.invert();
-          }
+          typeFalse = type1.commonValuesWith(type2);
           break;
         case LTE:
           typeTrue = type1.lessThanOrEqualsValues(type2, parameter.inLoop());
-          if (typeTrue != null && typeTrue != VOID_TYPE) {
-            typeFalse = typeTrue.invert();
-          } else if (typeTrue == VOID_TYPE) {
-            typeFalse = VOID_TYPE;
-          }
+          typeFalse = type1.greaterThanValues(type2, parameter.inLoop());
           break;
         case GTE:
-          typeTrue = type2.lessThanOrEqualsValues(type1, parameter.inLoop()); // a >= b <=> b <= a
-          if (typeTrue != null && typeTrue != VOID_TYPE) {
-            typeFalse = typeTrue.invert();
-          } else if (typeTrue == VOID_TYPE) {
-            typeFalse = VOID_TYPE;
-          }
+          typeTrue = type1.greaterThanOrEqualsValues(type2, parameter.inLoop());
+          typeFalse = type1.lessThanValues(type2, parameter.inLoop());
           break;
         case LT:
           typeTrue = type1.lessThanValues(type2, parameter.inLoop());
-          if (typeTrue != null && typeTrue != VOID_TYPE) {
-            typeFalse = typeTrue.invert();
-          } else if (typeTrue == VOID_TYPE) {
-            typeFalse = VOID_TYPE;
-          }
+          typeFalse = type1.greaterThanOrEqualsValues(type2, parameter.inLoop());
           break;
         case GT:
-          typeTrue = type2.lessThanValues(type1, parameter.inLoop()); // a > b <=> b < a
-          if (typeTrue != null && typeTrue != VOID_TYPE) {
-            typeFalse = typeTrue.invert();
-          } else if (typeTrue == VOID_TYPE) {
-            typeFalse = VOID_TYPE;
-          }
+          typeTrue = type1.greaterThanValues(type2, parameter.inLoop());
+          typeFalse = type1.lessThanOrEqualsValues(type2, parameter.inLoop());
           break;
 
         case AND: {
@@ -1097,6 +1076,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
         InterfaceType interfaceArray = (InterfaceType) typeOfArray;
 
         Element element = interfaceArray.lookupMember("operator []");
+        if (element == null) {
+          element = interfaceArray.lookupMember("operator []=");
+        }
         if (element == null || !(element instanceof MethodElement)) {
           // the class doesn't provide any operator []
           return DYNAMIC_NON_NULL_TYPE;

@@ -74,27 +74,10 @@ public interface Type {
   Type commonValuesWith(Type type);
 
   /**
-   * Returns the invert of this type. This call may return null.
+   * Returns values which are not common between this and the other type.
    * 
-   * The results varies according to this {@link Type} instance.
-   * For example if this is an IntType like int[3;5], 
-   * the result will be an UnionType like union[int[-inf;2], int[6;+inf]]
-   * 
-   * DoubleType will always return DOUBLE_NON_NULL_TYPE.
-   * 
-   * BoolType will return its negation or BOOL_NON_NULL_TYPE.
-   * 
-   * Other types will return null.
-   * 
-   * @return Returns the invert of this type. Return null if the type is not invertible.
-   */
-  Type invert();
-
-  /**
-   * Returns the result 
-   * 
-   * @param other
-   * @return
+   * @param other Type to use to check not common values.
+   * @return Type containing not common values between this and the other type.
    */
   Type exclude(Type other);
   

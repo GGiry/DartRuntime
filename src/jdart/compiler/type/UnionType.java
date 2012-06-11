@@ -2,7 +2,6 @@ package jdart.compiler.type;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
 
-import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -238,67 +237,6 @@ public class UnionType extends NullableType implements NumType {
         return type.commonValuesWith(other);
       }
     });
-  }
-
-  @Override
-  public Type invert() {    
-    LinkedHashSet<NullableType> result = new LinkedHashSet<>();
-    boolean minIsDone = false;
-    boolean maxIsDone = false;
-    BigInteger last = null;
-
-    for (Type type : types) {
-      if (type instanceof IntType) {
-        IntType iType = (IntType) type;
-        BigInteger minBound = iType.getMinBound();
-        BigInteger maxBound = iType.getMaxBound();
-
-        if (maxBound == null) {
-          maxIsDone = true;
-        }
-
-        if (!minIsDone) {
-          if (maxBound != null) {
-            last = maxBound.add(BigInteger.ONE);
-          } else {
-            last = null;
-          }
-          if (minBound != null) {
-            result.add(new IntType(isNullable(), null, minBound.subtract(BigInteger.ONE)));
-          }
-          minIsDone = true;
-        } else {
-          if (last != null) {
-            result.add(new IntType(isNullable(), last, minBound.subtract(BigInteger.ONE)));
-            if (maxBound != null) {
-              last = maxBound.add(BigInteger.ONE);
-            } else {
-              last = null;
-            }
-          }
-        }
-
-      } else {
-        NullableType invert = (NullableType) type.invert();
-        if (invert != null) {
-          result.add(invert);
-        }
-      }
-    }
-
-    if (!maxIsDone) {
-      result.add(new IntType(isNullable(), last, null));
-    }
-
-    if (result.isEmpty()) {
-      return null;
-    }
-    if (result.size() == 1) {
-      NullableType[] array = new NullableType[1];
-      result.toArray(array);
-      return array[0];
-    }
-    return new UnionType(isNullable(), result);
   }
 
   @Override
