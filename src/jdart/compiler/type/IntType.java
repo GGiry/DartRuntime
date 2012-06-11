@@ -14,13 +14,13 @@ public class IntType extends PrimitiveType implements NumType {
   IntType(boolean nullable, /* maybenull */BigInteger minBound, /* maybenull */
       BigInteger maxBound) {
     super(nullable);
-    
+
     if (minBound != null && maxBound != null) {
       if (minBound.compareTo(maxBound) > 0) {
         throw new IllegalArgumentException("minBound must be lesser than maxBound.");
       }
     }
-    
+
     this.minBound = minBound;
     this.maxBound = (Objects.equals(minBound, maxBound)) ? minBound : maxBound;
     // be sure that if the type is constant min == max
@@ -1052,26 +1052,27 @@ public class IntType extends PrimitiveType implements NumType {
   private Type modInt(IntType other) {
     BigInteger cst = asConstant();
     BigInteger oCst = other.asConstant();
-    
+
     if (cst != null && oCst != null) {
       BigInteger value = cst.mod(oCst);
       return constant(value);
     }
 
-    BigInteger val = other.maxBound.subtract(BigInteger.ONE);
-    if (BigInteger.ZERO.compareTo(val) < 0) {
-      return new IntType(false, BigInteger.ZERO, val);
+    if (maxBound != null || minBound != null) {
+      BigInteger val = other.maxBound.subtract(BigInteger.ONE);
+      if (BigInteger.ZERO.compareTo(val) < 0) {
+        return new IntType(false, BigInteger.ZERO, val);
+      }
     }
-    throw new IllegalArgumentException("other value must be greater than zero.");
+    return DYNAMIC_TYPE;
   }
 
-  
   @Override
   public Type mod(Type other) {
     if (other instanceof IntType) {
       return modInt((IntType) other);
     }
-    
+
     if (other instanceof DoubleType) {
       return ((DoubleType) other).reverseMod(this);
     }
