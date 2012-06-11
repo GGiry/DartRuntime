@@ -965,7 +965,7 @@ public class IntTest {
 
     IntType expected1 = range(4, 4);
     IntType expected2 = null;
-    IntType expected3 = range(1, 6);
+    IntType expected3 = range(8, 9);
     IntType expected4 = null;
 
     Assert.assertEquals(expected1, int1.exclude(int2));
