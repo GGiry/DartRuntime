@@ -208,7 +208,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
       return null;
     }
-    
+
     @Override
     public Type visitFunction(DartFunction node, FlowEnv flowEnv) {
       // function element is not initialized, we use the parent element here
@@ -375,6 +375,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
         list.add(typeFalse);
         return list;
       }
+
+      @Override
+      public List<Type> visitBooleanLiteral(DartBooleanLiteral node, FlowEnv parameter) {
+        return null;
+      }
     }
 
     private void changeOperandsTypes(Type type, DartBinaryExpression node, FlowEnv parameter) {
@@ -433,15 +438,17 @@ public class FlowTypingPhase implements DartCompilationPhase {
       FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
       FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
 
-      //FIXME, Geoffrey the condition can be something different from a DartBinaryExpression
-      // by example if (!true) is not a binary expression
       if (conditionType != FALSE_TYPE) {
-        changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, envThen);
+        if (types != null) {
+          changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, envThen);
+        }
         accept(node.getThenStatement(), envThen);
         parameter.merge(envThen);
       }
       if (conditionType != TRUE_TYPE && node.getElseStatement() != null) {
-        changeOperandsTypes(types.get(ConditionVisitor.FALSE_POSITION), (DartBinaryExpression) condition, envElse);
+        if (types != null) {
+          changeOperandsTypes(types.get(ConditionVisitor.FALSE_POSITION), (DartBinaryExpression) condition, envElse);
+        }
         accept(node.getElseStatement(), envElse);
         parameter.merge(envElse);
       }
@@ -507,7 +514,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         }
         accept(condition, env);
       } while(!env.isStable());
-      
+
       parameter.update(env);
     }
 
