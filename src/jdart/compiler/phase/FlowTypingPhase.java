@@ -462,17 +462,17 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
       return null;
     }
-    
+
     static class LoopVisitor extends ASTVisitor2<List<VariableElement>, FlowEnv> {
       public LoopVisitor() {
         super();
       }
-      
+
       @Override
       protected List<VariableElement> accept(DartNode node, FlowEnv parameter) {
         return super.accept(node, parameter);
       }
-      
+
       @Override
       public List<VariableElement> visitBlock(DartBlock node, FlowEnv parameter) {
         LinkedList<VariableElement> list = new LinkedList<>();
@@ -482,7 +482,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         }
         return list;
       }
-      
+
       @Override
       public List<VariableElement> visitIfStatement(DartIfStatement node, FlowEnv parameter) {
         LinkedList<VariableElement> list = new LinkedList<>();
@@ -490,7 +490,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         list.addAll(accept(node.getElseStatement(), parameter));
         return list;
       }
-      
+
       @Override
       public List<VariableElement> visitExprStmt(DartExprStmt node, FlowEnv parameter) {
         LinkedList<VariableElement> list = new LinkedList<>();
@@ -499,72 +499,48 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
     }
 
-    // FIXME, Geoffrey, for, while and do/while should share code
-    @Override
-    public Type visitForStatement(DartForStatement node, FlowEnv parameter) {
-      DartExpression condition = node.getCondition();
+    private void computeLoop(DartExpression condition, DartStatement body, DartStatement /* maybe null */ init, DartExpression /* maybe null */ increment, FlowEnv parameter) {
       accept(condition, parameter);
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
-
       FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
-      accept(node.getInit(), env);
-      
+
       LoopVisitor loopVisitor = new LoopVisitor();
-      loopVisitor.accept(node.getBody(), parameter);
+      loopVisitor.accept(body, parameter);
+
+      if (init != null) {
+        accept(init, env);
+      }
 
       do {
         env = new FlowEnv(env, env.getReturnType(), env.getExpectedType(), true);
         List<Type> types = conditionVisitor.accept(condition, env);
         changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, env);
 
-        accept(node.getBody(), env);
-        accept(node.getIncrement(), env);
+        accept(body, env);
+        if (increment != null) {
+          accept(increment, env);
+        }
         accept(condition, env);
       } while(!env.isStable());
-
+      
       parameter.update(env);
+    }
+
+    @Override
+    public Type visitForStatement(DartForStatement node, FlowEnv parameter) {
+      computeLoop(node.getCondition(), node.getBody(), node.getInit(), node.getIncrement(), parameter);
       return null;
     }
 
     @Override
     public Type visitWhileStatement(DartWhileStatement node, FlowEnv parameter) {
-      DartExpression condition = node.getCondition();
-      accept(condition, parameter);
-      ConditionVisitor conditionVisitor = new ConditionVisitor(this);
-
-      FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
-      
-      do {
-        env = new FlowEnv(env, env.getReturnType(), env.getExpectedType(), true);
-        List<Type> types = conditionVisitor.accept(condition, env);
-        changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, env);
-
-        accept(node.getBody(), env);
-        accept(condition, env);
-      } while(!env.isStable());
-
-      parameter.update(env);
+      computeLoop(node.getCondition(), node.getBody(), null, null, parameter);
       return null;
     }
 
     @Override
     public Type visitDoWhileStatement(DartDoWhileStatement node, FlowEnv parameter) {
-      DartExpression condition = node.getCondition();
-      Type conditionType = accept(condition, parameter);
-      ConditionVisitor conditionVisitor = new ConditionVisitor(this);
-
-      FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
-
-      do {
-        env = new FlowEnv(env, env.getReturnType(), env.getExpectedType(), true);
-        List<Type> types = conditionVisitor.accept(condition, env);
-        changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, env);
-
-        accept(node.getBody(), env);
-        conditionType = accept(condition, env);
-      } while(!env.isStable() && conditionType == TRUE_TYPE);
-
-      parameter.update(env);
+      computeLoop(node.getCondition(), node.getBody(), null, null, parameter);
       return null;
     }
 
@@ -865,7 +841,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       Type type = ((OwnerType) parameter.getThisType()).getSuperType();
       return type;
     }
-    
+
     @Override
     public Type visitParenthesizedExpression(DartParenthesizedExpression node, FlowEnv parameter) {
       return accept(node.getExpression(), parameter);
