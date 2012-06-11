@@ -7,7 +7,7 @@ import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
 
-public class IntType extends PrimitiveType {
+public class IntType extends PrimitiveType implements NumType {
   private final BigInteger minBound;
   private final BigInteger maxBound;
 
@@ -317,17 +317,13 @@ public class IntType extends PrimitiveType {
   }
 
   enum DiffResult {
-    FIRST_CONTAINS_SECOND(-3),
-    FIRST_IS_LEFT(-2),
-    FIRST_IS_LEFT_OVERLAP(-1),
-    EQUALS(0),
-    SECOND_IS_LEFT_OVERLAP(1),
-    SECOND_IS_LEFT(2),
-    SECOND_CONTAINS_FIRST(3);
-
-    //FIXME, Geoffrey unused code ??
-    private DiffResult(int value) {
-    }
+    FIRST_CONTAINS_SECOND,
+    FIRST_IS_LEFT,
+    FIRST_IS_LEFT_OVERLAP,
+    EQUALS,
+    SECOND_IS_LEFT_OVERLAP,
+    SECOND_IS_LEFT,
+    SECOND_CONTAINS_FIRST;
   }
 
   static DiffResult diff(IntType type1, IntType type2) {
@@ -611,23 +607,6 @@ public class IntType extends PrimitiveType {
   }
 
   @Override
-  public Type invert() {
-    if (minBound == null && maxBound == null) {
-      return null;
-    }
-
-    if (minBound != null) {
-      Type result = new IntType(isNullable(), null, minBound.subtract(BigInteger.ONE));
-      if (maxBound != null) {
-        result = Types.union(result, new IntType(isNullable(), maxBound.add(BigInteger.ONE), null));
-      }
-      return result;
-    }
-
-    return new IntType(isNullable(), maxBound.add(BigInteger.ONE), null);
-  }
-
-  @Override
   public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
     if (other instanceof IntType) {
       IntType iType = (IntType) other;
@@ -883,7 +862,7 @@ public class IntType extends PrimitiveType {
       BigInteger oCst = iType.asConstant();
 
       DiffResult diff = diff(this, iType);
-
+      
       if (oCst != null) {
         switch (diff) {
         case EQUALS:
@@ -933,6 +912,9 @@ public class IntType extends PrimitiveType {
         //$FALL-THROUGH$
       case FIRST_CONTAINS_SECOND:
       case SECOND_IS_LEFT_OVERLAP:
+        if (maxBound.equals(iType.maxBound)) {
+          return null;
+        }
         return new IntType(false, iType.maxBound.add(BigInteger.ONE), maxBound);
       default:
         return VOID_TYPE;  
@@ -1240,11 +1222,11 @@ public class IntType extends PrimitiveType {
   @Override
   public Type add(Type other) {
     if (other instanceof DoubleType) {
-      return other.add(this);
+      return ((DoubleType) other).add(this);
     }
 
     if (other instanceof UnionType) {
-      return other.add(this);
+      return ((UnionType) other).add(this);
     }
 
     return null;

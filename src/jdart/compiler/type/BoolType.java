@@ -146,37 +146,6 @@ public class BoolType extends PrimitiveType {
   }
 
   @Override
-  public Type invert() {
-    if (this == TRUE_TYPE) {
-      return FALSE_TYPE;
-    }
-    if (this == FALSE_TYPE) {
-      return TRUE_TYPE;
-    }
-    return this;
-  }
-
-  @Override
-  public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
-    return null;
-  }
-
-  @Override
-  public Type lessThanValues(Type other, boolean inLoop) {
-    return null;
-  }
-  
-  @Override
-  public Type greaterThanOrEqualsValues(Type other, boolean inLoop) {
-    return null;
-  }
-  
-  @Override
-  public Type greaterThanValues(Type other, boolean inLoop) {
-    return null;
-  }
-
-  @Override
   public Type exclude(Type other) {
     if (other instanceof BoolType) {
       if (other.equals(this)) {
@@ -195,21 +164,6 @@ public class BoolType extends PrimitiveType {
       return other.exclude(this);
     }
 
-    return null;
-  }
-
-  @Override
-  public Type add(Type other) {
-    return null;
-  }
-
-  @Override
-  public Type mod(Type other) {
-    return null;
-  }
-
-  @Override
-  public Type sub(Type other) {
     return null;
   }
 }

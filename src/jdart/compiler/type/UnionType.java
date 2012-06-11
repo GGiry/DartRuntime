@@ -2,7 +2,6 @@ package jdart.compiler.type;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
 
-import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -10,7 +9,8 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 
-public class UnionType extends NullableType {
+// TODO not sure if it need to implements NumType or just add the methods without @Override annotation
+public class UnionType extends NullableType implements NumType {
   // each component type should be non nullable and not a union type
   private final LinkedHashSet<NullableType> types;
 
@@ -240,76 +240,18 @@ public class UnionType extends NullableType {
   }
 
   @Override
-  public Type invert() {    
-    LinkedHashSet<NullableType> result = new LinkedHashSet<>();
-    boolean minIsDone = false;
-    boolean maxIsDone = false;
-    BigInteger last = null;
-
-    for (Type type : types) {
-      if (type instanceof IntType) {
-        IntType iType = (IntType) type;
-        BigInteger minBound = iType.getMinBound();
-        BigInteger maxBound = iType.getMaxBound();
-
-        if (maxBound == null) {
-          maxIsDone = true;
-        }
-
-        if (!minIsDone) {
-          if (maxBound != null) {
-            last = maxBound.add(BigInteger.ONE);
-          } else {
-            last = null;
-          }
-          if (minBound != null) {
-            result.add(new IntType(isNullable(), null, minBound.subtract(BigInteger.ONE)));
-          }
-          minIsDone = true;
-        } else {
-          if (last != null) {
-            result.add(new IntType(isNullable(), last, minBound.subtract(BigInteger.ONE)));
-            if (maxBound != null) {
-              last = maxBound.add(BigInteger.ONE);
-            } else {
-              last = null;
-            }
-          }
-        }
-
-      } else {
-        NullableType invert = (NullableType) type.invert();
-        if (invert != null) {
-          result.add(invert);
-        }
-      }
-    }
-
-    if (!maxIsDone) {
-      result.add(new IntType(isNullable(), last, null));
-    }
-
-    if (result.isEmpty()) {
-      return null;
-    }
-    if (result.size() == 1) {
-      NullableType[] array = new NullableType[1];
-      result.toArray(array);
-      return array[0];
-    }
-    return new UnionType(isNullable(), result);
-  }
-
-  @Override
   public Type lessThanOrEqualsValues(final Type other, final boolean inLoop) {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        Type lteValues = type.lessThanOrEqualsValues(other, inLoop);
-        if (lteValues == VOID_TYPE) {
-          return type;
-        }
-        return lteValues;
+        if (type instanceof NumType) {
+          Type lteValues = ((NumType) type).lessThanOrEqualsValues(other, inLoop);
+          if (lteValues == VOID_TYPE) {
+            return type;
+          }
+          return lteValues;
+        } 
+        return null;
       }
     });
   }
@@ -319,11 +261,14 @@ public class UnionType extends NullableType {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        Type ltValues = type.lessThanValues(other, inLoop);
-        if (ltValues == VOID_TYPE) {
-          return type;
+        if (type instanceof NumType) {
+          Type ltValues = ((NumType) type).lessThanValues(other, inLoop);
+          if (ltValues == VOID_TYPE) {
+            return type;
+          }
+          return ltValues;
         }
-        return ltValues;
+        return null;
       }
     });
   }
@@ -333,7 +278,7 @@ public class UnionType extends NullableType {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        Type gteValues = type.greaterThanOrEqualsValues(other, inLoop);
+        Type gteValues = ((NumType) type).greaterThanOrEqualsValues(other, inLoop);
         if (gteValues == VOID_TYPE) {
           return type;
         }
@@ -347,7 +292,7 @@ public class UnionType extends NullableType {
     return map(new TypeMapper() {
       @Override
       public Type transform(Type type) {
-        Type ltValues = other.lessThanValues(type, inLoop);
+        Type ltValues = ((NumType) type).greaterThanValues(other, inLoop);
         if (ltValues == VOID_TYPE) {
           return type;
         }
@@ -373,7 +318,10 @@ public class UnionType extends NullableType {
 
       @Override
       public Type transform(Type type) {
-        return type.add(other);
+        if (type instanceof NumType)  {
+          return ((NumType) type).add(other);
+        }
+        return null;
       }
     });
   }
@@ -383,7 +331,10 @@ public class UnionType extends NullableType {
 
       @Override
       public Type transform(Type type) {
-        return type.sub(other);
+        if (type instanceof NumType)  {
+          return ((NumType) type).sub(other);
+        }
+        return null;
       }
     });
   }
@@ -393,7 +344,10 @@ public class UnionType extends NullableType {
 
       @Override
       public Type transform(Type type) {
-        return type.mod(other);
+        if (type instanceof NumType)  {
+          return ((NumType) type).mod(other);
+        }
+        return null;
       }
     });
   }
@@ -403,7 +357,10 @@ public class UnionType extends NullableType {
 
       @Override
       public Type transform(Type type) {
-        return other.sub(type);
+        if (type instanceof NumType)  {
+          return ((NumType) other).sub(type);
+        }
+        return null;
       }
     });
   }
@@ -413,7 +370,10 @@ public class UnionType extends NullableType {
 
       @Override
       public Type transform(Type type) {
-        return other.mod(type);
+        if (type instanceof NumType)  {
+          return ((NumType) other).mod(type);
+        }
+        return null;
       }
     });
   }

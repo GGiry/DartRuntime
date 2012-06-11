@@ -18,10 +18,10 @@ import com.google.dart.compiler.type.FunctionAliasType;
 /**
  * Helper methods to do conversions between Dart compiler type/element and type flow's type.
  */
-class TypeHelper {
+public class TypeHelper {
   private final TypeRepository typeRepository;
   
-  TypeHelper(TypeRepository typeRepository) {
+  public TypeHelper(TypeRepository typeRepository) {
     this.typeRepository = typeRepository;
   }
   

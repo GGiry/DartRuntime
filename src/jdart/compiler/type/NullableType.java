@@ -60,4 +60,24 @@ abstract class NullableType implements Type {
     Type resultType = typeMapper.transform(this);
     return (resultType == null) ? DYNAMIC_NON_NULL_TYPE : resultType;
   }
+  
+  @Override
+  public Type greaterThanOrEqualsValues(Type other, boolean inLoop) {
+    return null;
+  }
+
+  @Override
+  public Type greaterThanValues(Type other, boolean inLoop) {
+    return null;
+  }
+  
+  @Override
+  public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
+    return null;
+  }
+  
+  @Override
+  public Type lessThanValues(Type other, boolean inLoop) {
+    return null;
+  }
 }

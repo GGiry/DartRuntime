@@ -108,30 +108,6 @@ public class UnionTest {
   }
 
   @Test
-  public void unionDoubleInvert() {
-    NullableType type1 = range(false, 0, 10);
-    Assert.assertEquals(type1, type1.invert().invert());
-  }
-
-  @Test
-  public void unionInvert() {
-    IntType int1 = range(false, null, 10);
-    IntType int2 = range(false, 15, 20);
-    IntType int3 = range(false, 30, null);
-
-    IntType int4 = range(false, 11, 14);
-    IntType int5 = range(false, 21, 29);
-
-    UnionType unionType1 = UnionType.createUnionType(int1, int2);
-    unionType1 = (UnionType) unionType1.merge(int3);
-
-    UnionType unionType2 = UnionType.createUnionType(int4, int5);
-
-    Assert.assertEquals(unionType2, unionType1.invert());
-    Assert.assertEquals(unionType1, unionType2.invert());
-  }
-
-  @Test
   public void unionLessOrEqualsThanValues() {
     IntType int1 = range(false, null, 10);
     IntType int2 = range(false, 15, 20);

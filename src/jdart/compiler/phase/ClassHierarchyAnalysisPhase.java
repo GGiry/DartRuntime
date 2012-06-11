@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import jdart.compiler.visitor.ASTVisitor2;
 
@@ -38,7 +39,6 @@ public class ClassHierarchyAnalysisPhase implements DartCompilationPhase {
   final LinkedHashSet<DartUnit> seenUnit = new LinkedHashSet<>();
   final ArrayDeque<DartUnit> pending = new ArrayDeque<>();
   CoreTypeProvider coreTypeProvider;
-  private boolean alreadyCalledOnce;
   
   private ClassHierarchyAnalysisPhase() {
     // enforce singleton
@@ -48,6 +48,18 @@ public class ClassHierarchyAnalysisPhase implements DartCompilationPhase {
     return SINGLETON;
   }
   private static final ClassHierarchyAnalysisPhase SINGLETON = new ClassHierarchyAnalysisPhase();
+  
+  public Set<DartUnit> getUnits() {
+    return seenUnit;
+  }
+  
+  public CHAClass getCHAClass(ClassElement classElement) {
+    return visitor.classMap.get(classElement);
+  }
+  
+  public CoreTypeProvider getCoreTypeProvider() {
+    return coreTypeProvider;
+  }
   
   @Override
   public DartUnit exec(DartUnit unit, DartCompilerContext context, CoreTypeProvider coreTypeProvider) {
@@ -78,7 +90,6 @@ public class ClassHierarchyAnalysisPhase implements DartCompilationPhase {
       visitor.analysis(pendingUnit);
     }
     
-    alreadyCalledOnce = true;
     //visitor.debug();
     return unit;
   }

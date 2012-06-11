@@ -55,17 +55,7 @@ public class VoidType implements Type {
   }
 
   @Override
-  public Type invert() {
-    throw new IllegalStateException("void type");
-  }
-
-  @Override
-  public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
-    return null;
-  }
-
-  @Override
-  public Type lessThanValues(Type other, boolean inLoop) {
+  public Type exclude(Type other) {
     return null;
   }
   
@@ -73,29 +63,19 @@ public class VoidType implements Type {
   public Type greaterThanOrEqualsValues(Type other, boolean inLoop) {
     return null;
   }
-  
+
   @Override
   public Type greaterThanValues(Type other, boolean inLoop) {
     return null;
   }
-
+  
   @Override
-  public Type exclude(Type other) {
+  public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
     return null;
   }
-
+  
   @Override
-  public Type add(Type other) {
-    return null;
-  }
-
-  @Override
-  public Type mod(Type other) {
-    return null;
-  }
-
-  @Override
-  public Type sub(Type other) {
+  public Type lessThanValues(Type other, boolean inLoop) {
     return null;
   }
 }

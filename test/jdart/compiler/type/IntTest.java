@@ -17,11 +17,11 @@ public class IntTest {
   static IntType range(boolean nullable, Integer min, Integer max) {
     IntType res;
     if (min != null && max != null) {
-      res =  INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(min)).asTypeLessOrEqualsThan(BigInteger.valueOf(max));
+      res = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(min)).asTypeLessOrEqualsThan(BigInteger.valueOf(max));
     } else if (min != null) {
-      res =  INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(min));
+      res = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(min));
     } else if (max != null) {
-      res =  INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.valueOf(max));
+      res = INT_NON_NULL_TYPE.asTypeLessOrEqualsThan(BigInteger.valueOf(max));
     } else {
       res = INT_NON_NULL_TYPE;
     }
@@ -267,7 +267,7 @@ public class IntTest {
     IntType int5 = range(4, 4);
 
     IntType expected = null;
-    
+
     Assert.assertEquals(expected, int2.greaterThanValues(int1, true));
     Assert.assertEquals(expected, int2.greaterThanValues(int1, false));
 
@@ -335,7 +335,6 @@ public class IntTest {
     Assert.assertEquals(expectedFalse4, int1.greaterThanValues(int5, false));
   }
 
-  /* WIP
   @Test
   public void intGreaterThanTest4() {
     IntType int1 = range(3, 4);
@@ -346,10 +345,10 @@ public class IntTest {
     IntType int6 = range(1, 7);
     IntType int7 = range(5, 7);
 
-    IntType expected1 = range(3, 4);
-    IntType expected2 = range(5, 5);
-    IntType expected3 = range(7, 9);
-    IntType expected4 = range(7, 7);
+    IntType expected1 = range(4, 4);
+    IntType expected2 = null;
+    IntType expected3 = range(8, 9);
+    IntType expected4 = null;
 
     Assert.assertEquals(expected1, int1.greaterThanValues(int2, true));
     Assert.assertEquals(expected1, int1.greaterThanValues(int2, false));
@@ -370,8 +369,8 @@ public class IntTest {
     IntType int2 = range(4, 4);
     IntType int3 = range(4, 5);
 
-    IntType expected1 = range(4, 6);
-    IntType expected2 = range(5, 6);
+    IntType expected1 = range(5, 6);
+    IntType expected2 = range(6, 6);
 
     Assert.assertEquals(expected1, int1.greaterThanValues(int2, true));
     Assert.assertEquals(expected1, int1.greaterThanValues(int2, false));
@@ -400,14 +399,12 @@ public class IntTest {
     IntType int1 = range(3, 3);
     IntType int2 = range(3, 5);
 
-    IntType expected1 = range(3, 3);
-    IntType expected2 = range(5, 5);
+    IntType expected = null;
 
-    Assert.assertEquals(expected1, int1.greaterThanValues(int1, true));
-    Assert.assertEquals(expected1, int1.greaterThanValues(int1, false));
+    Assert.assertEquals(expected, int1.greaterThanValues(int1, true));
+    Assert.assertEquals(expected, int1.greaterThanValues(int1, false));
 
-    Assert.assertEquals(expected2, int2.greaterThanValues(int2, true));
-    Assert.assertEquals(expected2, int2.greaterThanValues(int2, false));
+    Assert.assertEquals(expected, int2.greaterThanValues(int2, true));
+    Assert.assertEquals(expected, int2.greaterThanValues(int2, false));
   }
-  */
 }
