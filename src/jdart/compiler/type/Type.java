@@ -88,12 +88,4 @@ public interface Type {
   Type greaterThanOrEqualsValues(Type other, boolean inLoop);
 
   Type greaterThanValues(Type other, boolean inLoop);
-
-  // FIXME, Geoffrey, there is no point to do add on something
-  // which is not an int or a double
-  Type add(Type other);
-
-  Type sub(Type other);
-
-  Type mod(Type other);
 }

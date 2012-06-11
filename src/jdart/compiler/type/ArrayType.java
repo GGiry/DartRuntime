@@ -137,39 +137,4 @@ public class ArrayType extends NullableType {
   public Type exclude(Type other) {
     return null;
   }
-
-  @Override
-  public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
-    return null;
-  }
-
-  @Override
-  public Type lessThanValues(Type other, boolean inLoop) {
-    return null;
-  }
-  
-  @Override
-  public Type greaterThanOrEqualsValues(Type other, boolean inLoop) {
-    return null;
-  }
-  
-  @Override
-  public Type greaterThanValues(Type other, boolean inLoop) {
-    return null;
-  }
-
-  @Override
-  public Type add(Type other) {
-    return null;
-  }
-
-  @Override
-  public Type mod(Type other) {
-    return null;
-  }
-
-  @Override
-  public Type sub(Type other) {
-    return null;
-  }
 }

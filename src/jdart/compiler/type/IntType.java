@@ -7,7 +7,7 @@ import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
 
-public class IntType extends PrimitiveType {
+public class IntType extends PrimitiveType implements NumType {
   private final BigInteger minBound;
   private final BigInteger maxBound;
 
@@ -1243,11 +1243,11 @@ public class IntType extends PrimitiveType {
   @Override
   public Type add(Type other) {
     if (other instanceof DoubleType) {
-      return other.add(this);
+      return ((DoubleType) other).add(this);
     }
 
     if (other instanceof UnionType) {
-      return other.add(this);
+      return ((UnionType) other).add(this);
     }
 
     return null;

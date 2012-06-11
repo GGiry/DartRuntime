@@ -7,7 +7,7 @@ import java.util.Objects;
 
 import com.google.dart.compiler.resolver.ClassElement;
 
-public class DoubleType extends PrimitiveType {
+public class DoubleType extends PrimitiveType implements NumType {
   private final Double constant;
 
   DoubleType(boolean isNullable, Double constant) {
@@ -297,7 +297,7 @@ public class DoubleType extends PrimitiveType {
     }
 
     if (other instanceof UnionType) {
-      return other.add(this);
+      return ((UnionType) other).add(this);
     }
 
     return null;
