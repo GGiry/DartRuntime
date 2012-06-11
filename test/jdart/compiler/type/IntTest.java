@@ -1,7 +1,7 @@
 package jdart.compiler.type;
 
-import static jdart.compiler.type.IntType.*;
 import static jdart.compiler.type.CoreTypeRepository.*;
+import static jdart.compiler.type.IntType.diff;
 import static jdart.compiler.type.IntType.DiffResult.*;
 
 import java.math.BigInteger;
@@ -33,6 +33,80 @@ public class IntTest {
     return range(false, min, max);
   }
 
+  @Test
+  public void diffEqualsTest() {
+    Assert.assertEquals(EQUALS, diff(range(3, 3), range(3, 3)));
+    Assert.assertEquals(EQUALS, diff(range(3, null), range(3, null)));
+    Assert.assertEquals(EQUALS, diff(range(null, 3), range(null, 3)));
+    Assert.assertEquals(EQUALS, diff(range(null, null), range(null, null)));
+  }
+
+  @Test
+  public void diffFirstIsLeft() {
+    Assert.assertEquals(FIRST_IS_LEFT, diff(range(3, 5), range(6, 8)));
+    Assert.assertEquals(FIRST_IS_LEFT, diff(range(null, 5), range(6, 8)));
+    Assert.assertEquals(FIRST_IS_LEFT, diff(range(null, 5), range(6, null)));
+    Assert.assertEquals(FIRST_IS_LEFT, diff(range(3, 5), range(6, null)));
+  }
+
+  @Test
+  public void diffFirstIsLeftOvertlap() {
+    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(3, 5), range(4, 8)));
+    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(3, 5), range(5, 8)));
+    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(3, 5), range(5, 5)));
+    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(null, 5), range(5, 5)));
+    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(null, 5), range(4, 8)));
+    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(null, 5), range(5, 8)));
+    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(null, 5), range(5, null)));
+    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(null, 5), range(4, null)));
+    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(3, 5), range(5, null)));
+    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(3, 5), range(4, null)));
+    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(null, null), range(5, null)));
+  }
+
+  @Test
+  public void diffSecondIsLeft() {
+    Assert.assertEquals(SECOND_IS_LEFT, diff(range(7, 9), range(2, 6)));
+    Assert.assertEquals(SECOND_IS_LEFT, diff(range(7, null), range(null, 6)));
+    Assert.assertEquals(SECOND_IS_LEFT, diff(range(7, null), range(2, 6)));
+    Assert.assertEquals(SECOND_IS_LEFT, diff(range(7, 9), range(null, 6)));
+  }
+
+  @Test
+  public void diffSecondIsLeftOvertlap() {
+    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, 9), range(2, 8)));
+    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(8, 9), range(2, 8)));
+    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, 9), range(7, 7)));
+    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, null), range(7, 7)));
+    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, null), range(2, 7)));
+    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, null), range(2, 8)));
+    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, null), range(null, 7)));
+    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, null), range(null, 8)));
+    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, 9), range(null, 7)));
+    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, 9), range(null, 8)));
+    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, null), range(null, null)));
+  }
+
+  @Test
+  public void diffFirstContainsSecond() {
+    Assert.assertEquals(FIRST_CONTAINS_SECOND, diff(range(0, 10), range(2, 8)));
+    Assert.assertEquals(FIRST_CONTAINS_SECOND, diff(range(null, null), range(2, 8)));
+    Assert.assertEquals(FIRST_CONTAINS_SECOND, diff(range(null, 10), range(2, 8)));
+    Assert.assertEquals(FIRST_CONTAINS_SECOND, diff(range(0, null), range(2, 8)));
+    Assert.assertEquals(FIRST_CONTAINS_SECOND, diff(range(null, 10), range(null, 8)));
+    Assert.assertEquals(FIRST_CONTAINS_SECOND, diff(range(0, null), range(2, null)));
+  }
+
+  @Test
+  public void diffSecondContainsFirst() {
+    Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(4, 6), range(2, 8)));
+    Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(4, 6), range(null, null)));
+    Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(4, 6), range(null, 8)));
+    Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(4, 6), range(2, null)));
+    Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(null, 6), range(null, 8)));
+    Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(4, null), range(2, null)));
+  }
+  
   @Test
   public void intGreaterThanOrEqualsTest1() {
     IntType int1 = range(2, 3);
@@ -184,80 +258,6 @@ public class IntTest {
 
     Assert.assertEquals(expected2, int2.greaterThanOrEqualsValues(int2, true));
     Assert.assertEquals(expected2, int2.greaterThanOrEqualsValues(int2, false));
-  }
-
-  @Test
-  public void diffEqualsTest() {
-    Assert.assertEquals(EQUALS, diff(range(3, 3), range(3, 3)));
-    Assert.assertEquals(EQUALS, diff(range(3, null), range(3, null)));
-    Assert.assertEquals(EQUALS, diff(range(null, 3), range(null, 3)));
-    Assert.assertEquals(EQUALS, diff(range(null, null), range(null, null)));
-  }
-
-  @Test
-  public void diffFirstIsLeft() {
-    Assert.assertEquals(FIRST_IS_LEFT, diff(range(3, 5), range(6, 8)));
-    Assert.assertEquals(FIRST_IS_LEFT, diff(range(null, 5), range(6, 8)));
-    Assert.assertEquals(FIRST_IS_LEFT, diff(range(null, 5), range(6, null)));
-    Assert.assertEquals(FIRST_IS_LEFT, diff(range(3, 5), range(6, null)));
-  }
-
-  @Test
-  public void diffFirstIsLeftOvertlap() {
-    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(3, 5), range(4, 8)));
-    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(3, 5), range(5, 8)));
-    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(3, 5), range(5, 5)));
-    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(null, 5), range(5, 5)));
-    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(null, 5), range(4, 8)));
-    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(null, 5), range(5, 8)));
-    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(null, 5), range(5, null)));
-    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(null, 5), range(4, null)));
-    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(3, 5), range(5, null)));
-    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(3, 5), range(4, null)));
-    Assert.assertEquals(FIRST_IS_LEFT_OVERLAP, diff(range(null, null), range(5, null)));
-  }
-
-  @Test
-  public void diffSecondIsLeft() {
-    Assert.assertEquals(SECOND_IS_LEFT, diff(range(7, 9), range(2, 6)));
-    Assert.assertEquals(SECOND_IS_LEFT, diff(range(7, null), range(null, 6)));
-    Assert.assertEquals(SECOND_IS_LEFT, diff(range(7, null), range(2, 6)));
-    Assert.assertEquals(SECOND_IS_LEFT, diff(range(7, 9), range(null, 6)));
-  }
-
-  @Test
-  public void diffSecondIsLeftOvertlap() {
-    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, 9), range(2, 8)));
-    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(8, 9), range(2, 8)));
-    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, 9), range(7, 7)));
-    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, null), range(7, 7)));
-    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, null), range(2, 7)));
-    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, null), range(2, 8)));
-    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, null), range(null, 7)));
-    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, null), range(null, 8)));
-    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, 9), range(null, 7)));
-    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, 9), range(null, 8)));
-    Assert.assertEquals(SECOND_IS_LEFT_OVERLAP, diff(range(7, null), range(null, null)));
-  }
-
-  @Test
-  public void diffFirstContainsSecond() {
-    Assert.assertEquals(FIRST_CONTAINS_SECOND, diff(range(0, 10), range(2, 8)));
-    Assert.assertEquals(FIRST_CONTAINS_SECOND, diff(range(null, null), range(2, 8)));
-    Assert.assertEquals(FIRST_CONTAINS_SECOND, diff(range(null, 10), range(2, 8)));
-    Assert.assertEquals(FIRST_CONTAINS_SECOND, diff(range(0, null), range(2, 8)));
-    Assert.assertEquals(FIRST_CONTAINS_SECOND, diff(range(null, 10), range(null, 8)));
-    Assert.assertEquals(FIRST_CONTAINS_SECOND, diff(range(0, null), range(2, null)));
-  }
-
-  @Test
-  public void diffSecondContainsFirst() {
-    Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(4, 6), range(2, 8)));
-    Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(4, 6), range(null, null)));
-    Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(4, 6), range(null, 8)));
-    Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(4, 6), range(2, null)));
-    Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(null, 6), range(null, 8)));
-    Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(4, null), range(2, null)));
   }
 
   @Test

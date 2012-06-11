@@ -378,7 +378,7 @@ public class IntType extends PrimitiveType implements NumType {
         if (max1CompareToMin2 < 0) {
           // ]-inf; j] & [k; +inf[ && j < k
           return DiffResult.FIRST_IS_LEFT;
-        } 
+        }
         // ]-inf; j] & [k; +inf[ && j >= k
         return DiffResult.FIRST_IS_LEFT_OVERLAP;
       }
@@ -673,7 +673,7 @@ public class IntType extends PrimitiveType implements NumType {
       case FIRST_IS_LEFT_OVERLAP:
         return new IntType(false, minBound, iType.minBound);
       default:
-        return VOID_TYPE;  
+        return VOID_TYPE;
       }
     }
 
@@ -755,7 +755,7 @@ public class IntType extends PrimitiveType implements NumType {
       case FIRST_IS_LEFT_OVERLAP:
         return new IntType(false, minBound, iType.minBound.subtract(BigInteger.ONE));
       default:
-        return VOID_TYPE;  
+        return VOID_TYPE;
       }
     }
 
@@ -800,8 +800,8 @@ public class IntType extends PrimitiveType implements NumType {
         case SECOND_IS_LEFT_OVERLAP:
         case EQUALS:
           return this;
-          
-        default:  // SECOND_CONTAINS_FIRST
+
+        default: // SECOND_CONTAINS_FIRST
         }
       }
 
@@ -819,7 +819,7 @@ public class IntType extends PrimitiveType implements NumType {
         case SECOND_IS_LEFT_OVERLAP:
         case EQUALS:
           return this;
-        default:  // FIRST_CONTAINS_SECOND
+        default: // FIRST_CONTAINS_SECOND
         }
       }
 
@@ -839,7 +839,7 @@ public class IntType extends PrimitiveType implements NumType {
       case SECOND_IS_LEFT_OVERLAP:
         return new IntType(false, iType.maxBound, maxBound);
       default:
-        return VOID_TYPE;   
+        return VOID_TYPE;
       }
     }
 
@@ -858,7 +858,7 @@ public class IntType extends PrimitiveType implements NumType {
     }
     return null;
   }
-  
+
   @Override
   public Type greaterThanValues(Type other, boolean inLoop) {
     if (other instanceof IntType) {
@@ -867,7 +867,7 @@ public class IntType extends PrimitiveType implements NumType {
       BigInteger oCst = iType.asConstant();
 
       DiffResult diff = diff(this, iType);
-      
+
       if (oCst != null) {
         switch (diff) {
         case EQUALS:
@@ -883,7 +883,7 @@ public class IntType extends PrimitiveType implements NumType {
           return this;
         case SECOND_IS_LEFT_OVERLAP:
           return new IntType(false, oCst.add(BigInteger.ONE), maxBound);
-        default:   // SECOND_CONTAINS_FIRST
+        default: // SECOND_CONTAINS_FIRST
         }
       }
 
@@ -900,7 +900,7 @@ public class IntType extends PrimitiveType implements NumType {
             return new IntType(false, iType.maxBound.add(BigInteger.ONE), cst);
           }
           return this;
-        default:  // FIRST_CONTAINS_SECOND
+        default: // FIRST_CONTAINS_SECOND
         }
       }
 
@@ -922,7 +922,7 @@ public class IntType extends PrimitiveType implements NumType {
         }
         return new IntType(false, iType.maxBound.add(BigInteger.ONE), maxBound);
       default:
-        return VOID_TYPE;  
+        return VOID_TYPE;
       }
     }
 
@@ -1002,7 +1002,7 @@ public class IntType extends PrimitiveType implements NumType {
   private Type excludeInt(IntType iType) {
     BigInteger cst = asConstant();
     DiffResult diff = diff(this, iType);
-    
+
     switch (diff) {
     case EQUALS:
     case SECOND_CONTAINS_FIRST:
@@ -1021,7 +1021,7 @@ public class IntType extends PrimitiveType implements NumType {
       }
       return null;
     case FIRST_CONTAINS_SECOND:
-      return Types.union(new IntType(false, minBound, iType.minBound.subtract(BigInteger.ONE)), 
+      return Types.union(new IntType(false, minBound, iType.minBound.subtract(BigInteger.ONE)),
           new IntType(false, iType.maxBound.add(BigInteger.ONE), maxBound));
 
     default:
@@ -1029,6 +1029,7 @@ public class IntType extends PrimitiveType implements NumType {
     }
   }
 
+  // TODO
   // FIXME, Geoffrey explanation ?
   public Type mod(IntType other) {
     return INT_NON_NULL_TYPE;
