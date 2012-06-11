@@ -563,4 +563,160 @@ public class IntTest {
     Assert.assertEquals(expected, int2.lessThanValues(int2, true));
     Assert.assertEquals(expected, int2.lessThanValues(int2, false));
   }
+  
+  @Test
+  public void intLessThanOrEqualsTest1() {
+    IntType int1 = range(2, 3);
+    IntType int2 = range(1, 1);
+    IntType int3 = range(2, 2);
+    IntType int4 = range(4, 5);
+    IntType int5 = range(4, 4);
+
+    IntType expectedTrue1 = range(1, 2);
+    IntType expectedFalse1 = range(1, 1);
+
+    IntType expectedTrue2 = range(2, 4);
+    IntType expectedFalse2 = range(2, 2);
+
+    IntType expectedTrue3 = range(2, 4);
+    IntType expectedFalse3 = range(2, 3);
+
+    IntType expectedTrue4 = range(2, 4);
+    IntType expectedFalse4 = range(2, 2);
+
+    Assert.assertEquals(expectedTrue1, int2.lessThanOrEqualsValues(int1, true));
+    Assert.assertEquals(expectedFalse1, int2.lessThanOrEqualsValues(int1, false));
+
+    Assert.assertEquals(expectedTrue2, int3.lessThanOrEqualsValues(int4, true));
+    Assert.assertEquals(expectedFalse2, int3.lessThanOrEqualsValues(int4, false));
+
+    Assert.assertEquals(expectedTrue3, int1.lessThanOrEqualsValues(int4, true));
+    Assert.assertEquals(expectedFalse3, int1.lessThanOrEqualsValues(int4, false));
+
+    Assert.assertEquals(expectedTrue4, int3.lessThanOrEqualsValues(int5, true));
+    Assert.assertEquals(expectedFalse4, int3.lessThanOrEqualsValues(int5, false));
+  }
+
+  @Test
+  public void intLessThanOrEqualsTest2() {
+    IntType int1 = range(2, 5);
+    IntType int2 = range(5, 5);
+    IntType int3 = range(4, 7);
+    IntType int4 = range(1, 6);
+    IntType int5 = range(3, 5);
+    IntType int6 = range(1, 1);
+
+    IntType expected1 = range(2, 5);
+
+    IntType expected2 = range(2, 4);
+
+    IntType expected3 = range(1, 1);
+
+    IntType expected4 = range(2, 3);
+
+    Assert.assertEquals(expected1, int1.lessThanOrEqualsValues(int2, true));
+    Assert.assertEquals(expected1, int1.lessThanOrEqualsValues(int2, false));
+
+    Assert.assertEquals(expected2, int1.lessThanOrEqualsValues(int3, true));
+    Assert.assertEquals(expected2, int1.lessThanOrEqualsValues(int3, false));
+
+    Assert.assertEquals(expected3, int6.lessThanOrEqualsValues(int4, true));
+    Assert.assertEquals(expected3, int6.lessThanOrEqualsValues(int4, false));
+
+    Assert.assertEquals(expected4, int1.lessThanOrEqualsValues(int5, true));
+    Assert.assertEquals(expected4, int1.lessThanOrEqualsValues(int5, false));
+  }
+
+  @Test
+  public void intLessThanOrEqualsTest3() {
+    IntType int1 = range(5, 7);
+    IntType int2 = range(2, 2);
+    IntType int3 = range(-6, -3);
+    IntType int4 = range(0, 0);
+    IntType int5 = range(0, 3);
+
+    IntType expected = null;
+
+    Assert.assertEquals(expected, int1.lessThanOrEqualsValues(int2, true));
+    Assert.assertEquals(expected, int1.lessThanOrEqualsValues(int2, false));
+
+    Assert.assertEquals(expected, int2.lessThanOrEqualsValues(int3, true));
+    Assert.assertEquals(expected, int2.lessThanOrEqualsValues(int3, false));
+
+    Assert.assertEquals(expected, int2.lessThanOrEqualsValues(int4, true));
+    Assert.assertEquals(expected, int2.lessThanOrEqualsValues(int4, false));
+
+    Assert.assertEquals(expected, int1.lessThanOrEqualsValues(int5, true));
+    Assert.assertEquals(expected, int1.lessThanOrEqualsValues(int5, false));
+  }
+
+  @Test
+  public void intLessThanOrEqualsTest4() {
+    IntType int1 = range(3, 4);
+    IntType int2 = range(3, 3);
+    IntType int3 = range(5, 5);
+    IntType int4 = range(1, 5);
+    IntType int5 = range(6, 9);
+    IntType int6 = range(1, 7);
+    IntType int7 = range(5, 7);
+
+    IntType expected1 = range(3,3);
+    IntType expectedNull = null;
+
+    Assert.assertEquals(expected1, int1.lessThanOrEqualsValues(int2, true));
+    Assert.assertEquals(expected1, int1.lessThanOrEqualsValues(int2, false));
+
+    Assert.assertEquals(expectedNull, int3.lessThanOrEqualsValues(int4, true));
+    Assert.assertEquals(expectedNull, int3.lessThanOrEqualsValues(int4, false));
+
+    Assert.assertEquals(expectedNull, int5.lessThanOrEqualsValues(int6, true));
+    Assert.assertEquals(expectedNull, int5.lessThanOrEqualsValues(int6, false));
+
+    Assert.assertEquals(expectedNull, int7.lessThanOrEqualsValues(int6, true));
+    Assert.assertEquals(expectedNull, int7.lessThanOrEqualsValues(int6, false));
+  }
+
+  @Test
+  public void intLessThanOrEqualsTest5() {
+    IntType int1 = range(3, 6);
+    IntType int2 = range(4, 4);
+    IntType int3 = range(4, 5);
+
+    IntType expected = range(3, 4);
+
+    Assert.assertEquals(expected, int1.lessThanOrEqualsValues(int2, true));
+    Assert.assertEquals(expected, int1.lessThanOrEqualsValues(int2, false));
+
+    Assert.assertEquals(expected, int1.lessThanOrEqualsValues(int3, true));
+    Assert.assertEquals(expected, int1.lessThanOrEqualsValues(int3, false));
+  }
+
+  @Test
+  public void intLessThanOrEqualsTest6() {
+    IntType int1 = range(3, 3);
+    IntType int2 = range(1, 6);
+    IntType int3 = range(3, 5);
+
+    IntType expected = null;
+
+    Assert.assertEquals(expected, int1.lessThanOrEqualsValues(int2, true));
+    Assert.assertEquals(expected, int1.lessThanOrEqualsValues(int2, false));
+
+    Assert.assertEquals(expected, int3.lessThanOrEqualsValues(int2, true));
+    Assert.assertEquals(expected, int3.lessThanOrEqualsValues(int2, false));
+  }
+
+  @Test
+  public void intLessThanOrEqualsTest7() {
+    IntType int1 = range(3, 3);
+    IntType int2 = range(3, 5);
+
+    IntType expected = range(3, 3);
+
+    Assert.assertEquals(expected, int1.lessThanOrEqualsValues(int1, true));
+    Assert.assertEquals(expected, int1.lessThanOrEqualsValues(int1, false));
+
+    Assert.assertEquals(expected, int2.lessThanOrEqualsValues(int2, true));
+    Assert.assertEquals(expected, int2.lessThanOrEqualsValues(int2, false));
+  }
 }

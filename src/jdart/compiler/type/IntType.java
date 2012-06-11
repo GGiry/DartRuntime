@@ -619,6 +619,10 @@ public class IntType extends PrimitiveType implements NumType {
         switch (diff) {
         case EQUALS:
           return this.asNonNull();
+        case SECOND_IS_LEFT_OVERLAP:
+          if (minBound.equals(oCst)) {
+            return other;
+          }
         case SECOND_IS_LEFT:
           return null;
         case FIRST_IS_LEFT:
@@ -647,7 +651,7 @@ public class IntType extends PrimitiveType implements NumType {
           if (!inLoop) {
             return this.asNonNull();
           }
-          return new IntType(false, cst, iType.maxBound);
+          return new IntType(false, cst, iType.minBound);
         default:
           throw new IllegalStateException();
         }
