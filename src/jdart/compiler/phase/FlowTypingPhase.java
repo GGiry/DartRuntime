@@ -134,42 +134,23 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitMethodDefinition(DartMethodDefinition node, FlowEnv unused) {
-      // We should allow to propagate the type of 'this' in the flow env
-      // to be more precise, but currently we don't specialize method call,
-      // but only function call
-
-      Type thisType = null;
-      Modifiers modifiers = node.getModifiers();
-      MethodElement element = node.getElement();
-      if (!modifiers.isStatic() && !modifiers.isFactory()) {
-        if (element.getEnclosingElement() instanceof ClassElement) {
-          thisType = typeHelper.findType(false, (ClassElement) element.getEnclosingElement());
-        } else {
-          thisType = DYNAMIC_TYPE;
-        }
-      }
-
-      FlowEnv flowEnv = new FlowEnv(thisType);
-      DartFunction function = node.getFunction();
-      if (function != null) {
-        new FTVisitor(typeHelper).typeFlow(function, flowEnv);
-      }
+      new FTVisitor(typeHelper).typeFlow(node);
       return null;
     }
   }
 
-  static class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
+  public static class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     private final TypeHelper typeHelper;
     private final HashMap<DartNode, Type> typeMap = new HashMap<>();
     private Type inferredReturnType;
 
-    FTVisitor(TypeHelper typeHelper) {
+    public FTVisitor(TypeHelper typeHelper) {
       this.typeHelper = typeHelper;
     }
 
     // entry point
-    public Type typeFlow(DartFunction node, FlowEnv flowEnv) {
-      return visitFunction(node, flowEnv);
+    public Type typeFlow(DartNode node) {
+      return accept(node, null);
     }
 
     private static void operandIsNonNull(DartExpression expr, FlowEnv flowEnv) {
@@ -203,6 +184,31 @@ public class FlowTypingPhase implements DartCompilationPhase {
       throw new AssertionError("this method should never be called");
     }
 
+    @Override
+    public Type visitMethodDefinition(DartMethodDefinition node, FlowEnv unused) {
+      // We should allow to propagate the type of 'this' in the flow env
+      // to be more precise, but currently we don't specialize method call,
+      // but only function call
+
+      Type thisType = null;
+      Modifiers modifiers = node.getModifiers();
+      MethodElement element = node.getElement();
+      if (!modifiers.isStatic() && !modifiers.isFactory()) {
+        if (element.getEnclosingElement() instanceof ClassElement) {
+          thisType = typeHelper.findType(false, (ClassElement) element.getEnclosingElement());
+        } else {
+          thisType = DYNAMIC_TYPE;
+        }
+      }
+
+      FlowEnv flowEnv = new FlowEnv(thisType);
+      DartFunction function = node.getFunction();
+      if (function != null) {
+        accept(function, flowEnv);
+      }
+      return null;
+    }
+    
     @Override
     public Type visitFunction(DartFunction node, FlowEnv flowEnv) {
       // function element is not initialized, we use the parent element here
