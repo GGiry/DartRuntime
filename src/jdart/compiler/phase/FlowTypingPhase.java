@@ -9,6 +9,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.lang.model.element.PackageElement;
+
 import jdart.compiler.type.ArrayType;
 import jdart.compiler.type.BoolType;
 import jdart.compiler.type.CoreTypeRepository;
@@ -21,6 +23,7 @@ import jdart.compiler.type.OwnerType;
 import jdart.compiler.type.Type;
 import jdart.compiler.type.TypeMapper;
 import jdart.compiler.type.TypeRepository;
+import jdart.compiler.type.TypeVisitor;
 import jdart.compiler.type.Types;
 import jdart.compiler.type.UnionType;
 import jdart.compiler.visitor.ASTVisitor2;
@@ -72,8 +75,10 @@ import com.google.dart.compiler.resolver.ClassElement;
 import com.google.dart.compiler.resolver.CoreTypeProvider;
 import com.google.dart.compiler.resolver.Element;
 import com.google.dart.compiler.resolver.ElementKind;
+import com.google.dart.compiler.resolver.EnclosingElement;
 import com.google.dart.compiler.resolver.FieldElement;
 import com.google.dart.compiler.resolver.MethodElement;
+import com.google.dart.compiler.resolver.MethodNodeElement;
 import com.google.dart.compiler.resolver.NodeElement;
 import com.google.dart.compiler.resolver.VariableElement;
 
@@ -85,15 +90,51 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     TypeRepository typeRepository = new TypeRepository(coreTypeRepository);
     TypeHelper typeHelper = new TypeHelper(typeRepository);
-    new DefinitionVisitor(typeHelper).typeFlow(unit);
+    IntraProcedualMethodCallResolver methodCallResolver = new IntraProcedualMethodCallResolver(typeHelper);
+    new DefinitionVisitor(typeHelper, methodCallResolver).typeFlow(unit);
     return unit;
   }
 
+  static class IntraProcedualMethodCallResolver implements MethodCallResolver {
+    final TypeHelper typeHelper;
+    
+    IntraProcedualMethodCallResolver(TypeHelper typeHelper) {
+      this.typeHelper = typeHelper;
+    }
+    
+    @Override
+    public Type methodCall(final String methodName, Type receiverType, List<Type> argumentType, final Type expectedType, boolean virtual) {
+      Type returnType = receiverType.accept(new TypeVisitor<Type, Void>() {
+          @Override
+          protected Type visitOwnerType(OwnerType type, Void parameter) {
+            Element member = type.lookupMember(methodName);
+            if (!(member instanceof MethodElement)) {
+              throw new AssertionError();
+            }
+            MethodElement methodElement = (MethodElement) member;
+            return typeHelper.asType(true, methodElement.getReturnType());
+          }
+          @Override
+          public Type visitDynamicType(DynamicType type, Void parameter) {
+            return expectedType;
+          }
+        }, null);
+      return (returnType instanceof DynamicType)? expectedType: returnType;
+    }
+    
+    @Override
+    public Type functionCall(MethodElement nodeElement, List<Type> argumentTypes, Type expectedType) {
+      return typeHelper.asType(true, nodeElement.getReturnType());
+    }
+  }
+  
   static class DefinitionVisitor extends ASTVisitor2<Type, FlowEnv> {
     private final TypeHelper typeHelper;
+    private final MethodCallResolver methodCallResolver;
 
-    DefinitionVisitor(TypeHelper typeHelper) {
+    DefinitionVisitor(TypeHelper typeHelper, MethodCallResolver methodCallResolver) {
       this.typeHelper = typeHelper;
+      this.methodCallResolver = methodCallResolver;
     }
 
     // entry point
@@ -130,7 +171,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitMethodDefinition(DartMethodDefinition node, FlowEnv unused) {
-      DartFunction function = node.getFunction();
+      DartFunction function2 = node.getFunction();
+      DartFunction function = function2;
       if (function == null) {
         // native function use declared return type
         return typeHelper.asType(true, node.getType());
@@ -151,8 +193,24 @@ public class FlowTypingPhase implements DartCompilationPhase {
         }
       }
 
-      FlowEnv flowEnv = new FlowEnv(thisType);
-      new FTVisitor(typeHelper).typeFlow(function, flowEnv);
+      // extract return type info from function type
+      Type returnType = ((FunctionType) typeHelper.asType(false, element.getType())).getReturnType();
+
+      FTVisitor flowTypeVisitor = new FTVisitor(typeHelper, methodCallResolver);
+      FlowEnv flowEnv = new FlowEnv(new FlowEnv(thisType), returnType, VOID_TYPE, false);
+      for (DartParameter parameter : function.getParameters()) {
+        Type parameterType = flowTypeVisitor.typeFlow(parameter, null);
+        flowEnv.register(parameter.getElement(), parameterType);
+      }
+
+      DartBlock body = function.getBody();
+      if (body != null) {
+        flowTypeVisitor.typeFlow(body, flowEnv);
+      }
+
+      // TODO test display, to remove.
+      System.out.println(flowEnv);
+      
       return null;
     }
   }
@@ -160,10 +218,12 @@ public class FlowTypingPhase implements DartCompilationPhase {
   public static class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     private final TypeHelper typeHelper;
     private final HashMap<DartNode, Type> typeMap = new HashMap<>();
+    private final MethodCallResolver methodCallResolver;
     private Type inferredReturnType;
 
-    public FTVisitor(TypeHelper typeHelper) {
+    public FTVisitor(TypeHelper typeHelper, MethodCallResolver methodCallResolver) {
       this.typeHelper = typeHelper;
+      this.methodCallResolver = methodCallResolver;
     }
 
     /**
@@ -178,15 +238,12 @@ public class FlowTypingPhase implements DartCompilationPhase {
       inferredReturnType = Types.union(inferredReturnType, type);
     }
     
-    public Type getInferredReturnType() {
-      if (inferredReturnType == null) {
-        return VOID_TYPE;
-      }
-      return inferredReturnType;
+    public Type getInferredReturnType(Type declaredReturnType) {
+      return (inferredReturnType == null)? declaredReturnType: inferredReturnType;
     }
     
     // entry point
-    public Type typeFlow(DartFunction node, FlowEnv flowEnv) {
+    public Type typeFlow(DartNode node, FlowEnv flowEnv) {
       return accept(node, flowEnv);
     }
 
@@ -220,30 +277,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
     public Type visitTypeNode(DartTypeNode node, FlowEnv unused) {
       throw new AssertionError("this method should never be called");
     }
-
-
-
     @Override
     public Type visitFunction(DartFunction node, FlowEnv flowEnv) {
-      // function element is not initialized, we use the parent element here
-      Element element = node.getParent().getElement();
-      Type returnType = ((FunctionType) typeHelper.asType(false, element.getType())).getReturnType();
-
-      // propagate thisType or null
-      FlowEnv env = new FlowEnv(flowEnv, returnType, VOID_TYPE, false);
-      for (DartParameter parameter : node.getParameters()) {
-        Type parameterType = accept(parameter, null);
-        env.register(parameter.getElement(), parameterType);
-      }
-
-      DartBlock body = node.getBody();
-      if (body != null) {
-        accept(body, env);
-      }
-
-      // TODO test display, to remove.
-      System.out.println(env);
-      return (inferredReturnType != null) ? inferredReturnType : returnType;
+      throw new AssertionError("this method should never be called");
     }
 
     @Override
@@ -947,8 +983,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
     @Override
     public Type visitUnqualifiedInvocation(DartUnqualifiedInvocation node, FlowEnv flowEnv) {
+      ArrayList<Type> argumentTypes = new ArrayList<>();
       for (DartExpression argument : node.getArguments()) {
-        accept(argument, flowEnv);
+        argumentTypes.add(accept(argument, flowEnv));
       }
 
       // weird, element is set on target ?
@@ -965,8 +1002,16 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       // Because of invoke, the parser doesn't set the value of element.
       switch (nodeElement.getKind()) {
-      case METHOD: // polymorphic method call on 'this'
-        return typeHelper.asType(true, ((MethodElement) nodeElement).getReturnType());
+      case METHOD: { // polymorphic method call on 'this'
+        EnclosingElement enclosingElement = nodeElement.getEnclosingElement();
+        if (enclosingElement instanceof ClassElement) {
+          Type receiverType = typeHelper.findType(false, (ClassElement)enclosingElement);
+          return methodCallResolver.methodCall(node.getObjectIdentifier(), receiverType, argumentTypes, flowEnv.getExpectedType(), true);
+        }
+        // FIXME should use another method of the methodResolver (but it doesn't exist now)
+        return methodCallResolver.functionCall((MethodNodeElement)nodeElement, argumentTypes, flowEnv.getExpectedType());
+        //return typeHelper.asType(true, ((MethodElement) nodeElement).getReturnType());
+      }
 
       case FIELD: // function call
       case PARAMETER:

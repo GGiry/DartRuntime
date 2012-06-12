@@ -3,14 +3,18 @@ import static com.google.dart.compiler.SystemLibraryManager.DEFAULT_PLATFORM;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import jdart.compiler.phase.ClassHierarchyAnalysisPhase;
+import jdart.compiler.phase.FlowEnv;
 import jdart.compiler.phase.FlowTypingPhase;
+import jdart.compiler.phase.InterProceduralMethodCallResolver;
 import jdart.compiler.phase.TypeHelper;
 import jdart.compiler.phase.FlowTypingPhase.FTVisitor;
 import jdart.compiler.type.CoreTypeRepository;
+import jdart.compiler.type.Type;
 import jdart.compiler.type.TypeRepository;
 
 import org.kohsuke.args4j.CmdLineException;
@@ -22,6 +26,8 @@ import com.google.dart.compiler.DartCompilationPhase;
 import com.google.dart.compiler.DartCompiler;
 import com.google.dart.compiler.DefaultCompilerConfiguration;
 import com.google.dart.compiler.SystemLibraryManager;
+import com.google.dart.compiler.ast.DartMethodDefinition;
+import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.ast.DartUnit;
 import com.google.dart.compiler.resolver.CompileTimeConstantAnalyzer;
 import com.google.dart.compiler.resolver.MethodElement;
@@ -76,8 +82,8 @@ public class Main {
     TypeHelper typeHelper = new TypeHelper(typeRepository);
     
     // type flow main method
-    FTVisitor visitor = new FTVisitor(typeHelper);
-    visitor.typeFlow(mainMethod.getNode());
+    InterProceduralMethodCallResolver methodCallResolver = new InterProceduralMethodCallResolver(typeHelper);
+    methodCallResolver.functionCall(mainMethod, Collections.<Type>emptyList(), CoreTypeRepository.VOID_TYPE);
   }
 
   public static void main(String[] args) throws IOException {

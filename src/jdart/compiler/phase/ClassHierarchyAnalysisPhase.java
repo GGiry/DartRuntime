@@ -61,6 +61,10 @@ public class ClassHierarchyAnalysisPhase implements DartCompilationPhase {
     return coreTypeProvider;
   }
   
+  public List<DartMethodDefinition> getOverridingMethods(ClassElement classElement, String methodName) {
+    return visitor.classMap.get(classElement).methodMap.get(methodName);
+  }
+  
   @Override
   public DartUnit exec(DartUnit unit, DartCompilerContext context, CoreTypeProvider coreTypeProvider) {
     // this phase is a rogue phase that doesn't follow the phase control flow
@@ -160,10 +164,6 @@ public class ClassHierarchyAnalysisPhase implements DartCompilationPhase {
         }
       }
     }
-  }
-  
-  public List<DartMethodDefinition> getOverridingMethods(MethodNodeElement element) {
-    return visitor.classMap.get(element.getEnclosingElement()).methodMap.get(element.getName());
   }
   
   
