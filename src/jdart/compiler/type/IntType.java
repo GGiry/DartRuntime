@@ -583,34 +583,17 @@ public class IntType extends PrimitiveType implements NumType {
    *         type.
    */
   public boolean hasCommonValuesWith(IntType other) {
-    if (minBound == null) {
-      // min == -inf
-      if (maxBound == null || other.minBound == null || maxBound.compareTo(other.minBound) < 0) {
-        // max == +inf || other.min == inf || max < other.min
-        return true;
-      }
-      return false;
-    }
-    // min != -inf
-    if (other.maxBound == null) {
-      // oher.max == +inf
-      if (maxBound != null) {
-        // max != +inf
-        if (other.minBound == null || maxBound.compareTo(other.minBound) > 0) {
-          // other.min == inf || max > other.min
-          return true;
-        }
-        return false;
-      }
-      // max == +inf
+    DiffResult diff = diff(this, other);
+    switch (diff) {
+    case FIRST_CONTAINS_SECOND:
+    case SECOND_CONTAINS_FIRST:
+    case FIRST_IS_LEFT_OVERLAP:
+    case SECOND_IS_LEFT_OVERLAP:
+    case EQUALS:
       return true;
-    }
-    // min != -inf
-    // other.max != +inf
-    if (minBound.compareTo(other.maxBound) > 0) {
+    default:
       return false;
     }
-    return true;
   }
 
   @Override
