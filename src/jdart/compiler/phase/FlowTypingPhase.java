@@ -166,6 +166,21 @@ public class FlowTypingPhase implements DartCompilationPhase {
       this.typeHelper = typeHelper;
     }
 
+    private void addInferredReturnType(Type type) {
+      if (inferredReturnType == null) {
+        inferredReturnType = type;
+        return;
+      }
+      inferredReturnType = Types.union(inferredReturnType, type);
+    }
+    
+    public Type getInferredReturnType() {
+      if (inferredReturnType == null) {
+        return VOID_TYPE;
+      }
+      return inferredReturnType;
+    }
+    
     // entry point
     public Type typeFlow(DartFunction node, FlowEnv flowEnv) {
       return accept(node, flowEnv);
@@ -247,11 +262,15 @@ public class FlowTypingPhase implements DartCompilationPhase {
     @Override
     public Type visitReturnStatement(DartReturnStatement node, FlowEnv flowEnv) {
       DartExpression value = node.getValue();
+      Type type;
       if (value != null) {
         // return should return a value compatible with
         // the function declared return type
-        accept(value, flowEnv.expectedType(flowEnv.getReturnType()));
+        type = accept(value, flowEnv.expectedType(flowEnv.getReturnType()));
+      } else {
+        type = VOID_TYPE;
       }
+      addInferredReturnType(type);
       return null;
     }
 
