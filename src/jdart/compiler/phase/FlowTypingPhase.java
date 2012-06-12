@@ -166,6 +166,10 @@ public class FlowTypingPhase implements DartCompilationPhase {
       this.typeHelper = typeHelper;
     }
 
+    /**
+     * Collect inferred return type
+     * @param type an inferred return type.
+     */
     private void addInferredReturnType(Type type) {
       if (inferredReturnType == null) {
         inferredReturnType = type;
