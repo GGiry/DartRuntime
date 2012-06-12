@@ -386,4 +386,23 @@ public class UnionType extends NullableType implements NumType {
     }
     return false;
   }
+  
+  @Override
+  public boolean isIncludeIn(Type other) {
+    for (NullableType type : types) {
+      if (!type.isIncludeIn(other)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public boolean reverseIsIncludeIn(Type other) {
+    for (NullableType type : types) {
+      if (!other.isIncludeIn(type)) {
+        return false;
+      }
+    }
+    return true;
+  }
 }

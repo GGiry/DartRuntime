@@ -78,4 +78,10 @@ public class VoidType implements Type {
   public Type lessThanValues(Type other, boolean inLoop) {
     return null;
   }
+  
+  @Override
+  public boolean isIncludeIn(Type other) {
+    // TODO
+    return false;
+  }
 }

@@ -89,4 +89,10 @@ public class InterfaceType extends ElementType {
   public Type exclude(Type other) {
     return null;
   }
+  
+  @Override
+  public boolean isIncludeIn(Type other) {
+    //TODO
+    return false;
+  }
 }

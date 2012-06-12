@@ -187,7 +187,7 @@ public class DoubleType extends PrimitiveType implements NumType {
 
     return null;
   }
-  
+
   @Override
   public Type greaterThanOrEqualsValues(Type other, boolean inLoop) {
     if (other instanceof DoubleType) {
@@ -214,7 +214,7 @@ public class DoubleType extends PrimitiveType implements NumType {
 
     return null;
   }
-  
+
   @Override
   public Type greaterThanValues(Type other, boolean inLoop) {
     if (other instanceof DoubleType) {
@@ -334,5 +334,51 @@ public class DoubleType extends PrimitiveType implements NumType {
   public Type reverseSub(IntType other) {
     DoubleType dType = other.asDouble();
     return sub(dType);
+  }
+
+  @Override
+  public boolean isIncludeIn(Type other) {
+    if (isNullable() && !other.isNullable()) {
+      return false;
+    }
+    
+    if (other instanceof DoubleType) {
+      Double otherConstant = ((DoubleType) other).constant;
+      if (constant != null) {
+        if (otherConstant != null) {
+          return constant.equals(otherConstant);
+        }
+        // the first test "isNullable() && ! other.isNullable()" allow to avoid the case when this == DOUBLE_TYPE and other == DOUBLE_NON_NULL_TYPE.
+        return true;
+      }
+      if (otherConstant == null) {
+        return true;
+      }
+      return false;
+    }
+
+    if (other instanceof IntType) {
+      IntType intType = (IntType) other;
+      if (constant == null && intType.getMaxBound() == null && intType.getMinBound() == null) {
+        return true;
+      }
+
+      IntType iType;
+      float floatValue = constant.floatValue();
+      int longValue = (int) floatValue;
+      if (floatValue == longValue) {
+        iType = new IntType(isNullable(), BigInteger.valueOf(longValue), BigInteger.valueOf(longValue));
+      } else {
+        iType = new IntType(isNullable(), BigInteger.valueOf(longValue), BigInteger.valueOf(longValue + 1));
+      }
+
+      return iType.isIncludeIn(other);
+    }
+    
+    if (other instanceof UnionType) {
+      return ((UnionType) other).reverseIsIncludeIn(this);
+    }
+    
+    return false;
   }
 }

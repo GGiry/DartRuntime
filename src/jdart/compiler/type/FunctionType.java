@@ -137,4 +137,10 @@ public class FunctionType extends OwnerType {
   public Type exclude(Type other) {
     return null;
   }
+  
+  @Override
+  public boolean isIncludeIn(Type other) {
+    // TODO
+    return false;
+  }
 }

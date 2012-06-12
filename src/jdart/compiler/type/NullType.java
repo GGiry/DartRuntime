@@ -80,4 +80,10 @@ public class NullType implements Type {
   public Type lessThanValues(Type other, boolean inLoop) {
     return null;
   }
+  
+  @Override
+  public boolean isIncludeIn(Type intType) {
+    // TODO
+    return false;
+  }
 }

@@ -166,4 +166,10 @@ public class BoolType extends PrimitiveType {
 
     return null;
   }
+  
+  @Override
+  public boolean isIncludeIn(Type other) {
+    //TODO
+    return false;
+  }
 }

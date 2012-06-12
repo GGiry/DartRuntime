@@ -124,4 +124,13 @@ public interface Type {
    * @return The values of this type which are greater than other Type. Return null if types are not computable.
    */
   Type greaterThanValues(Type other, boolean inLoop);
+
+  /**
+   * Returns <code>true</code> if this type is include in the specified type.
+   * 
+   * @param other
+   *          Reference type.
+   * @return <code>true</code> if this type is include in the specified type.
+   */
+  boolean isIncludeIn(Type other);
 }

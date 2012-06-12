@@ -242,31 +242,48 @@ public class IntType extends PrimitiveType implements NumType {
    * minBound, maxBound); }
    */
 
-  /**
-   * Returns <code>true</code> if this type is include in the specified type.
-   * 
-   * @param intType
-   *          Reference type.
-   * @return <code>true</code> if this type is include in the specified type.
-   */
-  public boolean isIncludeIn(IntType intType) {
-    if (minBound == null && intType.minBound != null) {
+  @Override
+  public boolean isIncludeIn(Type other) {
+    if (isNullable() && !other.isNullable()) {
       return false;
     }
 
-    if (maxBound == null && intType.maxBound != null) {
-      return false;
-    }
-    boolean min = false;
-    if (intType.minBound == null || intType.minBound.compareTo(minBound) <= 0) {
-      min = true;
-    }
-    boolean max = false;
-    if (intType.maxBound == null || intType.maxBound.compareTo(maxBound) >= 0) {
-      max = true;
+    if (other instanceof IntType) {
+      IntType iType = (IntType) other;
+      DiffResult diff = diff(this, iType);
+
+      switch (diff) {
+      case FIRST_IS_LEFT:
+      case SECOND_IS_LEFT:
+        return false;
+      case EQUALS:
+
+        break;
+
+      default:
+        break;
+      }
     }
 
-    return min && max;
+    if (other instanceof DoubleType) {
+      Double doubleConstant = ((DoubleType) other).asConstant();
+      if (doubleConstant != null) {
+        float floatValue = doubleConstant.floatValue();
+        if (floatValue == (int) floatValue) {
+          if (asConstant().compareTo(BigInteger.valueOf(doubleConstant.longValue())) == 0) {
+            return true;
+          }
+        }
+        return false;
+      }
+      return true;
+    }
+
+    if (other instanceof UnionType) {
+      return ((UnionType) other).reverseIsIncludeIn(this);
+    }
+
+    return false;
   }
 
   @Override
