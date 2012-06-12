@@ -1058,7 +1058,7 @@ public class IntType extends PrimitiveType implements NumType {
       return constant(value);
     }
 
-    if (maxBound != null || minBound != null) {
+    if (other.maxBound != null && other.minBound != null) {
       BigInteger val = other.maxBound.subtract(BigInteger.ONE);
       if (BigInteger.ZERO.compareTo(val) < 0) {
         return new IntType(false, BigInteger.ZERO, val);

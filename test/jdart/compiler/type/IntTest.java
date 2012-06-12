@@ -106,7 +106,7 @@ public class IntTest {
     Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(null, 6), range(null, 8)));
     Assert.assertEquals(SECOND_CONTAINS_FIRST, diff(range(4, null), range(2, null)));
   }
-  
+
   @Test
   public void intGreaterThanOrEqualsTest1() {
     IntType int1 = range(2, 3);
@@ -566,7 +566,7 @@ public class IntTest {
     Assert.assertEquals(expected, int2.lessThanValues(int2, true));
     Assert.assertEquals(expected, int2.lessThanValues(int2, false));
   }
-  
+
   @Test
   public void intLessThanOrEqualsTest1() {
     IntType int1 = range(2, 3);
@@ -723,7 +723,7 @@ public class IntTest {
     Assert.assertEquals(expected, int2.lessThanOrEqualsValues(int2, true));
     Assert.assertEquals(expected, int2.lessThanOrEqualsValues(int2, false));
   }
-  
+
   @Test
   public void intCommonValuesWithTest1() {
     IntType int1 = range(2, 3);
@@ -872,7 +872,7 @@ public class IntTest {
     Assert.assertEquals(expected2, int2.commonValuesWith(int2));
     Assert.assertEquals(expected2, int2.commonValuesWith(int2));
   }
-  
+
   @Test
   public void intExcludeValuesTest1() {
     IntType int1 = range(2, 3);
@@ -1026,5 +1026,126 @@ public class IntTest {
 
     Assert.assertEquals(expected2, int2.exclude(int2));
     Assert.assertEquals(expected2, int2.exclude(int2));
+  }
+
+  @Test
+  public void addTest() {
+    IntType int1 = range(null, null);
+    IntType int2 = range(5, null);
+    IntType int3 = range(null, 10);
+    IntType int4 = range(5, 10);
+
+    IntType value1 = range(3, 3);
+    IntType value2 = range(null, 3);
+    IntType value3 = range(3, null);
+    IntType value4 = range(null, null);
+    IntType value5 = range(3, 6);
+
+    Assert.assertEquals(range(null, null), int1.add(value1));
+    Assert.assertEquals(range(null, null), int1.add(value2));
+    Assert.assertEquals(range(null, null), int1.add(value3));
+    Assert.assertEquals(range(null, null), int1.add(value4));
+    Assert.assertEquals(range(null, null), int1.add(value5));
+
+    Assert.assertEquals(range(8, null), int2.add(value1));
+    Assert.assertEquals(range(null, null), int2.add(value2));
+    Assert.assertEquals(range(8, null), int2.add(value3));
+    Assert.assertEquals(range(null, null), int2.add(value4));
+    Assert.assertEquals(range(8, null), int2.add(value5));
+
+    Assert.assertEquals(range(null, 13), int3.add(value1));
+    Assert.assertEquals(range(null, 13), int3.add(value2));
+    Assert.assertEquals(range(null, null), int3.add(value3));
+    Assert.assertEquals(range(null, null), int3.add(value4));
+    Assert.assertEquals(range(null, 16), int3.add(value5));
+
+    Assert.assertEquals(range(8, 13), int4.add(value1));
+    Assert.assertEquals(range(null, 13), int4.add(value2));
+    Assert.assertEquals(range(8, null), int4.add(value3));
+    Assert.assertEquals(range(null, null), int4.add(value4));
+    Assert.assertEquals(range(8, 16), int4.add(value5));
+  }
+
+  @Test
+  public void subTest() {
+    IntType int1 = range(null, null);
+    IntType int2 = range(5, null);
+    IntType int3 = range(null, 10);
+    IntType int4 = range(5, 10);
+
+    IntType value1 = range(3, 3);
+    IntType value2 = range(null, 3);
+    IntType value3 = range(3, null);
+    IntType value4 = range(null, null);
+    IntType value5 = range(3, 6);
+
+    Assert.assertEquals(range(null, null), int1.sub(value1));
+    Assert.assertEquals(range(null, null), int1.sub(value2));
+    Assert.assertEquals(range(null, null), int1.sub(value3));
+    Assert.assertEquals(range(null, null), int1.sub(value4));
+    Assert.assertEquals(range(null, null), int1.sub(value5));
+
+    Assert.assertEquals(range(2, null), int2.sub(value1));
+    Assert.assertEquals(range(null, null), int2.sub(value2));
+    Assert.assertEquals(range(2, null), int2.sub(value3));
+    Assert.assertEquals(range(null, null), int2.sub(value4));
+    Assert.assertEquals(range(2, null), int2.sub(value5));
+
+    Assert.assertEquals(range(null, 7), int3.sub(value1));
+    Assert.assertEquals(range(null, 7), int3.sub(value2));
+    Assert.assertEquals(range(null, null), int3.sub(value3));
+    Assert.assertEquals(range(null, null), int3.sub(value4));
+    Assert.assertEquals(range(null, 4), int3.sub(value5));
+
+    Assert.assertEquals(range(2, 7), int4.sub(value1));
+    Assert.assertEquals(range(null, 7), int4.sub(value2));
+    Assert.assertEquals(range(2, null), int4.sub(value3));
+    Assert.assertEquals(range(null, null), int4.sub(value4));
+    Assert.assertEquals(range(2, 4), int4.sub(value5));
+  }
+  
+  @Test
+  public void modTest() {
+    IntType int1 = range(null, null);
+    IntType int2 = range(5, null);
+    IntType int3 = range(null, 10);
+    IntType int4 = range(5, 10);
+    IntType int5 = range(6, 6);
+
+    IntType value1 = range(3, 3);
+    IntType value2 = range(null, 3);
+    IntType value3 = range(3, null);
+    IntType value4 = range(null, null);
+    IntType value5 = range(3, 6);
+
+    Assert.assertEquals(range(0, 2), int1.mod(value1));
+    Assert.assertEquals(DYNAMIC_TYPE, int1.mod(value2));
+    Assert.assertEquals(DYNAMIC_TYPE, int1.mod(value3));
+    Assert.assertEquals(DYNAMIC_TYPE, int1.mod(value4));
+    Assert.assertEquals(range(0, 5), int1.mod(value5));
+
+    Assert.assertEquals(range(0, 2), int2.mod(value1));
+    Assert.assertEquals(DYNAMIC_TYPE, int2.mod(value2));
+    Assert.assertEquals(DYNAMIC_TYPE, int2.mod(value3));
+    Assert.assertEquals(DYNAMIC_TYPE, int2.mod(value4));
+    Assert.assertEquals(range(0, 5), int2.mod(value5));
+    
+    Assert.assertEquals(range(0, 2), int3.mod(value1));
+    Assert.assertEquals(DYNAMIC_TYPE, int3.mod(value2));
+    Assert.assertEquals(DYNAMIC_TYPE, int3.mod(value3));
+    Assert.assertEquals(DYNAMIC_TYPE, int3.mod(value4));
+    Assert.assertEquals(range(0, 5), int3.mod(value5));
+    
+    Assert.assertEquals(range(0, 2), int4.mod(value1));
+    Assert.assertEquals(DYNAMIC_TYPE, int4.mod(value2));
+    Assert.assertEquals(DYNAMIC_TYPE, int4.mod(value3));
+    Assert.assertEquals(DYNAMIC_TYPE, int4.mod(value4));
+    Assert.assertEquals(range(0, 5), int4.mod(value5));
+    
+    Assert.assertEquals(range(0, 0), int5.mod(value1));
+    Assert.assertEquals(DYNAMIC_TYPE, int5.mod(value2));
+    Assert.assertEquals(DYNAMIC_TYPE, int5.mod(value3));
+    Assert.assertEquals(DYNAMIC_TYPE, int5.mod(value4));
+    Assert.assertEquals(range(0, 5), int5.mod(value5));
   }
 }
