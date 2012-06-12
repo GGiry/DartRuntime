@@ -8,11 +8,8 @@ import java.util.List;
 import java.util.Set;
 
 import jdart.compiler.phase.ClassHierarchyAnalysisPhase;
-import jdart.compiler.phase.FlowEnv;
-import jdart.compiler.phase.FlowTypingPhase;
 import jdart.compiler.phase.InterProceduralMethodCallResolver;
 import jdart.compiler.phase.TypeHelper;
-import jdart.compiler.phase.FlowTypingPhase.FTVisitor;
 import jdart.compiler.type.CoreTypeRepository;
 import jdart.compiler.type.Type;
 import jdart.compiler.type.TypeRepository;
@@ -26,11 +23,8 @@ import com.google.dart.compiler.DartCompilationPhase;
 import com.google.dart.compiler.DartCompiler;
 import com.google.dart.compiler.DefaultCompilerConfiguration;
 import com.google.dart.compiler.SystemLibraryManager;
-import com.google.dart.compiler.ast.DartMethodDefinition;
-import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.ast.DartUnit;
 import com.google.dart.compiler.resolver.CompileTimeConstantAnalyzer;
-import com.google.dart.compiler.resolver.MethodElement;
 import com.google.dart.compiler.resolver.MethodNodeElement;
 import com.google.dart.compiler.resolver.Resolver;
 
@@ -81,7 +75,7 @@ public class Main {
     TypeRepository typeRepository = new TypeRepository(coreTypeRepository);
     TypeHelper typeHelper = new TypeHelper(typeRepository);
     
-    // type flow main method
+    // type flow starting with main method
     InterProceduralMethodCallResolver methodCallResolver = new InterProceduralMethodCallResolver(typeHelper);
     methodCallResolver.functionCall(mainMethod, Collections.<Type>emptyList(), CoreTypeRepository.VOID_TYPE);
   }
@@ -90,7 +84,8 @@ public class Main {
     String sdkPath = "../../dart-sdk/";
 
     String[] paths = { 
-        "DartTest/Hello.dart"
+        "DartTest/Fibo.dart"
+        //"DartTest/Hello.dart"
     };
 
     for (String path : paths) {

@@ -93,7 +93,7 @@ public class Types {
         return NEGATIVE_INT32_TYPE.asNullable(nullable);
       }
       if (type.isIncludeIn(INT32_TYPE)) {
-        return INT32_TYPE;
+        return INT32_TYPE.asNullable(nullable);
       }
       return INT_NON_NULL_TYPE.asNullable(nullable);
     }
@@ -104,6 +104,11 @@ public class Types {
     }
     
     @Override
+    public Type visitBoolType(BoolType type, Void parameter) {
+      return BOOL_NON_NULL_TYPE.asNullable(type.isNullable());
+    }
+    
+    @Override
     public Type visitUnionType(UnionType type, Void unused) {
       return type.map(new TypeMapper() {
         @Override
@@ -111,6 +116,16 @@ public class Types {
           return widening(type);
         }
       });
+    }
+    
+    @Override
+    public Type visitFunctionType(FunctionType type, Void parameter) {
+      return CoreTypeRepository.getCoreTypeRepository().getFunctionType();
+    }
+    
+    @Override
+    protected Type visitType(Type type, Void parameter) {
+      return type;
     }
   };
 }
