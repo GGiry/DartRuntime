@@ -1103,7 +1103,7 @@ public class IntTest {
     Assert.assertEquals(range(null, null), int4.sub(value4));
     Assert.assertEquals(range(2, 4), int4.sub(value5));
   }
-  
+
   @Test
   public void modTest() {
     IntType int1 = range(null, null);
@@ -1129,19 +1129,19 @@ public class IntTest {
     Assert.assertEquals(DYNAMIC_TYPE, int2.mod(value3));
     Assert.assertEquals(DYNAMIC_TYPE, int2.mod(value4));
     Assert.assertEquals(range(0, 5), int2.mod(value5));
-    
+
     Assert.assertEquals(range(0, 2), int3.mod(value1));
     Assert.assertEquals(DYNAMIC_TYPE, int3.mod(value2));
     Assert.assertEquals(DYNAMIC_TYPE, int3.mod(value3));
     Assert.assertEquals(DYNAMIC_TYPE, int3.mod(value4));
     Assert.assertEquals(range(0, 5), int3.mod(value5));
-    
+
     Assert.assertEquals(range(0, 2), int4.mod(value1));
     Assert.assertEquals(DYNAMIC_TYPE, int4.mod(value2));
     Assert.assertEquals(DYNAMIC_TYPE, int4.mod(value3));
     Assert.assertEquals(DYNAMIC_TYPE, int4.mod(value4));
     Assert.assertEquals(range(0, 5), int4.mod(value5));
-    
+
     Assert.assertEquals(range(0, 0), int5.mod(value1));
     Assert.assertEquals(DYNAMIC_TYPE, int5.mod(value2));
     Assert.assertEquals(DYNAMIC_TYPE, int5.mod(value3));

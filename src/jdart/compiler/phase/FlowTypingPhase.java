@@ -1,17 +1,13 @@
 package jdart.compiler.phase;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
-import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.NULL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.POSITIVE_INT32_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.VOID_TYPE;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import jdart.compiler.type.ArrayType;
 import jdart.compiler.type.BoolType;
@@ -131,7 +127,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       // field as already been resolved by Dart compiler resolver
       return null;
     }
-    
+
     @Override
     public Type visitMethodDefinition(DartMethodDefinition node, FlowEnv unused) {
       DartFunction function = node.getFunction();
@@ -139,11 +135,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
         // native function use declared return type
         return typeHelper.asType(true, node.getType());
       }
-      
+
       // We should allow to propagate the type of 'this' in the flow env
       // to be more precise, but currently we don't specialize method call,
       // but only function call
-      
+
       Type thisType = null;
       Modifiers modifiers = node.getModifiers();
       MethodElement element = node.getElement();
@@ -206,7 +202,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
       throw new AssertionError("this method should never be called");
     }
 
-    
+
 
     @Override
     public Type visitFunction(DartFunction node, FlowEnv flowEnv) {
@@ -454,53 +450,64 @@ public class FlowTypingPhase implements DartCompilationPhase {
       return null;
     }
 
-    static class LoopVisitor extends ASTVisitor2<List<VariableElement>, FlowEnv> {
+    static class LoopVisitor extends ASTVisitor2<Set<VariableElement>, FlowEnv> {
       public LoopVisitor() {
         super();
       }
 
       @Override
-      protected List<VariableElement> accept(DartNode node, FlowEnv parameter) {
+      protected Set<VariableElement> accept(DartNode node, FlowEnv parameter) {
         return super.accept(node, parameter);
       }
 
       @Override
-      public List<VariableElement> visitBlock(DartBlock node, FlowEnv parameter) {
-        LinkedList<VariableElement> list = new LinkedList<>();
+      public Set<VariableElement> visitBlock(DartBlock node, FlowEnv parameter) {
+        HashSet<VariableElement> list = new HashSet<>();
         for (DartStatement statement : node.getStatements()) {
-          System.out.println(statement + " -> " + accept(statement, parameter));
           list.addAll(accept(statement, parameter));
         }
         return list;
       }
 
       @Override
-      public List<VariableElement> visitIfStatement(DartIfStatement node, FlowEnv parameter) {
-        LinkedList<VariableElement> list = new LinkedList<>();
+      public Set<VariableElement> visitIfStatement(DartIfStatement node, FlowEnv parameter) {
+        HashSet<VariableElement> list = new HashSet<>();
         list.addAll(accept(node.getThenStatement(), parameter));
-        list.addAll(accept(node.getElseStatement(), parameter));
+        if (node.getElseStatement() != null) {
+          list.addAll(accept(node.getElseStatement(), parameter));
+        }
         return list;
       }
 
       @Override
-      public List<VariableElement> visitExprStmt(DartExprStmt node, FlowEnv parameter) {
-        LinkedList<VariableElement> list = new LinkedList<>();
+      public Set<VariableElement> visitExprStmt(DartExprStmt node, FlowEnv parameter) {
+        HashSet<VariableElement> list = new HashSet<>();
         list.addAll(accept(node.getExpression(), parameter));
+        return list;
+      }
+
+      @Override
+      public Set<VariableElement> visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
+        HashSet<VariableElement> list = new HashSet<>();
+        if (node.getOperator().isAssignmentOperator()) {
+          list.add((VariableElement) node.getArg1().getElement());
+        }
         return list;
       }
     }
 
     private void computeLoop(DartExpression condition, DartStatement body, DartStatement /* maybe null */ init, DartExpression /* maybe null */ increment, FlowEnv parameter) {
-      accept(condition, parameter);
-      ConditionVisitor conditionVisitor = new ConditionVisitor(this);
       FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
-
-      LoopVisitor loopVisitor = new LoopVisitor();
-      loopVisitor.accept(body, parameter);
-
       if (init != null) {
         accept(init, env);
       }
+
+      accept(condition, env);
+      ConditionVisitor conditionVisitor = new ConditionVisitor(this);
+
+      LoopVisitor loopVisitor = new LoopVisitor();
+      Set<VariableElement> list = loopVisitor.accept(body, parameter);
+      System.out.println(list);
 
       do {
         env = new FlowEnv(env, env.getReturnType(), env.getExpectedType(), true);

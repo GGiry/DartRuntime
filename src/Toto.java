@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import jdart.compiler.phase.ClassHierarchyAnalysisPhase;
 import jdart.compiler.phase.FlowTypingPhase;
 
 import org.kohsuke.args4j.CmdLineException;
@@ -64,8 +63,8 @@ public class Toto {
     String sdkPath = "../../dart-sdk/";
 
     String[] paths = { 
+         "DartTest/For2.dart",
         "DartTest/If7.dart",
-        // "DartTest/For2.dart",
         // "DartTest/For.dart",
         // "DartTest/If4.dart",
         // "DartTest/While.dart"
