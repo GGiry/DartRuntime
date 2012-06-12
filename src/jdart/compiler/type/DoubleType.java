@@ -142,12 +142,7 @@ public class DoubleType extends PrimitiveType implements NumType {
       BigInteger min = ((IntType) other).getMinBound();
       if (min != null) {
         float floatValue = constant.floatValue();
-        if (floatValue == (int) floatValue) {
-          if (BigInteger.valueOf((int) floatValue).compareTo(min) <= 0) {
-            return this;
-          }
-        }
-        if (BigInteger.valueOf((int) floatValue).compareTo(min) < 0) {
+        if (BigInteger.valueOf((int) floatValue).compareTo(min) <= 0) {
           return this;
         }
       }
@@ -174,8 +169,13 @@ public class DoubleType extends PrimitiveType implements NumType {
       BigInteger min = ((IntType) other).getMinBound();
       if (min != null) {
         float floatValue = constant.floatValue();
-        if (BigInteger.valueOf((int) floatValue).compareTo(min) < 0) {
+        int compareTo = BigInteger.valueOf((int) floatValue).compareTo(min);
+        if (compareTo < 0) {
           return this;
+        } else if (compareTo == 0) {
+          if (floatValue != (int) floatValue) {
+            return this;
+          }
         }
       }
       return null;
@@ -198,15 +198,10 @@ public class DoubleType extends PrimitiveType implements NumType {
     }
 
     if (other instanceof IntType) {
-      BigInteger min = ((IntType) other).getMinBound();
-      if (min != null) {
+      BigInteger max = ((IntType) other).getMaxBound();
+      if (max != null) {
         float floatValue = constant.floatValue();
-        if (floatValue == (int) floatValue) {
-          if (BigInteger.valueOf((int) floatValue).compareTo(min) >= 0) {
-            return this;
-          }
-        }
-        if (BigInteger.valueOf((int) floatValue).compareTo(min) > 0) {
+        if (BigInteger.valueOf((int) floatValue).compareTo(max) >= 0) {
           return this;
         }
       }
@@ -230,11 +225,16 @@ public class DoubleType extends PrimitiveType implements NumType {
     }
 
     if (other instanceof IntType) {
-      BigInteger min = ((IntType) other).getMinBound();
-      if (min != null) {
+      BigInteger max = ((IntType) other).getMaxBound();
+      if (max != null) {
         float floatValue = constant.floatValue();
-        if (BigInteger.valueOf((int) floatValue).compareTo(min) > 0) {
+        int compareTo = BigInteger.valueOf((int) floatValue).compareTo(max);
+        if (compareTo > 0) {
           return this;
+        } else if (compareTo == 0) {
+          if (floatValue != (int) floatValue) {
+            return this;
+          }
         }
       }
       return null;
