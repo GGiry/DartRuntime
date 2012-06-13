@@ -82,8 +82,10 @@ public class NullType implements Type {
   }
   
   @Override
-  public boolean isIncludeIn(Type intType) {
-    // TODO
+  public boolean isIncludeIn(Type other) {
+    if (other.isNullable()) {
+      return true;
+    }
     return false;
   }
 }

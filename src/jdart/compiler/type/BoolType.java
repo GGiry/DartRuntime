@@ -166,10 +166,31 @@ public class BoolType extends PrimitiveType {
 
     return null;
   }
-  
+
   @Override
   public boolean isIncludeIn(Type other) {
-    //TODO
+    if (isNullable() && !other.isNullable()) {
+      return false;
+    }
+
+    if (other instanceof BoolType) {
+      if (asConstant() != null && other.asConstant() != null) {
+        if (asConstant().equals(other.asConstant())) {
+          return true;
+        }
+        return false;
+      }
+      return true;
+    }
+
+    if (other instanceof UnionType) {
+      return ((UnionType) other).reverseIsIncludeIn(this);
+    }
+    
+    if (other instanceof DynamicType) {
+      return true;
+    }
+
     return false;
   }
 }

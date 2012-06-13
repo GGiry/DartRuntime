@@ -379,6 +379,10 @@ public class DoubleType extends PrimitiveType implements NumType {
       return ((UnionType) other).reverseIsIncludeIn(this);
     }
     
+    if (other instanceof DynamicType) {
+      return true;
+    }
+    
     return false;
   }
 }

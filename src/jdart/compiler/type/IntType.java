@@ -254,14 +254,18 @@ public class IntType extends PrimitiveType implements NumType {
 
       switch (diff) {
       case FIRST_IS_LEFT:
+      case FIRST_IS_LEFT_OVERLAP:
       case SECOND_IS_LEFT:
+      case FIRST_CONTAINS_SECOND:
         return false;
       case EQUALS:
-
-        break;
-
-      default:
-        break;
+      case SECOND_CONTAINS_FIRST:
+        return true;
+      case SECOND_IS_LEFT_OVERLAP:
+        if (iType.maxBound.compareTo(maxBound) >= 0) {
+          return true;
+        }
+        return false;
       }
     }
 
@@ -281,6 +285,10 @@ public class IntType extends PrimitiveType implements NumType {
 
     if (other instanceof UnionType) {
       return ((UnionType) other).reverseIsIncludeIn(this);
+    }
+    
+    if (other instanceof DynamicType) {
+      return true;
     }
 
     return false;
