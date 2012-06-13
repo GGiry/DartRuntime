@@ -1148,4 +1148,13 @@ public class IntTest {
     Assert.assertEquals(DYNAMIC_TYPE, int5.mod(value4));
     Assert.assertEquals(range(0, 5), int5.mod(value5));
   }
+  
+  @Test
+  public void isIncluded() {
+    Assert.assertTrue(IntType.constant(BigInteger.TEN).isIncludeIn(POSITIVE_INT32_TYPE));
+    Assert.assertTrue(POSITIVE_INT32_TYPE.isIncludeIn(INT32_TYPE));
+    Assert.assertTrue(NEGATIVE_INT32_TYPE.isIncludeIn(INT32_TYPE));
+    Assert.assertTrue(INT32_TYPE.isIncludeIn(INT_NON_NULL_TYPE));
+    Assert.assertTrue(INT32_TYPE.isIncludeIn(INT_TYPE));
+  }
 }
