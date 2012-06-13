@@ -133,4 +133,6 @@ public interface Type {
    * @return <code>true</code> if this type is include in the specified type.
    */
   boolean isIncludeIn(Type other);
+  
+  boolean isAssignableFrom(Type other);
 }

@@ -58,7 +58,7 @@ public class VoidType implements Type {
   public Type exclude(Type other) {
     return null;
   }
-  
+
   @Override
   public Type greaterThanOrEqualsValues(Type other, boolean inLoop) {
     return null;
@@ -68,20 +68,33 @@ public class VoidType implements Type {
   public Type greaterThanValues(Type other, boolean inLoop) {
     return null;
   }
-  
+
   @Override
   public Type lessThanOrEqualsValues(Type other, boolean inLoop) {
     return null;
   }
-  
+
   @Override
   public Type lessThanValues(Type other, boolean inLoop) {
     return null;
   }
-  
+
   @Override
   public boolean isIncludeIn(Type other) {
+    if (other instanceof DynamicType) {
+      return true;
+    }
+
     // TODO
+    throw new IllegalStateException("Not yet implemented.");
+  }
+
+  @Override
+  public boolean isAssignableFrom(Type other) {
+    if (other instanceof VoidType) {
+      return true;
+    }
+
     return false;
   }
 }

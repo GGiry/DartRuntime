@@ -186,9 +186,36 @@ public class BoolType extends PrimitiveType {
     if (other instanceof UnionType) {
       return ((UnionType) other).reverseIsIncludeIn(this);
     }
-    
+
     if (other instanceof DynamicType) {
       return true;
+    }
+
+    return false;
+  }
+
+  @Override
+  public boolean isAssignableFrom(Type other) {
+    if (other instanceof BoolType) {
+      Boolean cst = asConstant();
+      if (cst == null) {
+        if (!other.isNullable() || isNullable()) {
+          // if other is not nullable this can be both, else this must be nullable.
+          return true;
+        }
+        return false;
+      }
+      Object otherCst = other.asConstant();
+      if (otherCst == null) {
+        return false;
+      }
+      return cst.equals(otherCst);
+    }
+
+    if (other instanceof NullType) {
+      if (isNullable()) {
+        return true;
+      }
     }
 
     return false;

@@ -86,6 +86,19 @@ public class NullType implements Type {
     if (other.isNullable()) {
       return true;
     }
+    
+    if (other instanceof DynamicType) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  @Override
+  public boolean isAssignableFrom(Type other) {
+    if (other instanceof NullType) {
+      return true;
+    }
     return false;
   }
 }

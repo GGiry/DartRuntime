@@ -243,58 +243,6 @@ public class IntType extends PrimitiveType implements NumType {
    */
 
   @Override
-  public boolean isIncludeIn(Type other) {
-    if (isNullable() && !other.isNullable()) {
-      return false;
-    }
-
-    if (other instanceof IntType) {
-      IntType iType = (IntType) other;
-      DiffResult diff = diff(this, iType);
-
-      switch (diff) {
-      case FIRST_IS_LEFT:
-      case FIRST_IS_LEFT_OVERLAP:
-      case SECOND_IS_LEFT:
-      case FIRST_CONTAINS_SECOND:
-        return false;
-      case EQUALS:
-      case SECOND_CONTAINS_FIRST:
-        return true;
-      case SECOND_IS_LEFT_OVERLAP:
-        if (iType.maxBound.compareTo(maxBound) >= 0) {
-          return true;
-        }
-        return false;
-      }
-    }
-
-    if (other instanceof DoubleType) {
-      Double doubleConstant = ((DoubleType) other).asConstant();
-      if (doubleConstant != null) {
-        float floatValue = doubleConstant.floatValue();
-        if (floatValue == (int) floatValue) {
-          if (asConstant().compareTo(BigInteger.valueOf(doubleConstant.longValue())) == 0) {
-            return true;
-          }
-        }
-        return false;
-      }
-      return true;
-    }
-
-    if (other instanceof UnionType) {
-      return ((UnionType) other).reverseIsIncludeIn(this);
-    }
-    
-    if (other instanceof DynamicType) {
-      return true;
-    }
-
-    return false;
-  }
-
-  @Override
   public Type commonValuesWith(Type type) {
     if (type instanceof IntType) {
       return intersect(this, (IntType) type);
@@ -1119,5 +1067,100 @@ public class IntType extends PrimitiveType implements NumType {
       return IntType.constant(value);
     }
     return INT_NON_NULL_TYPE;
+  }
+
+  @Override
+  public boolean isIncludeIn(Type other) {
+    if (isNullable() && !other.isNullable()) {
+      return false;
+    }
+
+    if (other instanceof IntType) {
+      IntType iType = (IntType) other;
+      DiffResult diff = diff(this, iType);
+
+      switch (diff) {
+      case FIRST_IS_LEFT:
+      case FIRST_IS_LEFT_OVERLAP:
+      case SECOND_IS_LEFT:
+      case FIRST_CONTAINS_SECOND:
+        return false;
+      case EQUALS:
+      case SECOND_CONTAINS_FIRST:
+        return true;
+      case SECOND_IS_LEFT_OVERLAP:
+        if (iType.maxBound.compareTo(maxBound) >= 0) {
+          return true;
+        }
+        return false;
+      }
+    }
+
+    if (other instanceof DoubleType) {
+      Double doubleConstant = ((DoubleType) other).asConstant();
+      if (doubleConstant != null) {
+        float floatValue = doubleConstant.floatValue();
+        if (floatValue == (int) floatValue) {
+          if (asConstant().compareTo(BigInteger.valueOf(doubleConstant.longValue())) == 0) {
+            return true;
+          }
+        }
+        return false;
+      }
+      return true;
+    }
+
+    if (other instanceof UnionType) {
+      return ((UnionType) other).reverseIsIncludeIn(this);
+    }
+
+    if (other instanceof DynamicType) {
+      return true;
+    }
+
+    return false;
+  }
+
+  @Override
+  public boolean isAssignableFrom(Type other) {
+    if (other.isNullable() && !isNullable()) {
+      return false;
+    }
+
+    if (other instanceof DoubleType) {
+      DoubleType dType = (DoubleType) other;
+      long longValue = dType.asConstant().longValue();
+      BigInteger valueOf = BigInteger.valueOf(longValue);
+      if (dType.asConstant().floatValue() == longValue) {
+        other = new IntType(other.isNullable(), valueOf, valueOf);
+      } else {
+        other = new IntType(other.isNullable(), valueOf, valueOf.add(BigInteger.ONE));
+      }
+    }
+
+    if (other instanceof IntType) {
+      IntType iType = (IntType) other;
+
+      DiffResult diff = diff(this, iType);
+
+      switch (diff) {
+      case FIRST_IS_LEFT_OVERLAP:
+        if (maxBound != null && maxBound.compareTo(iType.maxBound) >= 0) {
+          return true;
+        }
+        return false;
+      case FIRST_CONTAINS_SECOND:
+      case EQUALS:
+        return true;
+      default:
+        return false;
+      }
+    }
+    
+    if (other instanceof NullType) {
+      return true;
+    }
+
+    return false;
   }
 }

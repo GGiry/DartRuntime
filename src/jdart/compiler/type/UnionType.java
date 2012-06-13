@@ -389,6 +389,10 @@ public class UnionType extends NullableType implements NumType {
   
   @Override
   public boolean isIncludeIn(Type other) {
+    if (other instanceof DynamicType) {
+      return true;
+    }
+    
     for (NullableType type : types) {
       if (!type.isIncludeIn(other)) {
         return false;
@@ -400,6 +404,16 @@ public class UnionType extends NullableType implements NumType {
   public boolean reverseIsIncludeIn(Type other) {
     for (NullableType type : types) {
       if (!other.isIncludeIn(type)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  @Override
+  public boolean isAssignableFrom(Type other) {
+    for (NullableType type : types) {
+      if (!other.isAssignableFrom(type)) {
         return false;
       }
     }

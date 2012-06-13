@@ -385,4 +385,44 @@ public class DoubleType extends PrimitiveType implements NumType {
     
     return false;
   }
+  
+  @Override
+  public boolean isAssignableFrom(Type other) {
+    if (other instanceof NumType) {
+      Object otherCst = other.asConstant();
+      if (otherCst == null) {
+        if (asConstant() == null) {
+          if (isNullable() || !other.isNullable()) {
+            return true;
+          }
+        }
+        return false;
+      }
+      
+      if (asConstant() == null) {
+        if (isNullable() || !other.isNullable()) {
+          return true;
+        }
+        return false;
+      }
+      
+      if (other instanceof DoubleType) {
+        Double doubleCst = (Double) otherCst;
+        return asConstant().equals(doubleCst);
+      }
+      if (other instanceof IntType) {
+        BigInteger bigIntCst = (BigInteger) otherCst;
+        return asConstant().equals(bigIntCst.floatValue());
+      }
+      return false;
+    }
+    
+    if (other instanceof NullType) {
+      if (isNullable()) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
 }

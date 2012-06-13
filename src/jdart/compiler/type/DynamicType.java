@@ -59,7 +59,16 @@ public class DynamicType extends NullableType {
   
   @Override
   public boolean isIncludeIn(Type other) {
+    if (other instanceof DynamicType) {
+      return true;
+    }
+    
     //TODO
-    return false;
+    throw new IllegalStateException("Not yet implemented.");
+  }
+  
+  @Override
+  public boolean isAssignableFrom(Type other) {
+    return true;
   }
 }

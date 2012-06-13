@@ -140,7 +140,17 @@ public class FunctionType extends OwnerType {
   
   @Override
   public boolean isIncludeIn(Type other) {
+    if (other instanceof DynamicType) {
+      return true;
+    }
+    
     // TODO
-    return false;
+    throw new IllegalStateException("Not yet implemented.");
+  }
+  
+  @Override
+  public boolean isAssignableFrom(Type other) {
+    // TODO Auto-generated method stub
+    throw new IllegalStateException("Not yet implemented.");
   }
 }
