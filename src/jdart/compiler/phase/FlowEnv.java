@@ -181,7 +181,7 @@ public class FlowEnv {
    * @param env
    *          Environment with the new values.
    */
-  public void update(FlowEnv env) {
+  public void copyAll(FlowEnv env) {
     for (Entry<VariableElement, Type> entry : variableTypeMap.entrySet()) {
       entry.setValue(env.getType(entry.getKey()));
     }

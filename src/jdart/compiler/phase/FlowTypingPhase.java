@@ -1,6 +1,7 @@
 package jdart.compiler.phase;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
+import static jdart.compiler.phase.FlowTypingPhase.Liveness.*;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -198,7 +199,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       DartBlock body = function.getBody();
       if (body != null) {
-        flowTypeVisitor.typeFlow(body, flowEnv);
+        flowTypeVisitor.liveness(body, flowEnv);
       }
 
       // TODO test display, to remove.
@@ -208,22 +209,31 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
   }
 
+  enum Liveness {
+    ALIVE,
+    DEAD
+  }
+  
+  
+  
   public static class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
-    private final TypeHelper typeHelper;
+    final TypeHelper typeHelper;
     private final HashMap<DartNode, Type> typeMap = new HashMap<>();
     private final MethodCallResolver methodCallResolver;
+    private final StatementVisitor statementVisitor;
     private Type inferredReturnType;
 
     public FTVisitor(TypeHelper typeHelper, MethodCallResolver methodCallResolver) {
       this.typeHelper = typeHelper;
       this.methodCallResolver = methodCallResolver;
+      this.statementVisitor = new StatementVisitor();
     }
 
     /**
      * Collect inferred return type
      * @param type an inferred return type.
      */
-    private void addInferredReturnType(Type type) {
+    void addInferredReturnType(Type type) {
       if (inferredReturnType == null) {
         inferredReturnType = type;
         return;
@@ -235,11 +245,17 @@ public class FlowTypingPhase implements DartCompilationPhase {
       return (inferredReturnType == null)? declaredReturnType: inferredReturnType;
     }
     
-    // entry point
+    // entry points
     public Type typeFlow(DartNode node, FlowEnv flowEnv) {
       return accept(node, flowEnv);
     }
+    
+    public Liveness liveness(DartNode node, FlowEnv flowEnv) {
+      return statementVisitor.liveness(node, flowEnv);
+    }
 
+    // --- helper methods
+    
     private static void operandIsNonNull(DartExpression expr, FlowEnv flowEnv) {
       if (!(expr instanceof DartIdentifier)) {
         return;
@@ -252,6 +268,52 @@ public class FlowTypingPhase implements DartCompilationPhase {
       Type type = flowEnv.getType(variable);
       flowEnv.register(variable, type.asNonNull());
     }
+    
+    void changeOperandsTypes(Type type, DartBinaryExpression node, FlowEnv parameter) {
+      if (type == VOID_TYPE || type == null) {
+        return;
+      }
+
+      DartExpression arg1 = node.getArg1();
+      DartExpression arg2 = node.getArg2();
+      Type type1 = accept(arg1, parameter);
+      Type type2 = accept(arg2, parameter);
+      Token operator = node.getOperator();
+      VariableElement element1 = (VariableElement) arg1.getElement();
+      VariableElement element2 = (VariableElement) arg2.getElement();
+
+      switch (operator) {
+      case EQ_STRICT:
+      case EQ:
+      case NE_STRICT:
+      case NE:
+        if (element1 != null) {
+          parameter.register(element1, type);
+        }
+        if (element2 != null) {
+          parameter.register(element2, type);
+        }
+        break;
+      case LTE:
+      case GTE:
+      case LT:
+      case GT:
+        if (element1 != null) {
+          if (parameter.inLoop() || type1.asConstant() == null) {
+            parameter.register(element1, type);
+          }
+        }
+        if (element2 != null) {
+          if (parameter.inLoop() || type2.asConstant() == null) {
+            parameter.register(element2, type);
+          }
+        }
+        break;
+      default:
+        throw new IllegalStateException("You must implement changeOperand for " + operator + " (" + operator.name() + ")");
+      }
+    }
+    
 
     @Override
     protected Type accept(DartNode node, FlowEnv flowEnv) {
@@ -281,79 +343,171 @@ public class FlowTypingPhase implements DartCompilationPhase {
       return typeHelper.asType(true, node.getElement().getType());
     }
 
-    @Override
-    public Type visitBlock(DartBlock node, FlowEnv flowEnv) {
-      // each instruction should be compatible with void
-      for (DartStatement statement : node.getStatements()) {
-        accept(statement, flowEnv.expectedType(VOID_TYPE));
-      }
-      return null;
-    }
-
     // --- statements
-
-    @Override
-    public Type visitReturnStatement(DartReturnStatement node, FlowEnv flowEnv) {
-      DartExpression value = node.getValue();
-      Type type;
-      if (value != null) {
-        // return should return a value compatible with
-        // the function declared return type
-        type = accept(value, flowEnv.expectedType(flowEnv.getReturnType()));
-      } else {
-        type = VOID_TYPE;
-      }
-      addInferredReturnType(type);
-      return null;
-    }
-
-    @Override
-    public Type visitThrowStatement(DartThrowStatement node, FlowEnv flowEnv) {
-      if (node.getException() == null) {
-        // TODO correctly handle the error?
-        System.err.println("Throw statement: null exception");
-        throw null;
-      }
-
-      accept(node.getException(), flowEnv);
-      return null;
-    }
-
-    @Override
-    public Type visitVariableStatement(DartVariableStatement node, FlowEnv flowEnv) {
-      for (DartVariable variable : node.getVariables()) {
-        accept(variable, flowEnv);
-      }
-      return null;
-    }
-
-    @Override
-    public Type visitVariable(DartVariable node, FlowEnv flowEnv) {
-      DartExpression value = node.getValue();
-      if (value == null) {
-        // variable is not initialized, in Dart variables are initialized
-        // with null by default
-        flowEnv.register(node.getElement(), NULL_TYPE);
-        return NULL_TYPE;
-      }
-      // the type is the type of the initialization expression
-      VariableElement element = node.getElement();
-      Type declaredType = typeHelper.asType(true, element.getType());
-      Type type = accept(value, flowEnv.expectedType(declaredType));
-      flowEnv.register(element, type);
-      return null;
-    }
-
-    @Override
-    public Type visitExprStmt(DartExprStmt node, FlowEnv flowEnv) {
-      DartExpression expression = node.getExpression();
-      if (expression != null) {
-        // statement expression expression should return void
-        return accept(expression, flowEnv.expectedType(VOID_TYPE));
-      }
-      return null;
-    }
     
+    class StatementVisitor extends ASTVisitor2<Liveness, FlowEnv> {
+      Liveness liveness(DartNode node, FlowEnv flowEnv) {
+        return accept(node, flowEnv);
+      }
+      
+      @Override
+      public Liveness visitBlock(DartBlock node, FlowEnv flowEnv) {
+        // each instruction should be compatible with void
+        Liveness liveness = ALIVE;
+        for (DartStatement statement : node.getStatements()) {
+          liveness = accept(statement, flowEnv.expectedType(VOID_TYPE));
+        }
+        return liveness;
+      }
+
+      // --- statements
+
+      @Override
+      public Liveness visitReturnStatement(DartReturnStatement node, FlowEnv flowEnv) {
+        DartExpression value = node.getValue();
+        Type type;
+        if (value != null) {
+          // return should return a value compatible with
+          // the function declared return type
+          type = FTVisitor.this.accept(value, flowEnv.expectedType(flowEnv.getReturnType()));
+        } else {
+          type = VOID_TYPE;
+        }
+        addInferredReturnType(type);
+        return DEAD;
+      }
+
+      @Override
+      public Liveness visitThrowStatement(DartThrowStatement node, FlowEnv flowEnv) {
+        if (node.getException() == null) {
+          // TODO correctly handle the error?
+          System.err.println("Throw statement: null exception");
+          throw null;
+        }
+
+        accept(node.getException(), flowEnv);
+        return DEAD;
+      }
+
+      @Override
+      public Liveness visitVariableStatement(DartVariableStatement node, FlowEnv flowEnv) {
+        for (DartVariable variable : node.getVariables()) {
+          accept(variable, flowEnv);
+        }
+        return ALIVE;
+      }
+
+      @Override
+      public Liveness visitVariable(DartVariable node, FlowEnv flowEnv) {
+        DartExpression value = node.getValue();
+        if (value == null) {
+          // variable is not initialized, in Dart variables are initialized
+          // with null by default
+          flowEnv.register(node.getElement(), NULL_TYPE);
+          return null;
+        }
+        // the type is the type of the initialization expression
+        VariableElement element = node.getElement();
+        Type declaredType = typeHelper.asType(true, element.getType());
+        Type type = FTVisitor.this.accept(value, flowEnv.expectedType(declaredType));
+        flowEnv.register(element, type);
+        return null;
+      }
+
+      @Override
+      public Liveness visitExprStmt(DartExprStmt node, FlowEnv flowEnv) {
+        DartExpression expression = node.getExpression();
+        if (expression != null) {
+          // statement expression expression should return void
+          FTVisitor.this.accept(expression, flowEnv.expectedType(VOID_TYPE));
+        }
+        return null;
+      }
+
+      @Override
+      public Liveness visitIfStatement(DartIfStatement node, FlowEnv parameter) {
+        DartExpression condition = node.getCondition();
+        Type conditionType = FTVisitor.this.accept(condition, parameter);
+
+        ConditionVisitor conditionVisitor = new ConditionVisitor(FTVisitor.this);
+        ConditionType types = conditionVisitor.accept(condition, parameter);
+        
+        FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
+        FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
+
+        Liveness trueLiveness = DEAD;
+        if (conditionType != FALSE_TYPE) {
+          if (types != null) {
+            changeOperandsTypes(types.getTrueType(), (DartBinaryExpression) condition, envThen);
+          }
+          trueLiveness = accept(node.getThenStatement(), envThen);
+          parameter.merge(envThen);
+        }
+        Liveness falseLiveness = DEAD;
+        if (conditionType != TRUE_TYPE && node.getElseStatement() != null) {
+          if (types != null) {
+            changeOperandsTypes(types.getFalseType(), (DartBinaryExpression) condition, envElse);
+          }
+          falseLiveness = accept(node.getElseStatement(), envElse);
+          parameter.merge(envElse);
+        }
+        return (trueLiveness == ALIVE && falseLiveness == ALIVE)? ALIVE: DEAD;
+      }
+
+      
+
+      private Liveness computeLoop(DartExpression condition, DartStatement body, DartStatement /* maybe null */ init, DartExpression /* maybe null */ increment, FlowEnv parameter) {
+        FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
+        if (init != null) {
+          accept(init, env);
+        }
+
+        // condition should be a boolean
+        FTVisitor.this.accept(condition, env.expectedType(BOOL_TYPE));
+        ConditionVisitor conditionVisitor = new ConditionVisitor(FTVisitor.this);
+
+        LoopVisitor loopVisitor = new LoopVisitor();
+        Set<VariableElement> list = loopVisitor.accept(body, parameter);
+        System.out.println(list);
+
+        Liveness liveness;
+        do {
+          env = new FlowEnv(env, env.getReturnType(), env.getExpectedType(), true);
+          ConditionType types = conditionVisitor.accept(condition, env);
+          changeOperandsTypes(types.getTrueType(), (DartBinaryExpression) condition, env);
+
+          liveness = accept(body, env);
+          if (increment != null) {
+            FTVisitor.this.accept(increment, env);
+          }
+          FTVisitor.this.accept(condition, env.expectedType(BOOL_TYPE));
+        } while(!env.isStable());
+
+        parameter.copyAll(env);
+        return liveness;
+      }
+
+      @Override
+      public Liveness visitForStatement(DartForStatement node, FlowEnv parameter) {
+        return computeLoop(node.getCondition(), node.getBody(), node.getInit(), node.getIncrement(), parameter);
+      }
+
+      @Override
+      public Liveness visitWhileStatement(DartWhileStatement node, FlowEnv parameter) {
+        return computeLoop(node.getCondition(), node.getBody(), null, null, parameter);
+      }
+
+      @Override
+      public Liveness visitDoWhileStatement(DartDoWhileStatement node, FlowEnv parameter) {
+        return computeLoop(node.getCondition(), node.getBody(), null, null, parameter);
+      }
+
+      @Override
+      public Liveness visitEmptyStatement(DartEmptyStatement node, FlowEnv parameter) {
+        return ALIVE;
+      }
+    }
+
     static class ConditionType {
       private final Type trueType;
       private final Type falseType;
@@ -450,80 +604,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         return null;
       }
     }
-
-    private void changeOperandsTypes(Type type, DartBinaryExpression node, FlowEnv parameter) {
-      if (type == VOID_TYPE || type == null) {
-        return;
-      }
-
-      DartExpression arg1 = node.getArg1();
-      DartExpression arg2 = node.getArg2();
-      Type type1 = accept(arg1, parameter);
-      Type type2 = accept(arg2, parameter);
-      Token operator = node.getOperator();
-      VariableElement element1 = (VariableElement) arg1.getElement();
-      VariableElement element2 = (VariableElement) arg2.getElement();
-
-      switch (operator) {
-      case EQ_STRICT:
-      case EQ:
-      case NE_STRICT:
-      case NE:
-        if (element1 != null) {
-          parameter.register(element1, type);
-        }
-        if (element2 != null) {
-          parameter.register(element2, type);
-        }
-        break;
-      case LTE:
-      case GTE:
-      case LT:
-      case GT:
-        if (element1 != null) {
-          if (parameter.inLoop() || type1.asConstant() == null) {
-            parameter.register(element1, type);
-          }
-        }
-        if (element2 != null) {
-          if (parameter.inLoop() || type2.asConstant() == null) {
-            parameter.register(element2, type);
-          }
-        }
-        break;
-      default:
-        throw new IllegalStateException("You must implement changeOperand for " + operator + " (" + operator.name() + ")");
-      }
-    }
-
-    @Override
-    public Type visitIfStatement(DartIfStatement node, FlowEnv parameter) {
-      DartExpression condition = node.getCondition();
-      Type conditionType = accept(condition, parameter);
-
-      ConditionVisitor conditionVisitor = new ConditionVisitor(this);
-      ConditionType types = conditionVisitor.accept(condition, parameter);
-      
-      FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
-      FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
-
-      if (conditionType != FALSE_TYPE) {
-        if (types != null) {
-          changeOperandsTypes(types.getTrueType(), (DartBinaryExpression) condition, envThen);
-        }
-        accept(node.getThenStatement(), envThen);
-        parameter.merge(envThen);
-      }
-      if (conditionType != TRUE_TYPE && node.getElseStatement() != null) {
-        if (types != null) {
-          changeOperandsTypes(types.getFalseType(), (DartBinaryExpression) condition, envElse);
-        }
-        accept(node.getElseStatement(), envElse);
-        parameter.merge(envElse);
-      }
-      return null;
-    }
-
+    
     static class LoopVisitor extends ASTVisitor2<Set<VariableElement>, FlowEnv> {
       public LoopVisitor() {
         super();
@@ -569,58 +650,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
         return list;
       }
     }
-
-    private void computeLoop(DartExpression condition, DartStatement body, DartStatement /* maybe null */ init, DartExpression /* maybe null */ increment, FlowEnv parameter) {
-      FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
-      if (init != null) {
-        accept(init, env);
-      }
-
-      accept(condition, env);
-      ConditionVisitor conditionVisitor = new ConditionVisitor(this);
-
-      LoopVisitor loopVisitor = new LoopVisitor();
-      Set<VariableElement> list = loopVisitor.accept(body, parameter);
-      System.out.println(list);
-
-      do {
-        env = new FlowEnv(env, env.getReturnType(), env.getExpectedType(), true);
-        ConditionType types = conditionVisitor.accept(condition, env);
-        changeOperandsTypes(types.getTrueType(), (DartBinaryExpression) condition, env);
-
-        accept(body, env);
-        if (increment != null) {
-          accept(increment, env);
-        }
-        accept(condition, env);
-      } while(!env.isStable());
-
-      parameter.update(env);
-    }
-
-    @Override
-    public Type visitForStatement(DartForStatement node, FlowEnv parameter) {
-      computeLoop(node.getCondition(), node.getBody(), node.getInit(), node.getIncrement(), parameter);
-      return null;
-    }
-
-    @Override
-    public Type visitWhileStatement(DartWhileStatement node, FlowEnv parameter) {
-      computeLoop(node.getCondition(), node.getBody(), null, null, parameter);
-      return null;
-    }
-
-    @Override
-    public Type visitDoWhileStatement(DartDoWhileStatement node, FlowEnv parameter) {
-      computeLoop(node.getCondition(), node.getBody(), null, null, parameter);
-      return null;
-    }
-
-    @Override
-    public Type visitEmptyStatement(DartEmptyStatement node, FlowEnv parameter) {
-      return null;
-    }
-
+    
     // --- expressions
 
     @Override

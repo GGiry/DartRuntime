@@ -177,7 +177,7 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
 
     DartBlock body = function.getBody();
     if (body != null) {
-      flowTypeVisitor.typeFlow(body, flowEnv);
+      flowTypeVisitor.liveness(body, flowEnv);
       
       // DEBUG
       System.out.println("flow env"+flowEnv);
