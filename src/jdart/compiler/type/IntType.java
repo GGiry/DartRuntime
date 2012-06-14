@@ -1081,13 +1081,17 @@ public class IntType extends PrimitiveType implements NumType {
 
       switch (diff) {
       case FIRST_IS_LEFT:
-      case FIRST_IS_LEFT_OVERLAP:
       case SECOND_IS_LEFT:
       case FIRST_CONTAINS_SECOND:
         return false;
       case EQUALS:
       case SECOND_CONTAINS_FIRST:
         return true;
+      case FIRST_IS_LEFT_OVERLAP:
+        if (iType.minBound.compareTo(minBound) <= 0) {
+          return true;
+        }
+        return false;
       case SECOND_IS_LEFT_OVERLAP:
         if (iType.maxBound.compareTo(maxBound) >= 0) {
           return true;
@@ -1156,7 +1160,7 @@ public class IntType extends PrimitiveType implements NumType {
         return false;
       }
     }
-    
+
     if (other instanceof NullType) {
       return true;
     }

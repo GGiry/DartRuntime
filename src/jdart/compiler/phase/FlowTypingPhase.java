@@ -9,8 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.lang.model.element.PackageElement;
-
 import jdart.compiler.type.ArrayType;
 import jdart.compiler.type.BoolType;
 import jdart.compiler.type.CoreTypeRepository;
@@ -360,8 +358,33 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
       return null;
     }
+    
+    static class ConditionType {
+      private final Type trueType;
+      private final Type falseType;
+      
+      public ConditionType(Type trueType, Type falseType) {
+        super();
+        this.trueType = trueType;
+        this.falseType = falseType;
+      }
 
-    static class ConditionVisitor extends ASTVisitor2<List<Type>, FlowEnv> {
+      /**
+       * @return the trueType
+       */
+      public Type getTrueType() {
+        return trueType;
+      }
+
+      /**
+       * @return the falseType
+       */
+      public Type getFalseType() {
+        return falseType;
+      }
+    }
+
+    static class ConditionVisitor extends ASTVisitor2<ConditionType, FlowEnv> {
       private final FTVisitor visitor;
       final static int TRUE_POSITION = 0;
       final static int FALSE_POSITION = 1;
@@ -371,18 +394,17 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
 
       @Override
-      protected List<Type> accept(DartNode node, FlowEnv parameter) {
+      protected ConditionType accept(DartNode node, FlowEnv parameter) {
         return super.accept(node, parameter);
       }
 
       @Override
-      public List<Type> visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
+      public ConditionType visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
         DartExpression arg1 = node.getArg1();
         DartExpression arg2 = node.getArg2();
         Type type1 = visitor.accept(arg1, parameter);
         Type type2 = visitor.accept(arg2, parameter);
         Token operator = node.getOperator();
-        ArrayList<Type> list = new ArrayList<>(2);
         Type typeTrue = null;
         Type typeFalse = null;
         switch (operator) {
@@ -414,24 +436,22 @@ public class FlowTypingPhase implements DartCompilationPhase {
           break;
 
         case AND: {
-          List<Type> list1 = accept(arg1, parameter);
-          List<Type> list2 = accept(arg2, parameter);
+          ConditionType cType1 = accept(arg1, parameter);
+          ConditionType cType2 = accept(arg2, parameter);
 
-          typeTrue = list1.get(TRUE_POSITION).commonValuesWith(list2.get(TRUE_POSITION));
-          typeFalse = list1.get(FALSE_POSITION).commonValuesWith(list2.get(FALSE_POSITION));
+          typeTrue = cType1.getTrueType().commonValuesWith(cType2.getTrueType());
+          typeFalse = cType1.getFalseType().commonValuesWith(cType2.getFalseType());
           break;
         }
 
         default:
           throw new IllegalStateException("You have to implement ConditionVisitor.visitBinaryExpression() for " + operator + " (" + operator.name() + ")");
         }
-        list.add(typeTrue);
-        list.add(typeFalse);
-        return list;
+        return new ConditionType(typeTrue, typeFalse);
       }
 
       @Override
-      public List<Type> visitBooleanLiteral(DartBooleanLiteral node, FlowEnv parameter) {
+      public ConditionType visitBooleanLiteral(DartBooleanLiteral node, FlowEnv parameter) {
         return null;
       }
     }
@@ -487,21 +507,21 @@ public class FlowTypingPhase implements DartCompilationPhase {
       Type conditionType = accept(condition, parameter);
 
       ConditionVisitor conditionVisitor = new ConditionVisitor(this);
-      List<Type> types = conditionVisitor.accept(condition, parameter);
-
+      ConditionType types = conditionVisitor.accept(condition, parameter);
+      
       FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
       FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
 
       if (conditionType != FALSE_TYPE) {
         if (types != null) {
-          changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, envThen);
+          changeOperandsTypes(types.getTrueType(), (DartBinaryExpression) condition, envThen);
         }
         accept(node.getThenStatement(), envThen);
         parameter.merge(envThen);
       }
       if (conditionType != TRUE_TYPE && node.getElseStatement() != null) {
         if (types != null) {
-          changeOperandsTypes(types.get(ConditionVisitor.FALSE_POSITION), (DartBinaryExpression) condition, envElse);
+          changeOperandsTypes(types.getFalseType(), (DartBinaryExpression) condition, envElse);
         }
         accept(node.getElseStatement(), envElse);
         parameter.merge(envElse);
@@ -570,8 +590,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
       do {
         env = new FlowEnv(env, env.getReturnType(), env.getExpectedType(), true);
-        List<Type> types = conditionVisitor.accept(condition, env);
-        changeOperandsTypes(types.get(ConditionVisitor.TRUE_POSITION), (DartBinaryExpression) condition, env);
+        ConditionType types = conditionVisitor.accept(condition, env);
+        changeOperandsTypes(types.getTrueType(), (DartBinaryExpression) condition, env);
 
         accept(body, env);
         if (increment != null) {

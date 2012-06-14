@@ -341,14 +341,15 @@ public class DoubleType extends PrimitiveType implements NumType {
     if (isNullable() && !other.isNullable()) {
       return false;
     }
-    
+
     if (other instanceof DoubleType) {
       Double otherConstant = ((DoubleType) other).constant;
       if (constant != null) {
         if (otherConstant != null) {
           return constant.equals(otherConstant);
         }
-        // the first test "isNullable() && ! other.isNullable()" allow to avoid the case when this == DOUBLE_TYPE and other == DOUBLE_NON_NULL_TYPE.
+        // the first test "isNullable() && ! other.isNullable()" allow to avoid
+        // the case when this == DOUBLE_TYPE and other == DOUBLE_NON_NULL_TYPE.
         return true;
       }
       if (otherConstant == null) {
@@ -374,18 +375,18 @@ public class DoubleType extends PrimitiveType implements NumType {
 
       return iType.isIncludeIn(other);
     }
-    
+
     if (other instanceof UnionType) {
       return ((UnionType) other).reverseIsIncludeIn(this);
     }
-    
+
     if (other instanceof DynamicType) {
       return true;
     }
-    
+
     return false;
   }
-  
+
   @Override
   public boolean isAssignableFrom(Type other) {
     if (other instanceof NumType) {
@@ -398,14 +399,14 @@ public class DoubleType extends PrimitiveType implements NumType {
         }
         return false;
       }
-      
+
       if (asConstant() == null) {
         if (isNullable() || !other.isNullable()) {
           return true;
         }
         return false;
       }
-      
+
       if (other instanceof DoubleType) {
         Double doubleCst = (Double) otherCst;
         return asConstant().equals(doubleCst);
@@ -416,13 +417,13 @@ public class DoubleType extends PrimitiveType implements NumType {
       }
       return false;
     }
-    
+
     if (other instanceof NullType) {
       if (isNullable()) {
         return true;
       }
     }
-    
+
     return false;
   }
 }
