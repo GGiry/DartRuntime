@@ -1156,5 +1156,8 @@ public class IntTest {
     Assert.assertTrue(NEGATIVE_INT32_TYPE.isIncludeIn(INT32_TYPE));
     Assert.assertTrue(INT32_TYPE.isIncludeIn(INT_NON_NULL_TYPE));
     Assert.assertTrue(INT32_TYPE.isIncludeIn(INT_TYPE));
+    
+    Assert.assertFalse(range(7, 7).isIncludeIn(range(6, 6)));
+    Assert.assertFalse(range(6, 6).isIncludeIn(range(7, 7)));
   }
 }
