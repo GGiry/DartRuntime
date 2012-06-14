@@ -126,7 +126,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
   }
   
-  static class DefinitionVisitor extends ASTVisitor2<Type, FlowEnv> {
+  static class DefinitionVisitor extends ASTVisitor2<Void, FlowEnv> {
     private final TypeHelper typeHelper;
     private final MethodCallResolver methodCallResolver;
 
@@ -141,7 +141,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     @Override
-    public Type visitUnit(DartUnit node, FlowEnv unused) {
+    public Void visitUnit(DartUnit node, FlowEnv unused) {
       // TODO Temporary display.
       System.out.println("Unit: " + node.getSourceName());
       for (DartNode child : node.getTopLevelNodes()) {
@@ -151,7 +151,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     @Override
-    public Type visitClass(DartClass node, FlowEnv unused) {
+    public Void visitClass(DartClass node, FlowEnv unused) {
       for (DartNode member : node.getMembers()) {
         if (member != null) {
           accept(member, null);
@@ -161,21 +161,16 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     @Override
-    public Type visitFieldDefinition(DartFieldDefinition node, FlowEnv unused) {
+    public Void visitFieldDefinition(DartFieldDefinition node, FlowEnv unused) {
       // do nothing, at least for now,
       // field as already been resolved by Dart compiler resolver
       return null;
     }
 
     @Override
-    public Type visitMethodDefinition(DartMethodDefinition node, FlowEnv unused) {
-      DartFunction function2 = node.getFunction();
-      DartFunction function = function2;
-      if (function == null) {
-        // native function use declared return type
-        return typeHelper.asType(true, node.getType());
-      }
-
+    public Void visitMethodDefinition(DartMethodDefinition node, FlowEnv unused) {
+      DartFunction function = node.getFunction();
+      
       // We should allow to propagate the type of 'this' in the flow env
       // to be more precise, but currently we don't specialize method call,
       // but only function call
