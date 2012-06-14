@@ -1159,5 +1159,20 @@ public class IntTest {
     
     Assert.assertFalse(range(7, 7).isIncludeIn(range(6, 6)));
     Assert.assertFalse(range(6, 6).isIncludeIn(range(7, 7)));
+    Assert.assertFalse(range(5, 6).isIncludeIn(range(6, 7)));
+    Assert.assertFalse(range(5, 6).isIncludeIn(range(4, 5)));
+    
+    
+    Assert.assertTrue(range(6, 6).isIncludeIn(range(6, 7)));
+    Assert.assertTrue(range(6, 6).isIncludeIn(range(5, 6)));
+    Assert.assertTrue(range(6, 6).isIncludeIn(range(6, 6)));
+    Assert.assertTrue(range(5, 6).isIncludeIn(range(4, 6)));
+    Assert.assertTrue(range(5, 6).isIncludeIn(range(5, 7)));
+    Assert.assertTrue(range(5, 6).isIncludeIn(range(4, 7)));
+    
+    Assert.assertTrue(range(false, 5, 10).isIncludeIn(range(true, 0, 20)));
+    Assert.assertTrue(range(false, 5, 10).isIncludeIn(range(false, 0, 20)));
+    Assert.assertTrue(range(true, 5, 10).isIncludeIn(range(true, 0, 20)));
+    Assert.assertFalse(range(true, 5, 10).isIncludeIn(range(false, 0, 20)));
   }
 }
