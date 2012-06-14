@@ -38,11 +38,18 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
     public Type lookupForACompatibleSignature(List<Type> argumentTypes) {
       Type returnType = signatureMap.get(argumentTypes);
       if (returnType != null) {
+        
+        System.out.println("found direct signature "+argumentTypes+ " "+ returnType);
         return returnType;
       }
       
       for(Entry<List<Type>, Type> entry: signatureMap.entrySet()) {
+        System.out.println("check compatible signature "+argumentTypes+" "+entry);
+        
         if (isCompatible(entry.getKey(), argumentTypes)) {
+          
+          System.out.println("found compatible signature "+argumentTypes+" "+entry);
+          
           return entry.getValue();
         }
       }
@@ -50,24 +57,33 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
     }
   }
   
-  static boolean isCompatible(List<Type> parameterTypes, List<Type> argumentTypes) {
-    for(int i=0; i<parameterTypes.size(); i++) {
-      Type parameterType = parameterTypes.get(i);
-      Type argumentType = argumentTypes.get(i);
-      
-      //FIXME use type.isIncludeIn
-      if (!parameterType.equals(argumentType)) {
-        return false;
-      }
-    }
-    return true;
-  }
-  
   public InterProceduralMethodCallResolver(TypeHelper typeHelper) {
     this.typeHelper = typeHelper;
   }
+  
+  static boolean isCompatible(Type parameterType, Type argumentType) {
+    return argumentType.isIncludeIn(parameterType);
+  }
+  
+  static boolean isCompatible(List<Type> parameterTypes, List<Type> argumentTypes) {
+    assert parameterTypes.size() == argumentTypes.size();
+    
+    for(int i=0; i<parameterTypes.size(); i++) {
+      if (!isCompatible(parameterTypes.get(i), argumentTypes.get(i))) {
+        return false;
+      }
+      
+      /*if (!parameterType.equals(argumentType)) {
+        return false;
+      }*/
+    }
+    return true;
+  }
 
   private Type actualCall(DartMethodDefinition node, /*maybenull*/OwnerType receiverType, List<Type> argumentTypes, Type expectedType) {
+    System.out.println("actual call "+receiverType+argumentTypes);
+    
+    
     Signatures signatures = methodMap.get(node);
     if (signatures == null) {
       // try to not widen argument if the method is called once
@@ -79,6 +95,7 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
       }
       
       // already a signature, try to generalize the signature by widening it
+      // FIXME, you try to do an union of type if parameters are different
       List<Type> windenedArgumentTypes = new ArrayList<>(argumentTypes.size());
       for(Type argumentType: argumentTypes) {
         windenedArgumentTypes.add(Types.widening(argumentType));
@@ -95,15 +112,23 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
     Type returnType = doActualCall(node, receiverType, argumentTypes, expectedType, signatures);
     
     // try to remove signatures too specific
-    if (!signatures.signatureMap.isEmpty()) {
+    if (signatures.signatureMap.size() > 1) {
       signatures.signatureMap.remove(argumentTypes);
+      System.out.println("map before cleaning " +signatures.signatureMap);
       
       for(Iterator<Entry<List<Type>,Type>> it = signatures.signatureMap.entrySet().iterator(); it.hasNext();) {
         Entry<List<Type>, Type> entry = it.next();
-        if (returnType.equals(entry.getValue()) && isCompatible(argumentTypes, entry.getKey())) {
+        
+        System.out.println("  check rtypes "+returnType+" "+entry.getValue());
+        System.out.println("  check argtypes "+argumentTypes+" "+entry.getKey());
+        
+        if (isCompatible(returnType, entry.getValue()) && isCompatible(argumentTypes, entry.getKey())) {
+          System.out.println("--> clean up "+entry);
           it.remove();   
         }
       }
+      
+      System.out.println("clean map " +signatures.signatureMap);
     }
     
     signatures.signatureMap.put(argumentTypes, returnType);
