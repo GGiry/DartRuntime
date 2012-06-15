@@ -46,6 +46,16 @@ public class FlowEnv {
   public FlowEnv(FlowEnv parent, Type returnType, Type expectedType, boolean inLoop) {
     this(parent, parent.thisType, returnType, expectedType, new HashMap<VariableElement, Type>(), inLoop);
   }
+  
+  /**
+   * Create a new flow environment with the same return type, expected type and inLoop state as parent.
+   * Use parent as parent.
+   * 
+   * @param parent Parent to use.
+   */
+  public FlowEnv(FlowEnv parent) {
+    this(parent, parent.getReturnType(), parent.getExpectedType(), parent.inLoop());
+  }
 
   /**
    * Retrieve the type of a variable. If the current flow environment has no

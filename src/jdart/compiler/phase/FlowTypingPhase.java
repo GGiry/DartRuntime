@@ -431,8 +431,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
 
         ConditionVisitor conditionVisitor = new ConditionVisitor(FTVisitor.this);
 
-        FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
-        FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
+        FlowEnv envThen = new FlowEnv(parameter);
+        FlowEnv envElse = new FlowEnv(parameter);
 
         conditionVisitor.accept(condition, new ConditionEnv(parameter, envThen, envElse));
         Liveness trueLiveness = DEAD;
@@ -660,9 +660,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
           break;
         }
         case AND: {
-          FlowEnv cpyTrue = new FlowEnv(parameter.trueEnv, parameter.trueEnv.getReturnType(), parameter.trueEnv.getExpectedType(), parameter.trueEnv.inLoop());
-          FlowEnv cpyFalse = new FlowEnv(parameter.falseEnv, parameter.falseEnv.getReturnType(), parameter.falseEnv.getExpectedType(), parameter.falseEnv.inLoop());
-          FlowEnv cpyParent = new FlowEnv(parameter.parent, parameter.parent.getReturnType(), parameter.parent.getExpectedType(), parameter.parent.inLoop());
+          FlowEnv cpyTrue = new FlowEnv(parameter.trueEnv);
+          FlowEnv cpyFalse = new FlowEnv(parameter.falseEnv);
+          FlowEnv cpyParent = new FlowEnv(parameter.parent);
 
           ConditionEnv conditionEnv = new ConditionEnv(cpyParent, cpyTrue, cpyFalse);
           accept(arg1, conditionEnv);
@@ -672,9 +672,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
           break;
         }
         case OR: {
-          FlowEnv cpyTrue = new FlowEnv(parameter.trueEnv, parameter.trueEnv.getReturnType(), parameter.trueEnv.getExpectedType(), parameter.trueEnv.inLoop());
-          FlowEnv cpyFalse = new FlowEnv(parameter.falseEnv, parameter.falseEnv.getReturnType(), parameter.falseEnv.getExpectedType(), parameter.falseEnv.inLoop());
-          FlowEnv cpyParent = new FlowEnv(parameter.parent, parameter.parent.getReturnType(), parameter.parent.getExpectedType(), parameter.parent.inLoop());
+          FlowEnv cpyTrue = new FlowEnv(parameter.trueEnv);
+          FlowEnv cpyFalse = new FlowEnv(parameter.falseEnv);
+          FlowEnv cpyParent = new FlowEnv(parameter.parent);
 
           ConditionEnv conditionEnv = new ConditionEnv(cpyParent, cpyTrue, cpyFalse);
           accept(arg1, conditionEnv);
@@ -743,7 +743,6 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     // --- expressions
-
     @Override
     public Type visitIdentifier(DartIdentifier node, FlowEnv flowEnv) {
       NodeElement element = node.getElement();
