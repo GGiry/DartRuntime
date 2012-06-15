@@ -511,9 +511,9 @@ public class FlowTypingPhase implements DartCompilationPhase {
     }
 
     static class ConditionEnv {
-      private final FlowEnv trueEnv;
-      private final FlowEnv falseEnv;
-      private final FlowEnv parent;
+      final FlowEnv trueEnv;
+      final FlowEnv falseEnv;
+      final FlowEnv parent;
 
       public ConditionEnv(FlowEnv parent, FlowEnv trueEnv, FlowEnv falseEnv) {
         this.parent = parent;
@@ -917,6 +917,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
             return iType1.bitAnd(iType2);
           case BIT_OR:
             return iType1.bitOr(iType2);
+          default:
           }
         }
         if (type1 instanceof UnionType) {
@@ -928,6 +929,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
             return utype.sub(type2);
           case MOD:
             return utype.mod(type2);
+          default:
           }
         }
         if (type2 instanceof UnionType) {
@@ -939,6 +941,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
             return utype.sub(type1);
           case MOD:
             return utype.mod(type1);
+          default:
+            
           }
         }
         if (type1 instanceof DoubleType || type2 instanceof DoubleType) {
@@ -963,6 +967,7 @@ public class FlowTypingPhase implements DartCompilationPhase {
             return dtype1.sub(dtype2);
           case MOD:
             return dtype1.mod(dtype2);
+          default:
           }
         }
 
@@ -988,7 +993,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
       return visitUnaryOperation(node, node.getOperator(), arg, accept(arg, parameter), parameter);
     }
 
-    private Type visitUnaryOperation(DartUnaryExpression node, Token operator, DartExpression arg, Type type, FlowEnv flowEnv) {
+    private static Type visitUnaryOperation(DartUnaryExpression node, Token operator, DartExpression arg, Type type, FlowEnv flowEnv) {
+      //FIXME Geoffrey, Dart allow to call unary/binary operators on 'num' too (the interface type)
       switch (operator) {
       case INC:
         if (type instanceof IntType) {
@@ -999,6 +1005,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
           DoubleType dType = (DoubleType) type;
           return dType.add(DoubleType.constant(1.));
         }
+        //FIXME Geoffrey, unary operator can be overriden
+        return DYNAMIC_NON_NULL_TYPE;
       case SUB:
         if (type instanceof IntType) {
           IntType iType = (IntType) type;
@@ -1008,6 +1016,8 @@ public class FlowTypingPhase implements DartCompilationPhase {
           DoubleType dType = (DoubleType) type;
           return dType.unarySub();
         }
+        //FIXME Geoffrey, unary operator can be overriden
+        return DYNAMIC_NON_NULL_TYPE;
       default:
         throw new UnsupportedOperationException("Unary Expr: " + operator + " (" + operator.name() + ") not implemented for " + type + ".");
       }
@@ -1233,11 +1243,11 @@ public class FlowTypingPhase implements DartCompilationPhase {
      *          Kind of the element to test.
      * @return Type of the property.
      */
-    private Type propertyType(Type type, ElementKind kind) {
+    static Type propertyType(Type type, ElementKind kind) {
       switch (kind) {
       case METHOD:
       case CONSTRUCTOR:
-        type = type.asNonNull();
+        return type.asNonNull();
       default:
         return type;
       }
