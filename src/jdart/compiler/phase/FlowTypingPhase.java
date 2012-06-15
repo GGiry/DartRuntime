@@ -430,16 +430,13 @@ public class FlowTypingPhase implements DartCompilationPhase {
         Type conditionType = FTVisitor.this.accept(condition, parameter.expectedType(BOOL_NON_NULL_TYPE));
 
         ConditionVisitor conditionVisitor = new ConditionVisitor(FTVisitor.this);
-        ConditionType types = conditionVisitor.accept(condition, parameter);
 
         FlowEnv envThen = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
         FlowEnv envElse = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), parameter.inLoop());
 
+        conditionVisitor.accept(condition, new ConditionEnv(parameter, envThen, envElse));
         Liveness trueLiveness = DEAD;
         if (conditionType != FALSE_TYPE) {
-          if (types != null) {
-            changeOperandsTypes(types.getTrueType(), (DartBinaryExpression) condition, envThen);
-          }
           trueLiveness = accept(node.getThenStatement(), envThen);
           parameter.merge(envThen);
         }
@@ -447,47 +444,48 @@ public class FlowTypingPhase implements DartCompilationPhase {
         if (node.getElseStatement() != null) {
           falseLiveness = DEAD;
           if (conditionType != TRUE_TYPE) {
-            if (types != null) {
-              changeOperandsTypes(types.getFalseType(), (DartBinaryExpression) condition, envElse);
-            }
             falseLiveness = accept(node.getElseStatement(), envElse);
             parameter.merge(envElse);
           }
         } else {
           if (trueLiveness == DEAD) {
-            changeOperandsTypes(types.getFalseType(), (DartBinaryExpression) condition, parameter);
+            parameter.copyAll(envElse);
           }
         }
         return (trueLiveness == ALIVE && falseLiveness == ALIVE) ? ALIVE : DEAD;
       }
 
       private Liveness computeLoop(DartExpression condition, DartStatement body, DartStatement /* maybe null */ init, DartExpression /* maybe null */ increment, FlowEnv parameter) {
-        FlowEnv env = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
+        FlowEnv loopEnv = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
+        FlowEnv afterLoopEnv = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), false);
         if (init != null) {
-          accept(init, env);
+          accept(init, loopEnv);
         }
 
         // condition should be a boolean
-        FTVisitor.this.accept(condition, env.expectedType(BOOL_NON_NULL_TYPE));
+        FTVisitor.this.accept(condition, loopEnv.expectedType(BOOL_NON_NULL_TYPE));
         ConditionVisitor conditionVisitor = new ConditionVisitor(FTVisitor.this);
 
         LoopVisitor loopVisitor = new LoopVisitor();
         Set<VariableElement> list = loopVisitor.accept(body, parameter);
         System.out.println(list);
 
-        do {
-          env = new FlowEnv(env, env.getReturnType(), env.getExpectedType(), true);
-          ConditionType types = conditionVisitor.accept(condition, env);
-          changeOperandsTypes(types.getTrueType(), (DartBinaryExpression) condition, env);
-
-          accept(body, env);
-          if (increment != null) {
-            FTVisitor.this.accept(increment, env);
+        for (VariableElement element : list) {
+          Type type = parameter.getType(element);
+          if (type != null) {
+            parameter.register(element, Types.widening(type));
           }
-          FTVisitor.this.accept(condition, env.expectedType(BOOL_NON_NULL_TYPE));
-        } while(!env.isStable());
+        }
 
-        parameter.copyAll(env);
+        conditionVisitor.accept(condition, new ConditionEnv(parameter, loopEnv, afterLoopEnv));
+        accept(body, loopEnv);
+        if (increment != null) {
+          FTVisitor.this.accept(increment, loopEnv);
+        }
+        FTVisitor.this.accept(condition, loopEnv.expectedType(BOOL_NON_NULL_TYPE));
+
+        parameter.copyAll(loopEnv);
+        parameter.copyAll(afterLoopEnv);
         return ALIVE;
       }
 
@@ -512,82 +510,159 @@ public class FlowTypingPhase implements DartCompilationPhase {
       }
     }
 
-    static class ConditionType {
-      private final Type trueType;
-      private final Type falseType;
+    static class ConditionEnv {
+      private final FlowEnv trueEnv;
+      private final FlowEnv falseEnv;
+      private final FlowEnv parent;
 
-      public ConditionType(Type trueType, Type falseType) {
-        this.trueType = trueType;
-        this.falseType = falseType;
+      public ConditionEnv(FlowEnv parent, FlowEnv trueEnv, FlowEnv falseEnv) {
+        this.parent = parent;
+        this.trueEnv = trueEnv;
+        this.falseEnv = falseEnv;
       }
 
       /**
-       * @return the trueType
+       * @return the environment representing variables when condition is true.
        */
-      public Type getTrueType() {
-        return trueType;
+      public FlowEnv getTrueEnv() {
+        return trueEnv;
       }
 
       /**
-       * @return the falseType
+       * @return the environment representing variables when condition is false.
        */
-      public Type getFalseType() {
-        return falseType;
+      public FlowEnv getFalseEnv() {
+        return falseEnv;
+      }
+
+      /**
+       * @return the environment before condition.
+       */
+      public FlowEnv getParent() {
+        return parent;
       }
     }
 
-    static class ConditionVisitor extends ASTVisitor2<ConditionType, FlowEnv> {
+    static class ConditionVisitor extends ASTVisitor2<Void, ConditionEnv> {
       private final FTVisitor visitor;
-      final static int TRUE_POSITION = 0;
-      final static int FALSE_POSITION = 1;
 
       public ConditionVisitor(FTVisitor visitor) {
         this.visitor = visitor;
       }
 
       @Override
-      protected ConditionType accept(DartNode node, FlowEnv parameter) {
+      protected Void accept(DartNode node, ConditionEnv parameter) {
         return super.accept(node, parameter);
       }
 
       @Override
-      public ConditionType visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
+      public Void visitBinaryExpression(DartBinaryExpression node, ConditionEnv parameter) {
         DartExpression arg1 = node.getArg1();
         DartExpression arg2 = node.getArg2();
-        Type type1 = visitor.accept(arg1, parameter);
-        Type type2 = visitor.accept(arg2, parameter);
+        Type type1 = visitor.accept(arg1, parameter.parent);
+        Type type2 = visitor.accept(arg2, parameter.parent);
+        Element element1 = arg1.getElement();
+        Element element2 = arg2.getElement();
         Token operator = node.getOperator();
-        Type typeTrue = null;
-        Type typeFalse = null;
         switch (operator) {
         case EQ_STRICT:
-        case EQ:
-          typeTrue = type1.commonValuesWith(type2);
-          typeFalse = type1.exclude(type2);
+        case EQ: {
+          Type commonValues = type1.commonValuesWith(type2);
+          if (element1 != null && element1 instanceof VariableElement) {
+            parameter.trueEnv.register((VariableElement) element1, commonValues);
+            parameter.falseEnv.register((VariableElement) element1, type1.exclude(type2));
+          }
+          if (element2 != null && element2 instanceof VariableElement) {
+            parameter.trueEnv.register((VariableElement) element2, commonValues);
+            parameter.falseEnv.register((VariableElement) element2, type2.exclude(type1));
+          }
           break;
+        }
         case NE_STRICT:
-        case NE:
-          typeTrue = type1.exclude(type2);
-          typeFalse = type1.commonValuesWith(type2);
+        case NE: {
+          Type commonValues = type1.commonValuesWith(type2);
+          if (element1 != null && element1 instanceof VariableElement) {
+            parameter.trueEnv.register((VariableElement) element1, type1.exclude(type2));
+            parameter.falseEnv.register((VariableElement) element1, commonValues);
+          }
+          if (element2 != null && element2 instanceof VariableElement) {
+            parameter.trueEnv.register((VariableElement) element2, type2.exclude(type1));
+            parameter.falseEnv.register((VariableElement) element2, commonValues);
+          }
           break;
-        case LTE:
-          typeTrue = type1.lessThanOrEqualsValues(type2, parameter.inLoop());
-          typeFalse = type1.greaterThanValues(type2, parameter.inLoop());
+        }
+        case LTE: {
+          if (element1 != null && element1 instanceof VariableElement) {
+            Type lessThanOrEqualsValues = type1.lessThanOrEqualsValues(type2, parameter.trueEnv.inLoop());
+            Type greaterThanValues = type1.greaterThanValues(type2, parameter.falseEnv.inLoop());
+            if (lessThanOrEqualsValues != null) {
+              parameter.trueEnv.register((VariableElement) element1, lessThanOrEqualsValues);
+            }
+            if (greaterThanValues != null) {
+              parameter.falseEnv.register((VariableElement) element1, greaterThanValues);
+            }
+          }
+          if (element2 != null && element2 instanceof VariableElement) {
+            parameter.trueEnv.register((VariableElement) element2, type2);
+            parameter.falseEnv.register((VariableElement) element2, type2);
+          }
           break;
-        case GTE:
-          typeTrue = type1.greaterThanOrEqualsValues(type2, parameter.inLoop());
-          typeFalse = type1.lessThanValues(type2, parameter.inLoop());
+        }
+        case GTE: {
+          if (element1 != null && element1 instanceof VariableElement) {
+            Type greaterThanOrEqualsValues = type1.greaterThanOrEqualsValues(type2, parameter.trueEnv.inLoop());
+            Type lessThanValues = type1.lessThanValues(type2, parameter.falseEnv.inLoop());
+            if (greaterThanOrEqualsValues != null) {
+              parameter.trueEnv.register((VariableElement) element1, greaterThanOrEqualsValues);
+            }
+            if (lessThanValues != null) {
+              parameter.falseEnv.register((VariableElement) element1, lessThanValues);
+            }
+          }
+          if (element2 != null && element2 instanceof VariableElement) {
+            parameter.trueEnv.register((VariableElement) element2, type2);
+            parameter.falseEnv.register((VariableElement) element2, type2);
+          }
           break;
-        case LT:
-          typeTrue = type1.lessThanValues(type2, parameter.inLoop());
-          typeFalse = type1.greaterThanOrEqualsValues(type2, parameter.inLoop());
+        }
+        case LT: {
+          Type lessThanValues = type1.lessThanValues(type2, parameter.trueEnv.inLoop());
+          Type greaterThanOrEqualsValues = type1.greaterThanOrEqualsValues(type2, parameter.falseEnv.inLoop());
+          if (element1 != null && element1 instanceof VariableElement) {
+            if (lessThanValues != null) {
+              parameter.trueEnv.register((VariableElement) element1, lessThanValues);
+            }
+            if (greaterThanOrEqualsValues != null) {
+              parameter.falseEnv.register((VariableElement) element1, greaterThanOrEqualsValues);
+            }
+          }
+          if (element2 != null && element2 instanceof VariableElement) {
+            parameter.trueEnv.register((VariableElement) element2, type2);
+            parameter.falseEnv.register((VariableElement) element2, type2);
+          }
           break;
-        case GT:
-          typeTrue = type1.greaterThanValues(type2, parameter.inLoop());
-          typeFalse = type1.lessThanOrEqualsValues(type2, parameter.inLoop());
+        }
+        case GT: {
+          Type greaterThanValues = type1.greaterThanValues(type2, parameter.trueEnv.inLoop());
+          Type lessThanOrEqualsValues = type1.lessThanOrEqualsValues(type2, parameter.falseEnv.inLoop());
+          if (element1 != null && element1 instanceof VariableElement) {
+            if (greaterThanValues != null) {
+              parameter.trueEnv.register((VariableElement) element1, greaterThanValues);
+            }
+            if (lessThanOrEqualsValues != null) {
+              parameter.falseEnv.register((VariableElement) element1, lessThanOrEqualsValues);
+            }
+          }
+          if (element2 != null && element2 instanceof VariableElement) {
+            parameter.trueEnv.register((VariableElement) element2, type2);
+            parameter.falseEnv.register((VariableElement) element2, type2);
+          }
           break;
-
+        }
+          /* FIXME
         case AND: {
+
+
           ConditionType cType1 = accept(arg1, parameter);
           ConditionType cType2 = accept(arg2, parameter);
 
@@ -595,15 +670,16 @@ public class FlowTypingPhase implements DartCompilationPhase {
           typeFalse = cType1.getFalseType().commonValuesWith(cType2.getFalseType());
           break;
         }
+           */
 
         default:
           throw new IllegalStateException("You have to implement ConditionVisitor.visitBinaryExpression() for " + operator + " (" + operator.name() + ")");
         }
-        return new ConditionType(typeTrue, typeFalse);
+        return null;
       }
 
       @Override
-      public ConditionType visitBooleanLiteral(DartBooleanLiteral node, FlowEnv parameter) {
+      public Void visitBooleanLiteral(DartBooleanLiteral node, ConditionEnv parameter) {
         return null;
       }
     }
