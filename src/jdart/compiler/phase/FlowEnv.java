@@ -215,4 +215,17 @@ public class FlowEnv {
       }
     }
   }
+
+  public void mergeCommonValues(FlowEnv env) {
+    for (Entry<VariableElement, Type> entry : env.variableTypeMap.entrySet()) {
+      VariableElement key = entry.getKey();
+
+      if (getType(key) != null) {
+        Type type1 = entry.getValue();
+        Type type2 = getType(key);
+        Type unionType = type1.commonValuesWith(type2);
+        register(key, unionType);
+      }
+    }
+  }
 }

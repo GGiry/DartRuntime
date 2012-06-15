@@ -659,18 +659,30 @@ public class FlowTypingPhase implements DartCompilationPhase {
           }
           break;
         }
-          /* FIXME
         case AND: {
+          FlowEnv cpyTrue = new FlowEnv(parameter.trueEnv, parameter.trueEnv.getReturnType(), parameter.trueEnv.getExpectedType(), parameter.trueEnv.inLoop());
+          FlowEnv cpyFalse = new FlowEnv(parameter.falseEnv, parameter.falseEnv.getReturnType(), parameter.falseEnv.getExpectedType(), parameter.falseEnv.inLoop());
+          FlowEnv cpyParent = new FlowEnv(parameter.parent, parameter.parent.getReturnType(), parameter.parent.getExpectedType(), parameter.parent.inLoop());
 
-
-          ConditionType cType1 = accept(arg1, parameter);
-          ConditionType cType2 = accept(arg2, parameter);
-
-          typeTrue = cType1.getTrueType().commonValuesWith(cType2.getTrueType());
-          typeFalse = cType1.getFalseType().commonValuesWith(cType2.getFalseType());
+          ConditionEnv conditionEnv = new ConditionEnv(cpyParent, cpyTrue, cpyFalse);
+          accept(arg1, conditionEnv);
+          parameter.trueEnv.mergeCommonValues(cpyTrue);
+          accept(arg2, conditionEnv);
+          parameter.trueEnv.mergeCommonValues(cpyTrue);
           break;
         }
-           */
+        case OR: {
+          FlowEnv cpyTrue = new FlowEnv(parameter.trueEnv, parameter.trueEnv.getReturnType(), parameter.trueEnv.getExpectedType(), parameter.trueEnv.inLoop());
+          FlowEnv cpyFalse = new FlowEnv(parameter.falseEnv, parameter.falseEnv.getReturnType(), parameter.falseEnv.getExpectedType(), parameter.falseEnv.inLoop());
+          FlowEnv cpyParent = new FlowEnv(parameter.parent, parameter.parent.getReturnType(), parameter.parent.getExpectedType(), parameter.parent.inLoop());
+
+          ConditionEnv conditionEnv = new ConditionEnv(cpyParent, cpyTrue, cpyFalse);
+          accept(arg1, conditionEnv);
+          parameter.falseEnv.mergeCommonValues(cpyFalse);
+          accept(arg2, conditionEnv);
+          parameter.falseEnv.merge(cpyFalse);
+          break;
+        }
 
         default:
           throw new IllegalStateException("You have to implement ConditionVisitor.visitBinaryExpression() for " + operator + " (" + operator.name() + ")");
