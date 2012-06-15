@@ -2,12 +2,14 @@ package jdart.compiler.type;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 
 // TODO not sure if it need to implements NumType or just add the methods without @Override annotation
 public class UnionType extends NullableType implements NumType {
@@ -105,17 +107,21 @@ public class UnionType extends NullableType implements NumType {
     // first filter out abstract type from collection that already exists in the
     // union
     LinkedHashSet<NullableType> unionSet = unionType.types;
+    LinkedHashSet<NullableType> computeSet  = new LinkedHashSet<>();
     LinkedList<NullableType> candidates = new LinkedList<>();
     //ArrayList<NullableType> candidates = new ArrayList<>(collection.size());
+    boolean intInUnion = false;
     for (NullableType type : collection) {
       assert !type.isNullable();
       assert !(type instanceof UnionType);
 
       if (unionSet.contains(type)) {
         if (!(type instanceof IntType)) {
+          intInUnion = true;
           continue;
         }
-        unionSet.remove(type);
+      } else {
+        computeSet.add(type);
       }
       candidates.add(type);
     }
@@ -127,7 +133,7 @@ public class UnionType extends NullableType implements NumType {
     // compute nullability
     nullable |= unionType.isNullable();
 
-    LinkedHashSet<NullableType> newUnionSet = new LinkedHashSet<>(unionSet);
+    LinkedHashSet<NullableType> newUnionSet = new LinkedHashSet<>(computeSet);
     Iterator<NullableType> candidateIt = candidates.iterator();
     NullableType candidate = candidateIt.next();
 
@@ -157,7 +163,9 @@ public class UnionType extends NullableType implements NumType {
         NullableType singleton = newUnionSet.iterator().next();
         return (nullable) ? singleton.asNullable() : singleton;
       }
-      newUnionSet = sortUnionSet(newUnionSet);
+      if (intInUnion) {
+        newUnionSet = sortUnionSet(newUnionSet);
+      }
       return new UnionType(nullable, newUnionSet);
     }
   }
@@ -171,7 +179,7 @@ public class UnionType extends NullableType implements NumType {
    * @return Sorted set.
    */
   private static LinkedHashSet<NullableType> sortUnionSet(LinkedHashSet<NullableType> unionSet) {
-    LinkedList<IntType> intTypes = new LinkedList<>();
+    ArrayList<IntType> intTypes = new ArrayList<>();
     LinkedHashSet<NullableType> result = new LinkedHashSet<>();
 
     for (NullableType candidate : unionSet) {
@@ -199,6 +207,14 @@ public class UnionType extends NullableType implements NumType {
     return result;
   }
 
+  public <R, P> List<R> collect(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
+    ArrayList<R> list = new ArrayList<>();
+    for(NullableType type: types) {
+      list.add(type.accept(visitor, parameter));
+    }
+    return list;
+  }
+  
   @Override
   public <R, P> R accept(TypeVisitor<? extends R, ? super P> visitor, P parameter) {
     return visitor.visitUnionType(this, parameter);
