@@ -106,7 +106,7 @@ public class ASTVisitor2<R, P> {
     node.visitChildren(bridgeASTVisitor);
   }
 
-  public R visitNode(DartNode node, P parameter) {
+  public R visitNode(DartNode node, @SuppressWarnings("unused") P parameter) {
     throw new AssertionError("visit on " + node.getClass().getName() + " not implemented");
   }
 
