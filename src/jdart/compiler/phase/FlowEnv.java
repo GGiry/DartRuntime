@@ -46,6 +46,16 @@ public class FlowEnv {
   public FlowEnv(FlowEnv parent, Type returnType, Type expectedType, boolean inLoop) {
     this(parent, parent.thisType, returnType, expectedType, new HashMap<VariableElement, Type>(), inLoop);
   }
+  
+  /**
+   * Create a new flow environment with the same return type, expected type and inLoop state as parent.
+   * Use parent as parent.
+   * 
+   * @param parent Parent to use.
+   */
+  public FlowEnv(FlowEnv parent) {
+    this(parent, parent.getReturnType(), parent.getExpectedType(), parent.inLoop());
+  }
 
   /**
    * Retrieve the type of a variable. If the current flow environment has no
@@ -212,6 +222,19 @@ public class FlowEnv {
       VariableElement key = entry.getKey();
       if (getType(key) != null && getType(key) == NULL_TYPE) {
         register(key, entry.getValue());
+      }
+    }
+  }
+
+  public void mergeCommonValues(FlowEnv env) {
+    for (Entry<VariableElement, Type> entry : env.variableTypeMap.entrySet()) {
+      VariableElement key = entry.getKey();
+
+      if (getType(key) != null) {
+        Type type1 = entry.getValue();
+        Type type2 = getType(key);
+        Type unionType = type1.commonValuesWith(type2);
+        register(key, unionType);
       }
     }
   }
