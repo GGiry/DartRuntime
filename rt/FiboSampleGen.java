@@ -53,11 +53,11 @@ public class FiboSampleGen {
     Label try_start0 = new Label();
     Label try_end0 = new Label();
     Label handler0 = new Label();
-    mv.visitTryCatchBlock(try_start0, try_end0, handler0, "FiboAsDart$ControlFlowException");
+    mv.visitTryCatchBlock(try_start0, try_end0, handler0, "jdart/runtime/ControlFlowException");
     Label try_start1 = new Label();
     Label try_end1 = new Label();
     Label handler1 = new Label();
-    mv.visitTryCatchBlock(try_start1, try_end1, handler1, "FiboAsDart$ControlFlowException");
+    mv.visitTryCatchBlock(try_start1, try_end1, handler1, "jdart/runtime/ControlFlowException");
     Label try_start2 = new Label();
     Label try_end2 = new Label();
     Label handler2 = new Label();
@@ -106,7 +106,7 @@ public class FiboSampleGen {
     mv.visitVarInsn(ILOAD, 1);
     mv.visitVarInsn(ILOAD, 3);
     mv.visitLabel(try_start2);
-    mv.visitMethodInsn(INVOKESTATIC, "java/lang/Math", "addExact", "(II)I");
+    mv.visitMethodInsn(INVOKESTATIC, "jdart/runtime/RT", "addExact", "(II)I");
     mv.visitLabel(try_end2);
     mv.visitVarInsn(ISTORE, 5);
     mv.visitInsn(ACONST_NULL);
@@ -129,7 +129,7 @@ public class FiboSampleGen {
     mv.visitInsn(ICONST_0);
     mv.visitVarInsn(ISTORE, 1);
     mv.visitVarInsn(ALOAD, 3);
-    mv.visitFieldInsn(GETFIELD, "FiboAsDart$ControlFlowException", "value", "Ljava/math/BigInteger;");
+    mv.visitFieldInsn(GETFIELD, "jdart/runtime/ControlFlowException", "value", "Ljdart/runtime/BigInt;");
     mv.visitVarInsn(ASTORE, 2);
     mv.visitJumpInsn(GOTO, l1);
     
@@ -138,7 +138,7 @@ public class FiboSampleGen {
     mv.visitInsn(ICONST_0);
     mv.visitVarInsn(ISTORE, 3);
     mv.visitVarInsn(ALOAD, 5);
-    mv.visitFieldInsn(GETFIELD, "FiboAsDart$ControlFlowException", "value", "Ljava/math/BigInteger;");
+    mv.visitFieldInsn(GETFIELD, "jdart/runtime/ControlFlowException", "value", "Ljdart/runtime/BigInt;");
     mv.visitVarInsn(ASTORE, 4);
     mv.visitJumpInsn(GOTO, l2);
     
@@ -147,7 +147,7 @@ public class FiboSampleGen {
     mv.visitVarInsn(ALOAD, 2);
     mv.visitVarInsn(ILOAD, 3);
     mv.visitVarInsn(ALOAD, 4);
-    mv.visitMethodInsn(INVOKESTATIC, "FiboSample", "addBig", "(ILjava/math/BigInteger;ILjava/math/BigInteger;)Ljava/math/BigInteger;");
+    mv.visitMethodInsn(INVOKESTATIC, "jdart/runtime/RT", "addBig", "(ILjdart/runtime/BigInt;ILjdart/runtime/BigInt;)Ljdart/runtime/BigInt;");
     mv.visitVarInsn(ASTORE, 6);
     mv.visitInsn(ICONST_0);
     mv.visitVarInsn(ISTORE, 5);
@@ -157,7 +157,7 @@ public class FiboSampleGen {
     mv.visitVarInsn(ASTORE, 7);
     mv.visitVarInsn(ILOAD, 1);
     mv.visitVarInsn(ILOAD, 3);
-    mv.visitMethodInsn(INVOKESTATIC, "FiboSample", "overflowedAdd", "(II)Ljava/math/BigInteger;");
+    mv.visitMethodInsn(INVOKESTATIC, "jdart/runtime/RT", "addOverflowed", "(II)Ljdart/runtime/BigInt;");
     mv.visitVarInsn(ASTORE, 6);
     mv.visitInsn(ICONST_0);
     mv.visitVarInsn(ISTORE, 5);
@@ -165,54 +165,10 @@ public class FiboSampleGen {
     
     mv.visitLabel(l5);
     mv.visitVarInsn(ALOAD, 6);
-    mv.visitMethodInsn(INVOKESTATIC, "FiboAsDart$ControlFlowException", "value", "(Ljava/math/BigInteger;)LFiboAsDart$ControlFlowException;");
+    mv.visitMethodInsn(INVOKESTATIC, "jdart/runtime/ControlFlowException", "value", "(Ljdart/runtime/BigInt;)Ljdart/runtime/ControlFlowException;");
     mv.visitInsn(ATHROW);
     
     mv.visitMaxs(0, 0);
-    mv.visitEnd();
-    }
-    
-    {
-    mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, "overflowedAdd", "(II)Ljava/math/BigInteger;", null, null);
-    mv.visitCode();
-    mv.visitVarInsn(ILOAD, 0);
-    mv.visitInsn(I2L);
-    mv.visitMethodInsn(INVOKESTATIC, "java/math/BigInteger", "valueOf", "(J)Ljava/math/BigInteger;");
-    mv.visitVarInsn(ILOAD, 1);
-    mv.visitInsn(I2L);
-    mv.visitMethodInsn(INVOKESTATIC, "java/math/BigInteger", "valueOf", "(J)Ljava/math/BigInteger;");
-    mv.visitMethodInsn(INVOKEVIRTUAL, "java/math/BigInteger", "add", "(Ljava/math/BigInteger;)Ljava/math/BigInteger;");
-    mv.visitInsn(ARETURN);
-    mv.visitMaxs(3, 2);
-    mv.visitEnd();
-    }
-    
-    {
-    mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, "addBig", "(ILjava/math/BigInteger;ILjava/math/BigInteger;)Ljava/math/BigInteger;", null, null);
-    mv.visitCode();
-    mv.visitVarInsn(ALOAD, 1);
-    Label l0 = new Label();
-    mv.visitJumpInsn(IFNONNULL, l0);
-    mv.visitVarInsn(ILOAD, 0);
-    mv.visitInsn(I2L);
-    mv.visitMethodInsn(INVOKESTATIC, "java/math/BigInteger", "valueOf", "(J)Ljava/math/BigInteger;");
-    mv.visitVarInsn(ASTORE, 1);
-    mv.visitLabel(l0);
-    mv.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
-    mv.visitVarInsn(ALOAD, 3);
-    Label l1 = new Label();
-    mv.visitJumpInsn(IFNONNULL, l1);
-    mv.visitVarInsn(ILOAD, 2);
-    mv.visitInsn(I2L);
-    mv.visitMethodInsn(INVOKESTATIC, "java/math/BigInteger", "valueOf", "(J)Ljava/math/BigInteger;");
-    mv.visitVarInsn(ASTORE, 3);
-    mv.visitLabel(l1);
-    mv.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
-    mv.visitVarInsn(ALOAD, 1);
-    mv.visitVarInsn(ALOAD, 3);
-    mv.visitMethodInsn(INVOKEVIRTUAL, "java/math/BigInteger", "add", "(Ljava/math/BigInteger;)Ljava/math/BigInteger;");
-    mv.visitInsn(ARETURN);
-    mv.visitMaxs(2, 4);
     mv.visitEnd();
     }
     
@@ -223,7 +179,7 @@ public class FiboSampleGen {
     Label try_start0 = new Label();
     Label try_end0 = new Label();
     Label handler0 = new Label();
-    mv.visitTryCatchBlock(try_start0, try_end0, handler0, "FiboAsDart$ControlFlowException");
+    mv.visitTryCatchBlock(try_start0, try_end0, handler0, "jdart/runtime/ControlFlowException");
     
     mv.visitIntInsn(BIPUSH, 40);
     mv.visitLabel(try_start0);
@@ -254,7 +210,7 @@ public class FiboSampleGen {
     mv.visitLabel(handler0);
     mv.visitVarInsn(ASTORE, 3);
     mv.visitVarInsn(ALOAD, 3);
-    mv.visitFieldInsn(GETFIELD, "FiboAsDart$ControlFlowException", "value", "Ljava/math/BigInteger;");
+    mv.visitFieldInsn(GETFIELD, "jdart/runtime/ControlFlowException", "value", "Ljava/math/BigInteger;");
     mv.visitVarInsn(ASTORE, 2);
     mv.visitInsn(ICONST_0);
     mv.visitVarInsn(ISTORE, 1);
