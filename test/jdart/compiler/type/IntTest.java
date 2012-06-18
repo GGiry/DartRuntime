@@ -14,7 +14,7 @@ public class IntTest {
     return nullable ? type.asNullable() : type.asNonNull();
   }
 
-  static IntType range(boolean nullable, Integer min, Integer max) {
+  public static IntType range(boolean nullable, Integer min, Integer max) {
     IntType res;
     if (min != null && max != null) {
       res = INT_NON_NULL_TYPE.asTypeGreaterOrEqualsThan(BigInteger.valueOf(min)).asTypeLessOrEqualsThan(BigInteger.valueOf(max));
