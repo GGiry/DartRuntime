@@ -36,7 +36,7 @@ package jdart.runtime;
 
 import java.util.Arrays;
 
-public class BigNum implements Comparable<BigNum> {
+public class BigInt implements Comparable<BigInt> {
   /**
    * The signum of this BigInteger: -1 for negative, 0 for zero, or 1 for
    * positive. Note that the BigInteger zero <i>must</i> have a signum of 0.
@@ -58,11 +58,6 @@ public class BigNum implements Comparable<BigNum> {
   final int[] mag;
 
   /**
-   * double representation used if mag is null.
-   */
-  final double dvalue;
-
-  /**
    * This mask is used to obtain the value of an int as if it were unsigned.
    */
   final static long LONG_MASK = 0xffffffffL;
@@ -75,7 +70,7 @@ public class BigNum implements Comparable<BigNum> {
    * The input array is assumed to be in <i>big-endian</i> int-order: the most
    * significant int is in the zeroth element.
    */
-  private BigNum(int[] val) {
+  private BigInt(int[] val) {
     if (val[0] < 0) {
       mag = makePositive(val);
       signum = -1;
@@ -83,7 +78,6 @@ public class BigNum implements Comparable<BigNum> {
       mag = trustedStripLeadingZeroInts(val);
       signum = (mag.length == 0 ? 0 : 1);
     }
-    dvalue = 0.0;
   }
 
   /**
@@ -189,28 +183,13 @@ public class BigNum implements Comparable<BigNum> {
    */
 
   /**
-   * Create a BifNum that store a double.
-   * @param value the double value.
-   */
-  private BigNum(double value) {
-    this.signum = 1; // must be > 0
-    this.mag = null;
-    this.dvalue = value;
-  }
-
-  public BigNum valueOf(double value) {
-    return new BigNum(value);
-  }
-
-  /**
    * This internal constructor differs from its public cousin with the arguments
    * reversed in two ways: it assumes that its arguments are correct, and it
    * doesn't copy the magnitude array.
    */
-  BigNum(int[] magnitude, int signum) {
+  BigInt(int[] magnitude, int signum) {
     this.signum = (magnitude.length == 0 ? 0 : signum);
     this.mag = magnitude;
-    this.dvalue = 0.0;
   }
 
   // Static Factory Methods
@@ -225,22 +204,16 @@ public class BigNum implements Comparable<BigNum> {
    *          value of the BigInteger to return.
    * @return a BigInteger with the specified value.
    */
-  public static BigNum valueOf(long val) {
-    // If -MAX_CONSTANT < val < MAX_CONSTANT, return stashed constant
+  public static BigInt valueOf(long val) {
     if (val == 0)
       return ZERO;
-    if (val > 0 && val <= MAX_CONSTANT)
-      return posConst[(int) val];
-    else if (val < 0 && val >= -MAX_CONSTANT)
-      return negConst[(int) -val];
-
-    return new BigNum(val);
+    return new BigInt(val);
   }
 
   /**
    * Constructs a BigInteger with the specified value, which may not be zero.
    */
-  private BigNum(long val) {
+  private BigInt(long val) {
     if (val < 0) {
       val = -val;
       signum = -1;
@@ -257,7 +230,25 @@ public class BigNum implements Comparable<BigNum> {
       mag[0] = highWord;
       mag[1] = (int) val;
     }
-    dvalue = 0.0;
+  }
+  
+  public static BigInt valueOf(int val) {
+    if (val == 0)
+      return ZERO;
+    return new BigInt(val);
+  }
+
+  /**
+   * Constructs a BigInteger with the specified value, which may not be zero.
+   */
+  private BigInt(int val) {
+    if (val < 0) {
+      val = -val;
+      signum = -1;
+    } else {
+      signum = 1;
+    }
+    mag = new int[] {val};
   }
 
   /**
@@ -265,46 +256,29 @@ public class BigNum implements Comparable<BigNum> {
    * Assumes that the input array will not be modified (the returned BigInteger
    * will reference the input array if feasible).
    */
-  private static BigNum valueOf(int val[]) {
-    return (val[0] > 0 ? new BigNum(val, 1) : new BigNum(val));
+  private static BigInt valueOf(int val[]) {
+    return (val[0] > 0 ? new BigInt(val, 1) : new BigInt(val));
   }
-
-  // Constants
-
+  
   /**
-   * Initialize static constant array when class is loaded.
+   * Null value.
    */
-  private final static int MAX_CONSTANT = 16;
-  private static final BigNum posConst[] = new BigNum[MAX_CONSTANT + 1];
-  private static final BigNum negConst[] = new BigNum[MAX_CONSTANT + 1];
-  static {
-    for (int i = 1; i <= MAX_CONSTANT; i++) {
-      int[] magnitude = new int[1];
-      magnitude[0] = i;
-      posConst[i] = new BigNum(magnitude, 1);
-      negConst[i] = new BigNum(magnitude, -1);
-    }
+  private BigInt() {
+    signum = 1;
+    mag = null;
   }
 
   /**
    * The BigInteger constant zero.
-   * 
-   * @since 1.2
    */
-  public static final BigNum ZERO = new BigNum(new int[0], 0);
+  public static final BigInt ZERO = new BigInt(new int[0], 0);
 
-  /**
-   * The BigInteger constant one.
-   * 
-   * @since 1.2
-   */
-  public static final BigNum ONE = valueOf(1);
   
   /**
    * The null value, packed in a BigNum.
    * This value should be never used in calculation, it's only for test.
    */
-  public static final BigNum NULL_OBJECT = new BigNum(Double.NaN);
+  public static final BigInt NULL = new BigInt();
 
   // Arithmetic Operations
 
@@ -315,9 +289,9 @@ public class BigNum implements Comparable<BigNum> {
    *          value to be added to this BigInteger.
    * @return {@code this + val}
    */
-  public BigNum add(BigNum val) {
+  public BigInt add(BigInt val) {
     if (mag == null || val.mag == null) {
-      return valueOf(doubleValue() + val.doubleValue());
+      throw new NullPointerException();
     }
     if (val.signum == 0)
       return this;
@@ -325,7 +299,7 @@ public class BigNum implements Comparable<BigNum> {
       return val;
 
     if (val.signum == signum)
-      return new BigNum(add(mag, val.mag), signum);
+      return new BigInt(add(mag, val.mag), signum);
 
     int cmp = compareMagnitude(val);
     if (cmp == 0)
@@ -334,7 +308,7 @@ public class BigNum implements Comparable<BigNum> {
         : subtract(val.mag, mag));
     resultMag = trustedStripLeadingZeroInts(resultMag);
 
-    return new BigNum(resultMag, cmp == signum ? 1 : -1);
+    return new BigInt(resultMag, cmp == signum ? 1 : -1);
   }
 
   /**
@@ -390,16 +364,16 @@ public class BigNum implements Comparable<BigNum> {
    *          value to be subtracted from this BigInteger.
    * @return {@code this - val}
    */
-  public BigNum subtract(BigNum val) {
+  public BigInt subtract(BigInt val) {
     if (mag == null || val.mag == null) {
-      return valueOf(doubleValue() - val.doubleValue());
+      throw new NullPointerException();
     }
     if (val.signum == 0)
       return this;
     if (signum == 0)
       return val.negate();
     if (val.signum != signum)
-      return new BigNum(add(mag, val.mag), signum);
+      return new BigInt(add(mag, val.mag), signum);
 
     int cmp = compareMagnitude(val);
     if (cmp == 0)
@@ -407,7 +381,7 @@ public class BigNum implements Comparable<BigNum> {
     int[] resultMag = (cmp > 0 ? subtract(mag, val.mag)
         : subtract(val.mag, mag));
     resultMag = trustedStripLeadingZeroInts(resultMag);
-    return new BigNum(resultMag, cmp == signum ? 1 : -1);
+    return new BigInt(resultMag, cmp == signum ? 1 : -1);
   }
 
   /**
@@ -447,9 +421,9 @@ public class BigNum implements Comparable<BigNum> {
    *          value to be multiplied by this BigInteger.
    * @return {@code this * val}
    */
-  public BigNum multiply(BigNum val) {
+  public BigInt multiply(BigInt val) {
     if (mag == null || val.mag == null) {
-      return valueOf(doubleValue() * val.doubleValue());
+      throw new NullPointerException();
     }
     if (val.signum == 0 || signum == 0)
       return ZERO;
@@ -462,12 +436,12 @@ public class BigNum implements Comparable<BigNum> {
     }
     int[] result = multiplyToLen(mag, mag.length, val.mag, val.mag.length, null);
     result = trustedStripLeadingZeroInts(result);
-    return new BigNum(result, resultSign);
+    return new BigInt(result, resultSign);
   }
 
-  private static BigNum multiplyByInt(int[] x, int y, int sign) {
+  private static BigInt multiplyByInt(int[] x, int y, int sign) {
     if (Integer.bitCount(y) == 1) {
-      return new BigNum(shiftLeft(x, Integer.numberOfTrailingZeros(y)), sign);
+      return new BigInt(shiftLeft(x, Integer.numberOfTrailingZeros(y)), sign);
     }
     int xlen = x.length;
     int[] rmag = new int[xlen + 1];
@@ -484,7 +458,7 @@ public class BigNum implements Comparable<BigNum> {
     } else {
       rmag[rstart] = (int) carry;
     }
-    return new BigNum(rmag, sign);
+    return new BigInt(rmag, sign);
   }
 
   /**
@@ -529,11 +503,11 @@ public class BigNum implements Comparable<BigNum> {
    * @throws ArithmeticException
    *           if {@code val} is zero.
    */
-  public BigNum divide(BigNum val) {
+  public BigInt divide(BigInt val) {
     if (mag == null || val.mag == null) {
-      return valueOf(doubleValue() / val.doubleValue());
+      throw new NullPointerException();
     }
-    MutableBigNum q = new MutableBigNum(), a = new MutableBigNum(this.mag), b = new MutableBigNum(
+    MutableBigInt q = new MutableBigInt(), a = new MutableBigInt(this.mag), b = new MutableBigInt(
         val.mag);
 
     a.divide(b, q, false);
@@ -571,11 +545,11 @@ public class BigNum implements Comparable<BigNum> {
    * @throws ArithmeticException
    *           if {@code val} is zero.
    */
-  public BigNum remainder(BigNum val) {
+  public BigInt remainder(BigInt val) {
     if (mag == null || val.mag == null) {
-      return valueOf(doubleValue() % val.doubleValue());
+      throw new NullPointerException();
     }
-    MutableBigNum q = new MutableBigNum(), a = new MutableBigNum(this.mag), b = new MutableBigNum(
+    MutableBigInt q = new MutableBigInt(), a = new MutableBigInt(this.mag), b = new MutableBigInt(
         val.mag);
 
     return a.divide(b, q).toBigInteger(this.signum);
@@ -593,9 +567,9 @@ public class BigNum implements Comparable<BigNum> {
    * 
    * @return {@code abs(this)}
    */
-  public BigNum abs() {
+  public BigInt abs() {
     if (mag == null) {
-      return valueOf(Math.abs(dvalue));
+      throw new NullPointerException();
     }
     return (signum >= 0 ? this : this.negate());
   }
@@ -605,11 +579,8 @@ public class BigNum implements Comparable<BigNum> {
    * 
    * @return {@code -this}
    */
-  public BigNum negate() {
-    if (mag == null) {
-      return valueOf(-dvalue);
-    }
-    return new BigNum(this.mag, -this.signum);
+  public BigInt negate() {
+    return new BigInt(this.mag, -this.signum);
   }
 
   /**
@@ -636,14 +607,14 @@ public class BigNum implements Comparable<BigNum> {
    *           {@code m} &le; 0
    * @see #remainder
    */
-  public BigNum mod(BigNum m) {
+  public BigInt mod(BigInt m) {
+    if (mag == null || m.mag == null) {
+      throw new NullPointerException();
+    }
     if (m.signum <= 0)
       throw new ArithmeticException("BigInteger: modulus not positive");
 
-    BigNum result = this.remainder(m);
-    if (result.mag == null) {
-      return (dvalue >= 0 ? result : result.add(m));
-    }
+    BigInt result = this.remainder(m);
     return (result.signum >= 0 ? result : result.add(m));
   }
 
@@ -661,7 +632,7 @@ public class BigNum implements Comparable<BigNum> {
    *           if the shift distance is {@code Integer.MIN_VALUE}.
    * @see #shiftRight
    */
-  public BigNum shiftLeft(int n) {
+  public BigInt shiftLeft(int n) {
     if (mag == null) {
       throw new ArithmeticException(
           "shifting a double is not supported");
@@ -680,7 +651,7 @@ public class BigNum implements Comparable<BigNum> {
     }
     int[] newMag = shiftLeft(mag, n);
 
-    return new BigNum(newMag, signum);
+    return new BigInt(newMag, signum);
   }
 
   private static int[] shiftLeft(int[] mag, int n) {
@@ -723,7 +694,7 @@ public class BigNum implements Comparable<BigNum> {
    *           if the shift distance is {@code Integer.MIN_VALUE}.
    * @see #shiftLeft
    */
-  public BigNum shiftRight(int n) {
+  public BigInt shiftRight(int n) {
     if (mag == null) {
       throw new ArithmeticException(
           "shifting a double is not supported");
@@ -746,7 +717,7 @@ public class BigNum implements Comparable<BigNum> {
 
     // Special case: entire contents shifted off the end
     if (nInts >= magLen)
-      return (signum >= 0 ? ZERO : negConst[1]);
+      return (signum >= 0 ? ZERO : new BigInt(-1));
 
     if (nBits == 0) {
       int newMagLen = magLen - nInts;
@@ -779,7 +750,7 @@ public class BigNum implements Comparable<BigNum> {
         newMag = javaIncrement(newMag);
     }
 
-    return new BigNum(newMag, signum);
+    return new BigInt(newMag, signum);
   }
 
   int[] javaIncrement(int[] val) {
@@ -804,7 +775,7 @@ public class BigNum implements Comparable<BigNum> {
    *          value to be AND'ed with this BigInteger.
    * @return {@code this & val}
    */
-  public BigNum and(BigNum val) {
+  public BigInt and(BigInt val) {
     if (mag == null) {
       throw new ArithmeticException("anding a double is not supported");
     }
@@ -825,7 +796,7 @@ public class BigNum implements Comparable<BigNum> {
    *          value to be OR'ed with this BigInteger.
    * @return {@code this | val}
    */
-  public BigNum or(BigNum val) {
+  public BigInt or(BigInt val) {
     if (mag == null) {
       throw new ArithmeticException("oring a double is not supported");
     }
@@ -846,7 +817,7 @@ public class BigNum implements Comparable<BigNum> {
    *          value to be XOR'ed with this BigInteger.
    * @return {@code this ^ val}
    */
-  public BigNum xor(BigNum val) {
+  public BigInt xor(BigInt val) {
     if (mag == null) {
       throw new ArithmeticException("xoring a double is not supported");
     }
@@ -864,7 +835,7 @@ public class BigNum implements Comparable<BigNum> {
    * 
    * @return {@code ~this}
    */
-  public BigNum not() {
+  public BigInt not() {
     if (mag == null) {
       throw new ArithmeticException("operator ~ is not supported on a double");
     }
@@ -1031,7 +1002,7 @@ public class BigNum implements Comparable<BigNum> {
    *         or greater than {@code val}.
    */
   @Override
-  public int compareTo(BigNum val) {
+  public int compareTo(BigInt val) {
     if (mag == null || val.mag == null) {
       return Double.compare(doubleValue(), val.doubleValue());
     }
@@ -1057,7 +1028,7 @@ public class BigNum implements Comparable<BigNum> {
    * @return -1, 0 or 1 as this magnitude array is less than, equal to or
    *         greater than the magnitude aray for the specified BigInteger's.
    */
-  final int compareMagnitude(BigNum val) {
+  final int compareMagnitude(BigInt val) {
     int[] m1 = mag;
     int len1 = m1.length;
     int[] m2 = val.mag;
@@ -1132,22 +1103,15 @@ public class BigNum implements Comparable<BigNum> {
     if (x == this)
       return true;
 
-    if (!(x instanceof BigNum))
+    if (!(x instanceof BigInt))
       return false;
 
-    BigNum bigNum = (BigNum) x;
+    BigInt bigNum = (BigInt) x;
     
     int[] m = mag;
     int[] bm = bigNum.mag;
-    if (m == null) {
-      if (bm != null) {
-        return false;
-      }
-      return Double.doubleToLongBits(dvalue) == Double.doubleToLongBits(bigNum.dvalue);
-    }
-    if (bm == null) {
-      return false;
-    }
+    if (m == bm)
+      return true;
    
     if (bigNum.signum != signum)
       return false;
@@ -1172,7 +1136,7 @@ public class BigNum implements Comparable<BigNum> {
    * @return the BigInteger whose value is the lesser of this BigInteger and
    *         {@code val}. If they are equal, either may be returned.
    */
-  public BigNum min(BigNum val) {
+  public BigInt min(BigInt val) {
     return (compareTo(val) < 0 ? this : val);
   }
 
@@ -1184,7 +1148,7 @@ public class BigNum implements Comparable<BigNum> {
    * @return the BigInteger whose value is the greater of this and {@code val}.
    *         If they are equal, either may be returned.
    */
-  public BigNum max(BigNum val) {
+  public BigInt max(BigInt val) {
     return (compareTo(val) > 0 ? this : val);
   }
 
@@ -1198,10 +1162,6 @@ public class BigNum implements Comparable<BigNum> {
   @Override
   public int hashCode() {
     int[] mag = this.mag;
-    if (mag == null) {
-      long bits = Double.doubleToLongBits(dvalue);
-      return (int)((bits >>> 32) ^ bits);
-    }
     int hashCode = 0;
     for (int i = 0; i < mag.length; i++)
       hashCode = (int) (31 * hashCode + (mag[i] & LONG_MASK));
@@ -1235,16 +1195,16 @@ public class BigNum implements Comparable<BigNum> {
     String digitGroup[] = new String[maxNumDigitGroups];
 
     // Translate number to string, a digit group at a time
-    BigNum tmp = this.abs();
+    BigInt tmp = this.abs();
     int numGroups = 0;
     while (tmp.signum != 0) {
-      BigNum d = longRadix[radix];
+      BigInt d = longRadix[radix];
 
-      MutableBigNum q = new MutableBigNum(), a = new MutableBigNum(tmp.mag), b = new MutableBigNum(
+      MutableBigInt q = new MutableBigInt(), a = new MutableBigInt(tmp.mag), b = new MutableBigInt(
           d.mag);
-      MutableBigNum r = a.divide(b, q);
-      BigNum q2 = q.toBigInteger(tmp.signum * d.signum);
-      BigNum r2 = r.toBigInteger(tmp.signum * d.signum);
+      MutableBigInt r = a.divide(b, q);
+      BigInt q2 = q.toBigInteger(tmp.signum * d.signum);
+      BigInt r2 = r.toBigInteger(tmp.signum * d.signum);
 
       digitGroup[numGroups++] = Long.toString(r2.longValue(), radix);
       tmp = q2;
@@ -1289,7 +1249,7 @@ public class BigNum implements Comparable<BigNum> {
   @Override
   public String toString() {
     if (mag == null) {
-      return Double.toString(dvalue);
+      throw new NullPointerException();
     }
     return toString(10);
   }
@@ -1369,7 +1329,7 @@ public class BigNum implements Comparable<BigNum> {
    */
   private double doubleValue() {
     if (mag == null) {
-      return dvalue;
+      throw new NullPointerException();
     }
     if (signum == 0) {
       return 0.0;
@@ -1441,7 +1401,7 @@ public class BigNum implements Comparable<BigNum> {
       20, 19, 18, 18, 17, 17, 16, 16, 15, 15, 15, 14, 14, 14, 14, 13, 13, 13,
       13, 13, 13, 12, 12, 12, 12, 12, 12, 12, 12 };
 
-  private static final BigNum longRadix[] = { null, null,
+  private static final BigInt longRadix[] = { null, null,
       valueOf(0x4000000000000000L), valueOf(0x383d9170b85ff80bL),
       valueOf(0x4000000000000000L), valueOf(0x6765c793fa10079dL),
       valueOf(0x41c21cb8e1000000L), valueOf(0x3642798750226111L),

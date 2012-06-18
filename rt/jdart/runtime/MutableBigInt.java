@@ -43,9 +43,9 @@ package jdart.runtime;
 
 import java.util.Arrays;
 
-import static jdart.runtime.BigNum.LONG_MASK;
+import static jdart.runtime.BigInt.LONG_MASK;
 
-class MutableBigNum {
+class MutableBigInt {
     /**
      * Holds the magnitude of this MutableBigInteger in big endian order.
      * The magnitude may start at an offset into the value array, and it may
@@ -73,7 +73,7 @@ class MutableBigNum {
      * The default constructor. An empty MutableBigInteger is created with
      * a one word capacity.
      */
-    MutableBigNum() {
+    MutableBigInt() {
         value = new int[1];
         intLen = 0;
     }
@@ -82,7 +82,7 @@ class MutableBigNum {
      * Construct a new MutableBigInteger with a magnitude specified by
      * the int val.
      */
-    private MutableBigNum(int val) {
+    private MutableBigInt(int val) {
         value = new int[1];
         intLen = 1;
         value[0] = val;
@@ -92,7 +92,7 @@ class MutableBigNum {
      * Construct a new MutableBigInteger with the specified value array
      * up to the length of the array supplied.
      */
-    MutableBigNum(int[] val) {
+    MutableBigInt(int[] val) {
         value = val;
         intLen = val.length;
     }
@@ -103,7 +103,7 @@ class MutableBigNum {
      * Construct a new MutableBigInteger with a magnitude equal to the
      * specified MutableBigInteger.
      */
-    private MutableBigNum(MutableBigNum val) {
+    private MutableBigInt(MutableBigInt val) {
         intLen = val.intLen;
         value = Arrays.copyOfRange(val.value, val.offset, val.offset + intLen);
     }
@@ -121,10 +121,10 @@ class MutableBigNum {
     /**
      * Convert this MutableBigInteger to a BigInteger object.
      */
-    BigNum toBigInteger(int sign) {
+    BigInt toBigInteger(int sign) {
         if (intLen == 0 || sign == 0)
-            return BigNum.ZERO;
-        return new BigNum(getMagnitudeArray(), sign);
+            return BigInt.ZERO;
+        return new BigInt(getMagnitudeArray(), sign);
     }
 
     /**
@@ -141,7 +141,7 @@ class MutableBigNum {
      * as this MutableBigInteger is numerically less than, equal to, or
      * greater than <tt>b</tt>.
      */
-    private int compare(MutableBigNum b) {
+    private int compare(MutableBigInt b) {
         int blen = b.intLen;
         if (intLen < blen)
             return -1;
@@ -216,7 +216,7 @@ class MutableBigNum {
         this.intLen -= nInts;
         if (nBits == 0)
             return;
-        int bitsInHighWord = BigNum.bitLengthForInt(value[offset]);
+        int bitsInHighWord = BigInt.bitLengthForInt(value[offset]);
         if (nBits >= bitsInHighWord) {
             this.primitiveLeftShift(32 - nBits);
             this.intLen--;
@@ -323,7 +323,7 @@ class MutableBigNum {
      * @return the remainder of the division is returned.
      *
      */
-    private int divideOneWord(int divisor, MutableBigNum quotient) {
+    private int divideOneWord(int divisor, MutableBigInt quotient) {
         long divisorLong = divisor & LONG_MASK;
 
         // Special case of one word dividend
@@ -390,31 +390,31 @@ class MutableBigNum {
      * changed.
      *
      */
-    MutableBigNum divide(MutableBigNum b, MutableBigNum quotient) {
+    MutableBigInt divide(MutableBigInt b, MutableBigInt quotient) {
         return divide(b,quotient,true);
     }
 
-    MutableBigNum divide(MutableBigNum b, MutableBigNum quotient, boolean needReminder) {
+    MutableBigInt divide(MutableBigInt b, MutableBigInt quotient, boolean needReminder) {
         if (b.intLen == 0)
             throw new ArithmeticException("BigInteger divide by zero");
 
         // Dividend is zero
         if (intLen == 0) {
             quotient.intLen = quotient.offset;
-            return needReminder ? new MutableBigNum() : null;
+            return needReminder ? new MutableBigInt() : null;
         }
 
         int cmp = compare(b);
         // Dividend less than divisor
         if (cmp < 0) {
             quotient.intLen = quotient.offset = 0;
-            return needReminder ? new MutableBigNum(this) : null;
+            return needReminder ? new MutableBigInt(this) : null;
         }
         // Dividend equal to divisor
         if (cmp == 0) {
             quotient.value[0] = quotient.intLen = 1;
             quotient.offset = 0;
-            return needReminder ? new MutableBigNum() : null;
+            return needReminder ? new MutableBigInt() : null;
         }
 
         quotient.clear();
@@ -423,8 +423,8 @@ class MutableBigNum {
             int r = divideOneWord(b.value[b.offset], quotient);
             if(needReminder) {
                 if (r == 0)
-                    return new MutableBigNum();
-                return new MutableBigNum(r);
+                    return new MutableBigInt();
+                return new MutableBigInt(r);
             } else {
                 return null;
             }
@@ -448,8 +448,8 @@ class MutableBigNum {
      * The quotient will be placed into the provided quotient object &
      * the remainder object is returned.
      */
-    private MutableBigNum divideMagnitude(MutableBigNum div,
-                                              MutableBigNum quotient,
+    private MutableBigInt divideMagnitude(MutableBigInt div,
+                                              MutableBigInt quotient,
                                               boolean needReminder ) {
         // assert div.intLen > 1
         // D1 normalize the divisor
@@ -457,19 +457,19 @@ class MutableBigNum {
         // Copy divisor value to protect divisor
         final int dlen = div.intLen;
         int[] divisor;
-        MutableBigNum rem; // Remainder starts as dividend with space for a leading zero
+        MutableBigInt rem; // Remainder starts as dividend with space for a leading zero
         if (shift > 0) {
             divisor = new int[dlen];
             copyAndShift(div.value,div.offset,dlen,divisor,0,shift);
             if(Integer.numberOfLeadingZeros(value[offset])>=shift) {
                 int[] remarr = new int[intLen + 1];
-                rem = new MutableBigNum(remarr);
+                rem = new MutableBigInt(remarr);
                 rem.intLen = intLen;
                 rem.offset = 1;
                 copyAndShift(value,offset,intLen,remarr,1,shift);
             } else {
                 int[] remarr = new int[intLen + 2];
-                rem = new MutableBigNum(remarr);
+                rem = new MutableBigInt(remarr);
                 rem.intLen = intLen+1;
                 rem.offset = 1;
                 int rFrom = offset;
@@ -484,7 +484,7 @@ class MutableBigNum {
             }
         } else {
             divisor = Arrays.copyOfRange(div.value, div.offset, div.offset + div.intLen);
-            rem = new MutableBigNum(new int[intLen + 1]);
+            rem = new MutableBigInt(new int[intLen + 1]);
             System.arraycopy(value, offset, rem.value, 1, intLen);
             rem.intLen = intLen;
             rem.offset = 1;
