@@ -51,7 +51,7 @@ public class NumFiboAsDart {
     BigInteger _r3;
     if (_r1 == null && _r2 == null) {
       try {
-        r3 = Math.addExact(r1, r2);
+        r3 = /*Math.*/addExact(r1, r2);
         _r3 = null;
       } catch(ArithmeticException e) {
         _r3 = overflowedAdd(r1, r2);
@@ -79,6 +79,16 @@ public class NumFiboAsDart {
       _r2 = BigInteger.valueOf(r2);
     }
     return _r1.add(_r2);
+  }
+  
+  // temporary hack, to compile with jdk7
+  private static int addExact(int x, int y) {
+    int r = x + y;
+    // HD 2-12 Overflow iff both arguments have the opposite sign of the result
+    if (((x ^ r) & (y ^ r)) < 0) {
+        throw new ArithmeticException("integer overflow");
+    }
+    return r;
   }
 
   public static void main(String[] args) {

@@ -9,22 +9,22 @@ public class FiboAsDart {
     ControlFlowException() {
       super(null, null, false, false);
     }
-    
+
     public static ControlFlowException value(BigInteger value) {
       ControlFlowException e = cache.get();
       e.value =  value;
       return e;
     }
-    
+
     private static final ThreadLocal<ControlFlowException> cache =
         new ThreadLocal<ControlFlowException>() {
-          @Override
-          protected ControlFlowException initialValue() {
-            return new ControlFlowException();
-          }
-        };
+      @Override
+      protected ControlFlowException initialValue() {
+        return new ControlFlowException();
+      }
+    };
   }
-  
+
   private static int fibo(int n) throws ControlFlowException {
     if (n < 2) {
       return 1;
@@ -51,7 +51,7 @@ public class FiboAsDart {
     BigInteger _r3;
     if (_r1 == null && _r2 == null) {
       try {
-        r3 = Math.addExact(r1, r2);
+        r3 = /*Math.*/addExact(r1, r2);
         _r3 = null;
       } catch(ArithmeticException e) {
         _r3 = overflowedAdd(r1, r2);
@@ -66,7 +66,7 @@ public class FiboAsDart {
     }
     throw ControlFlowException.value(_r3); 
   }
-  
+
   private static BigInteger overflowedAdd(int r1, int r2) {
     return BigInteger.valueOf(r1).add(BigInteger.valueOf(r2));
   }
@@ -79,6 +79,16 @@ public class FiboAsDart {
       _r2 = BigInteger.valueOf(r2);
     }
     return _r1.add(_r2);
+  }
+
+  //temporary hack, to compile with jdk7
+  private static int addExact(int x, int y) {
+    int r = x + y;
+    // HD 2-12 Overflow iff both arguments have the opposite sign of the result
+    if (((x ^ r) & (y ^ r)) < 0) {
+      throw new ArithmeticException("integer overflow");
+    }
+    return r;
   }
 
   public static void main(String[] args) {
