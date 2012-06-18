@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import jdart.compiler.phase.FlowTypingPhase;
+import jdart.compiler.flow.FlowTypingPhase;
 
 import org.kohsuke.args4j.CmdLineException;
 

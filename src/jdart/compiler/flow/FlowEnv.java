@@ -1,4 +1,4 @@
-package jdart.compiler.phase;
+package jdart.compiler.flow;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
 

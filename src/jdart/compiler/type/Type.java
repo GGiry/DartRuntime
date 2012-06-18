@@ -1,6 +1,6 @@
 package jdart.compiler.type;
 
-import jdart.compiler.phase.FlowEnv;
+import jdart.compiler.flow.FlowEnv;
 
 public interface Type {
   /**

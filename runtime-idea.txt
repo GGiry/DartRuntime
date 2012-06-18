@@ -49,3 +49,117 @@ allows to know how the format is decomposed.
   
   
   
+ Split Path optimization 
+  
+example:
+  ...
+  fibo(21)
+  ...
+  fibo(n) {                   n = [0..maxint], fibo -> [-inf, +inf]
+    if (n<2) {   
+      return 1;               n = [0..1] 
+    }                         n = [2..maxint]     
+    return fibo(n-1) +        fibo([1..maxint-1]) -> [-inf, +inf]
+           fibo(n-2);         fibo([1..maxint-1]),-> [-inf, +inf]
+                              +([-inf, +inf], [-inf, +inf]) -> [-inf, +inf] 
+  }                           
+  
+  translation:
+  
+  fibo(I)I
+    iload 0
+    iconst_2
+    if_icmpge l0
+    iconst_1
+    ireturn
+  
+ l0:
+    iload 0
+    iconst_1
+    isub
+ l1:
+    invokestatic fibo (I)I
+ l2:
+    istore 1
+    aconst_null
+    astore 2
+    
+ l3:
+    iload 0
+    iconst_2
+    isub
+ l4:
+    invokestatic fibo (I)I
+ l5:
+    istore 3
+    aconst_null   
+    astore 4
+ 
+ l6:
+    aload 2
+    ifnonnull l7
+    aload 4
+    ifnonnull l7
+    iload 1
+    iload 3
+ l8:
+    invokestatic Math.addExact (II)I
+ l9:
+    istore 5
+    actonst_null
+    astore 6
+    
+ l10:
+    aload 6
+    ifnonnull l11
+    iload 5
+    ireturn
+    
+l12:
+    astore 3
+    iconst_0
+    istore 1
+    aload 3
+    getfield ControlFlowException.value : Ljava/math/BigInteger;
+    astore 3
+    goto l3
+    
+l13:
+    astore 5
+    iconst_0
+    istore 3
+    aload 5
+    getfield ControlFlowException.value : Ljava/math/BigInteger;
+    astore 4
+    goto l6
+    
+l7:
+    iload 1
+    aload 2
+    iload 3
+    aload 4
+    invokestatic addBig (ILBigInteger;ILBigInteger;)LBigInteger;
+    astore 6
+    iconst_0
+    istore 5
+    goto l10
+
+l14:
+    astore 7
+    iload 1
+    iload 3
+    invokestatic overflowAdd (II)LBigInteger;
+    astore 6
+    iconst_0
+    istore 5
+    goto l10
+    
+l11:
+    aload 6
+    invokestatic ControlFlowException.value (LBigInteger;)LControlFlowException;
+    athrow
+    
+  trycatchblock l1, l2, l12, ControlFlowException
+  trycatchblock l4, l5, l13, ControlFlowException
+  trycatchblock l8, l9, l14, ArithmeticException
+  

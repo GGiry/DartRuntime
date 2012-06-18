@@ -7,9 +7,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import jdart.compiler.phase.ClassHierarchyAnalysisPhase;
-import jdart.compiler.phase.InterProceduralMethodCallResolver;
-import jdart.compiler.phase.TypeHelper;
+import jdart.compiler.cha.ClassHierarchyAnalysisPhase;
+import jdart.compiler.flow.InterProceduralMethodCallResolver;
+import jdart.compiler.flow.TypeHelper;
+import jdart.compiler.gen.Gen;
 import jdart.compiler.type.CoreTypeRepository;
 import jdart.compiler.type.Type;
 import jdart.compiler.type.TypeRepository;
@@ -78,6 +79,9 @@ public class Main {
     // type flow starting with main method
     InterProceduralMethodCallResolver methodCallResolver = new InterProceduralMethodCallResolver(typeHelper);
     methodCallResolver.functionCall(mainMethod, Collections.<Type>emptyList(), CoreTypeRepository.VOID_TYPE);
+    
+    Gen gen = new Gen();
+    gen.gen(methodCallResolver.getMethodMap());
   }
 
   public static void main(String[] args) throws IOException {

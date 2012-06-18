@@ -1,13 +1,11 @@
-package jdart.compiler.phase;
+package jdart.compiler.cha;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import jdart.compiler.visitor.ASTVisitor2;
@@ -98,81 +96,12 @@ public class ClassHierarchyAnalysisPhase implements DartCompilationPhase {
     return unit;
   }
   
-  static class CHAClass {
-    private final CHAClass superclass;
-    private final List<CHAClass> interfaces;
-    final HashMap<String, ArrayList<DartMethodDefinition>> methodMap = new HashMap<>();
-    
-    public CHAClass(CHAClass superclass, List<CHAClass> interfaces) {
-      this.superclass = superclass;
-      this.interfaces = interfaces;
-    }
-
-    public void addMethod(String name, DartMethodDefinition methodDefinition) {
-      if (superclass != null) {
-        superclass.addMethodIfOverride(name, methodDefinition);
-      }
-      for(CHAClass interfaze: interfaces) {
-        interfaze.addMethod(name, methodDefinition);
-      }
-      insertMethod(name, methodDefinition);
-    }
-    
-    private void insertMethod(String name, DartMethodDefinition methodDefinition) {
-      ArrayList<DartMethodDefinition> list = methodMap.get(name);
-      if (list == null) {
-        list = new ArrayList<>();
-        methodMap.put(name, list);
-      }
-      list.add(methodDefinition); 
-    }
-
-    private boolean addMethodIfOverride(String name, DartMethodDefinition methodDefinition) {
-      boolean override = false;
-      if (superclass != null) {
-        override = superclass.addMethodIfOverride(name, methodDefinition);
-      }
-      for(CHAClass interfaze: interfaces) {
-        override |= interfaze.addMethodIfOverride(name, methodDefinition);
-      }
-      
-      if (override || methodMap.containsKey(name)) {
-        insertMethod(name, methodDefinition);
-        return true;
-      }
-      return false;
-    }
-
-    public void debug() {
-      for(Entry<String, ArrayList<DartMethodDefinition>> entry: methodMap.entrySet()) {
-        ArrayList<DartMethodDefinition> list = new ArrayList<>();
-        for(DartMethodDefinition node: entry.getValue()) {
-          if (node.getElement().getModifiers().isAbstract()) {
-            continue;
-          }
-          list.add(node);
-        }
-        
-        if (list.size() <= 1) {
-          continue;
-        }
-        
-        System.out.println("  method "+entry.getKey());
-        for(DartMethodDefinition node: list) {
-          MethodNodeElement element = node.getElement();
-          System.out.println("    "+element.getEnclosingElement().getName()+'.'+element.getName()+" "+element.getFunctionType());
-        }
-      }
-    }
-  }
-  
-  
   private class CHAVisitor extends ASTVisitor2<Void, Void> {
     final LinkedHashMap<ClassElement, CHAClass> classMap = new LinkedHashMap<>();
     private final HashSet<NodeElement> seen = new HashSet<>();
     
     CHAVisitor() {
-      
+      // package visibility
     }
     
     // entry point
@@ -211,7 +140,7 @@ public class ClassHierarchyAnalysisPhase implements DartCompilationPhase {
       return chaClass;
     }    
 
-    public void debug() {
+    /*public void debug() {
       System.out.println("<========== DEBUG ===============>");
       System.out.println("count "+classMap.size());
       for(Entry<ClassElement, CHAClass> entry: classMap.entrySet()) {
@@ -219,7 +148,7 @@ public class ClassHierarchyAnalysisPhase implements DartCompilationPhase {
         System.out.println("class "+classElement.getName()+" "+ classElement.getEnclosingElement());
         entry.getValue().debug();
       }
-    }
+    }*/
     
     private void newInstantiation(Element element) {
       ClassElement classElement = (ClassElement) element;
