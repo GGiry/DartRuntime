@@ -230,6 +230,8 @@ public class IntType extends PrimitiveType implements NumType {
     if (minBound == null && maxBound == null) {
       return INT_NON_NULL_TYPE;
     }
+    //FIXME, Geoffrey minBound can be null, also the logic seems wrong
+    assert minBound != null;  // remove this !
     if (minBound.compareTo(maxBound) > 0) {
       return new IntType(false, maxBound, minBound);
     }
@@ -242,6 +244,7 @@ public class IntType extends PrimitiveType implements NumType {
     if (minBound == null && maxBound == null) {
       return INT_NON_NULL_TYPE;
     }
+    //FIXME, Geoffrey dividing by a negative value change the order of the bounds
     return new IntType(false, minBound, maxBound);
   }
   
@@ -251,6 +254,7 @@ public class IntType extends PrimitiveType implements NumType {
     if (minBound == null && maxBound == null) {
       return INT_NON_NULL_TYPE;
     }
+    //FIXME, Geoffrey dividing by a negative value change the order of the bounds
     return new IntType(false, minBound, maxBound);
   }
 
