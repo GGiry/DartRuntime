@@ -35,7 +35,7 @@ public class JVMTypes {
       if (type.isIncludeIn(INT32_TYPE)) {
         return PrimitiveType.INT;
       }
-      return PrimitiveType.NUM;
+      return PrimitiveType.BIGINT;
     }
     @Override
     public JVMType visitDoubleType(DoubleType type, Void parameter) {
@@ -75,14 +75,6 @@ public class JVMTypes {
         if (jvmType.equals(jvmType2)) {
           continue;
         }
-        if (jvmType == PrimitiveType.NUM && jvmType2 == PrimitiveType.INT) {
-          continue; 
-        }
-        if (jvmType == PrimitiveType.INT && jvmType2 == PrimitiveType.NUM) {
-          jvmType = PrimitiveType.NUM;
-          continue;
-        }
-        
         jvmType = OBJECT_TYPE;
       }
       return jvmType;

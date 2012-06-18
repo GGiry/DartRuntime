@@ -5,10 +5,8 @@ import static jdart.compiler.type.CoreTypeRepository.VOID_TYPE;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import jdart.compiler.cha.ClassHierarchyAnalysisPhase;
 import jdart.compiler.type.DynamicType;
@@ -21,6 +19,7 @@ import jdart.compiler.type.Types;
 import com.google.dart.compiler.ast.DartBlock;
 import com.google.dart.compiler.ast.DartFunction;
 import com.google.dart.compiler.ast.DartMethodDefinition;
+import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.ast.DartParameter;
 import com.google.dart.compiler.ast.Modifiers;
 import com.google.dart.compiler.resolver.ClassElement;
@@ -31,33 +30,6 @@ import com.google.dart.compiler.resolver.MethodNodeElement;
 public class InterProceduralMethodCallResolver implements MethodCallResolver {
   final TypeHelper typeHelper;
   private final HashMap<DartMethodDefinition, Profiles> methodMap = new HashMap<>();
-  
-  public static class Profiles {
-    final LinkedHashMap<List<Type>, Type> profileMap = new LinkedHashMap<>();
-
-    public Map<List<Type>, Type> getSignatureMap() {
-      return profileMap;
-    }
-    
-    @Override
-    public String toString() {
-      return profileMap.toString();
-    }
-    
-    public Type lookupForACompatibleSignature(List<Type> argumentTypes) {
-      Type returnType = profileMap.get(argumentTypes);
-      if (returnType != null) {
-        return returnType;
-      }
-      
-      for(Entry<List<Type>, Type> entry: profileMap.entrySet()) {
-       if (isCompatible(entry.getKey(), argumentTypes)) {
-          return entry.getValue();
-        }
-      }
-      return null;
-    }
-  }
   
   public InterProceduralMethodCallResolver(TypeHelper typeHelper) {
     this.typeHelper = typeHelper;
@@ -114,7 +86,7 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
       argumentTypes = windenedArgumentTypes;
     }
     
-    Type returnType = doActualCall(node, receiverType, argumentTypes, profiles);
+    ProfileInfo profileInfo = doActualCall(node, receiverType, argumentTypes, profiles);
     
     // try to remove signatures too specific
     /* FIXME, don't work because with recursive calls, we try to compare with something
@@ -139,21 +111,22 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
       System.out.println("clean map " +signatures.signatureMap);
     }*/
     
-    profiles.profileMap.put(argumentTypes, returnType);
+    profiles.profileMap.put(argumentTypes, profileInfo);
     
+    Type returnType = profileInfo.getReturnType();
     if (returnType instanceof DynamicType) {
       return expectedType;
     }
     return returnType;
   }
   
-  private Type doActualCall(DartMethodDefinition node, /*maybenull*/OwnerType receiverType, List<Type> argumentTypes, Profiles profiles) {
+  private ProfileInfo doActualCall(DartMethodDefinition node, /*maybenull*/OwnerType receiverType, List<Type> argumentTypes, Profiles profiles) {
     //System.out.println("call "+node.getName()+" receiver "+receiverType+" "+argumentTypes);
     
     DartFunction function = node.getFunction();
     if (function == null) {
       // native function use declared return type
-      return typeHelper.asType(true, node.getType());
+      return new ProfileInfo(typeHelper.asType(true, node.getType()), null);
     }
     
     // We should allow to propagate the type of 'this' in the flow env
@@ -175,7 +148,7 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
     Type returnType = ((FunctionType) typeHelper.asType(false, element.getType())).getReturnType();
 
     // register temporary signature with declared return type for recursive function 
-    profiles.profileMap.put(argumentTypes, returnType);
+    profiles.profileMap.put(argumentTypes, new ProfileInfo(returnType, null));
     
     FTVisitor flowTypeVisitor = new FTVisitor(typeHelper, this);
     FlowEnv flowEnv = new FlowEnv(new FlowEnv(thisType), returnType, VOID_TYPE, false);
@@ -185,13 +158,14 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
       flowEnv.register(parameter.getElement(), argumentTypes.get(i));
     }
 
+    Map<DartNode, Type> typeMap = null;
     DartBlock body = function.getBody();
     if (body != null) {
       flowTypeVisitor.liveness(body, flowEnv);
-      return flowTypeVisitor.getInferredReturnType(returnType);
+      returnType = flowTypeVisitor.getInferredReturnType(returnType);
+      typeMap = flowTypeVisitor.getTypeMap();
     }
-    
-    return returnType;
+    return new ProfileInfo(returnType, typeMap);
   }
   
   Type directCall(MethodNodeElement element, OwnerType receiverType, List<Type> argumentType, Type expectedType, boolean virtual) {

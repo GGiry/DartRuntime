@@ -15,7 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import jdart.compiler.flow.InterProceduralMethodCallResolver.Profiles;
+import jdart.compiler.flow.ProfileInfo;
+import jdart.compiler.flow.Profiles;
+import jdart.compiler.type.Type;
 import jdart.compiler.visitor.ASTVisitor2;
 
 import org.objectweb.asm.ClassReader;
@@ -132,7 +134,8 @@ public class Gen extends ASTVisitor2<Void, GenEnv> {
   }
 
   private void genMethod(ClassVisitor cv, DartMethodDefinition methodDefinition, Profiles profiles) {
-    // TODO Auto-generated method stub
+    Map<List<Type>, ProfileInfo> signatureMap = profiles.getSignatureMap();
+    
     
   }
 }

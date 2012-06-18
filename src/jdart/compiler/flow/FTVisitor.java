@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import jdart.compiler.type.ArrayType;
@@ -105,6 +106,10 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
   public Type getInferredReturnType(Type declaredReturnType) {
     return (inferredReturnType == null)? declaredReturnType: inferredReturnType;
+  }
+  
+  public Map<DartNode, Type> getTypeMap() {
+    return typeMap;
   }
 
   enum Liveness {
