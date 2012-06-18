@@ -2,15 +2,7 @@ package jdart.compiler.flow;
 
 import static jdart.compiler.flow.FTVisitor.Liveness.ALIVE;
 import static jdart.compiler.flow.FTVisitor.Liveness.DEAD;
-import static jdart.compiler.type.CoreTypeRepository.BOOL_NON_NULL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.BOOL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.FALSE_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.NULL_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.POSITIVE_INT32_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.TRUE_TYPE;
-import static jdart.compiler.type.CoreTypeRepository.VOID_TYPE;
+import static jdart.compiler.type.CoreTypeRepository.*;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -93,7 +85,9 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
   /**
    * Collect inferred return type
-   * @param type an inferred return type.
+   * 
+   * @param type
+   *          an inferred return type.
    */
   void addInferredReturnType(Type type) {
     if (inferredReturnType == null) {
@@ -104,14 +98,14 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
   }
 
   public Type getInferredReturnType(Type declaredReturnType) {
-    return (inferredReturnType == null)? declaredReturnType: inferredReturnType;
+    return (inferredReturnType == null) ? declaredReturnType : inferredReturnType;
   }
 
   enum Liveness {
     ALIVE,
     DEAD
   }
-  
+
   // entry points
   public Type typeFlow(DartNode node, FlowEnv flowEnv) {
     return accept(node, flowEnv);
@@ -181,7 +175,6 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
-
   @Override
   protected Type accept(DartNode node, FlowEnv flowEnv) {
     Type type = super.accept(node, flowEnv);
@@ -199,6 +192,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
   public Type visitTypeNode(DartTypeNode node, FlowEnv unused) {
     throw new AssertionError("this method should never be called");
   }
+
   @Override
   public Type visitFunction(DartFunction node, FlowEnv flowEnv) {
     throw new AssertionError("this method should never be called");
@@ -322,7 +316,13 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       return (trueLiveness == ALIVE && falseLiveness == ALIVE) ? ALIVE : DEAD;
     }
 
-    private Liveness computeLoop(DartExpression condition, DartStatement body, DartStatement /* maybe null */ init, DartExpression /* maybe null */ increment, FlowEnv parameter) {
+    private Liveness computeLoop(DartExpression condition, DartStatement body, DartStatement /*
+     * maybe
+     * null
+     */init, DartExpression /*
+     * maybe
+     * null
+     */increment, FlowEnv parameter) {
       FlowEnv loopEnv = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
       FlowEnv afterLoopEnv = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), false);
       if (init != null) {
@@ -673,175 +673,430 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
-  private Type visitBinaryOp(DartBinaryExpression node, Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
+  /*TODO 
+  private */static Type opIntInt(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
+    IntType iType1 = (IntType) type1;
+    IntType iType2 = (IntType) type2;
     switch (operator) {
-    // TODO finish binary op
     case NE:
-    case NE_STRICT: {
-      Object constant1 = type1.asConstant();
-      Object constant2 = type2.asConstant();
-      if (constant1 != null && constant2 != null) {
-        return constant1.equals(constant2) ? FALSE_TYPE : TRUE_TYPE;
-      }
-
-      if (type1 instanceof IntType && type2 instanceof IntType) {
-        IntType iType1 = (IntType) type1;
-        IntType iType2 = (IntType) type2;
-        return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : TRUE_TYPE;
-      }
-
-      if (type1 instanceof UnionType) {
-        return ((UnionType) type1).commonValuesWith(type2);
-      }
-
-      if (type2 instanceof UnionType) {
-        return ((UnionType) type2).commonValuesWith(type1);
-      }
-
-      throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
-    }
+    case NE_STRICT:
+      return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : TRUE_TYPE;
     case EQ:
-    case EQ_STRICT: {
-      Object constant1 = type1.asConstant();
-      Object constant2 = type2.asConstant();
-      if (constant1 != null && constant2 != null) {
-        return type1.equals(type2) ? TRUE_TYPE : FALSE_TYPE;
-      }
+    case EQ_STRICT:
+      return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : FALSE_TYPE;
+    case LT:
+      return iType1.isStrictLT(iType2) ? TRUE_TYPE : iType2.isStrictLTE(iType1) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
+    case LTE:
+      return iType1.isStrictLTE(iType2) ? TRUE_TYPE : iType2.isStrictLT(iType1) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
+    case GT:
+      return iType2.isStrictLT(iType1) ? TRUE_TYPE : iType1.isStrictLTE(iType2) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
+    case GTE:
+      return iType2.isStrictLTE(iType1) ? TRUE_TYPE : iType1.isStrictLT(iType2) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
+    case ADD:
+    case SUB:
+    case MUL:
+    case DIV:
+    case MOD:
+    case BIT_AND:
+    case BIT_OR:
+    case BIT_XOR:
+    case SHL:
+    case SAR:
+      operandIsNonNull(arg1, flowEnv);
+      operandIsNonNull(arg2, flowEnv);
 
-      if (type1 instanceof IntType && type2 instanceof IntType) {
-        IntType iType1 = (IntType) type1;
-        IntType iType2 = (IntType) type2;
-        return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : FALSE_TYPE;
+      switch (operator) {
+      case ADD:
+        return iType1.add(iType2);
+      case SUB:
+        return iType1.sub(iType2);
+      case MUL:
+        return iType1.mul(iType2);
+      case DIV:
+        return iType1.div(iType2);
+      case MOD:
+        return iType1.mod(iType2);
+      case BIT_AND:
+        return iType1.bitAnd(iType2);
+      case BIT_OR:
+        return iType1.bitOr(iType2);
+      case BIT_XOR:
+        return iType1.bitXor(iType2);
+      case SHL:
+        return iType1.shiftLeft(iType2);
+      case SAR:
+        return iType1.shiftRight(iType2);
+      default:
       }
-      throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
+    default:
+      throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
     }
-    case LT: {
-      if (type1 instanceof IntType && type2 instanceof IntType) {
-        IntType iType1 = (IntType) type1;
-        IntType iType2 = (IntType) type2;
+  }
 
-        return iType1.isStrictLT(iType2) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
+  /*TODO 
+  private */static Type opDoubleDouble(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
+    Double asConstant1 = ((DoubleType) type1).asConstant();
+    Double asConstant2 = ((DoubleType) type2).asConstant();
+    switch (operator) {
+    case NE:
+    case NE_STRICT:
+      if (asConstant1 != null && asConstant2 != null) {
+        return asConstant1.equals(asConstant2) ? FALSE_TYPE : TRUE_TYPE;
       }
-      throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
-    }
-    case LTE: {
-      if (type1 instanceof IntType && type2 instanceof IntType) {
-        IntType iType1 = (IntType) type1;
-        IntType iType2 = (IntType) type2;
+      return BOOL_NON_NULL_TYPE;
+    case EQ:
+    case EQ_STRICT:
+      if (asConstant1 != null && asConstant2 != null) {
+        return asConstant1.equals(asConstant2) ? TRUE_TYPE : FALSE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+    case LT:
+      if (asConstant1 != null && asConstant2 != null) {
+        return (asConstant1.compareTo(asConstant2) < 0) ? TRUE_TYPE : FALSE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+    case LTE:
+      if (asConstant1 != null && asConstant2 != null) {
+        return (asConstant1.compareTo(asConstant2) <= 0) ? TRUE_TYPE : FALSE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+    case GT:
+      if (asConstant1 != null && asConstant2 != null) {
+        return (asConstant1.compareTo(asConstant2) > 0) ? TRUE_TYPE : FALSE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+    case GTE:
+      if (asConstant1 != null && asConstant2 != null) {
+        return (asConstant1.compareTo(asConstant2) >= 0) ? TRUE_TYPE : FALSE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+    case ADD:
+    case SUB:
+    case MOD:
+    case BIT_AND:
+    case BIT_OR:
+    case BIT_XOR:
+      operandIsNonNull(arg1, flowEnv);
+      operandIsNonNull(arg2, flowEnv);
 
-        return iType1.isStrictLTE(iType2) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
+      if (asConstant1 != null && asConstant2 != null) {
+        switch (operator) {
+        case ADD:
+          return DoubleType.constant(asConstant1 + asConstant2);
+        case SUB:
+          return DoubleType.constant(asConstant1 - asConstant2);
+        case MOD:
+          return DoubleType.constant(asConstant1 % asConstant2);
+        case BIT_AND:
+          return DoubleType.constant(asConstant1.byteValue() & asConstant2.byteValue());
+        case BIT_OR:
+          return DoubleType.constant(asConstant1.byteValue() | asConstant2.byteValue());
+        case BIT_XOR:
+          return DoubleType.constant(asConstant1.byteValue() ^ asConstant2.byteValue());
+        default:
+        }
       }
-      throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
+    default:
+      throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
     }
-    case GT: {
-      if (type1 instanceof IntType && type2 instanceof IntType) {
-        IntType iType1 = (IntType) type1;
-        IntType iType2 = (IntType) type2;
+  }
 
-        return iType2.isStrictLT(iType1) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
-      }
-      throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
-    }
-    case GTE: {
-      if (type1 instanceof IntType && type2 instanceof IntType) {
-        IntType iType1 = (IntType) type1;
-        IntType iType2 = (IntType) type2;
+  /*TODO 
+  private */static Type opIntDouble(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
+    IntType iType1 = (IntType) type1;
+    DoubleType dType2 = (DoubleType) type2;
 
-        return iType2.isStrictLTE(iType1) ? TRUE_TYPE : BOOL_NON_NULL_TYPE;
+    BigInteger maxBound = iType1.getMaxBound();
+    BigInteger minBound = iType1.getMinBound();
+    Double asConstant2 = dType2.asConstant();
+    BigInteger asConstant1 = iType1.asConstant();
+    switch (operator) {
+    case NE:
+    case NE_STRICT:
+      if (dType2.isIncludeIn(iType1)) {
+        if (asConstant1 != null) {
+          return FALSE_TYPE;
+        }
+        return BOOL_NON_NULL_TYPE;
       }
-      throw new AssertionError("BinaryOp not implemented for: " + type1 + " " + operator + " " + type2);
-    }
-    case AND:
-      if (type1 == TRUE_TYPE && type2 == TRUE_TYPE) {
+      return TRUE_TYPE;
+    case EQ:
+    case EQ_STRICT:
+      if (dType2.isIncludeIn(iType1)) {
+        if (asConstant1 != null) {
+          return TRUE_TYPE;
+        }
+        return BOOL_NON_NULL_TYPE;
+      }
+      return FALSE_TYPE;
+    case LT:
+      if (maxBound != null && (maxBound.doubleValue() < asConstant2)) {
         return TRUE_TYPE;
       }
-      return BOOL_TYPE;
-    case OR:
-      if (type1 == TRUE_TYPE || type2 == TRUE_TYPE) {
+      return BOOL_NON_NULL_TYPE;
+    case LTE:
+      if (maxBound != null && (maxBound.doubleValue() <= asConstant2)) {
         return TRUE_TYPE;
-      } 
-      return BOOL_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+    case GT:
+      if (minBound != null && (minBound.doubleValue() > asConstant2)) {
+        return TRUE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+    case GTE:
+      if (minBound != null && (minBound.doubleValue() > asConstant2)) {
+        return TRUE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
 
     case ADD:
     case SUB:
     case MOD:
     case BIT_AND:
     case BIT_OR:
+    case BIT_XOR:
       operandIsNonNull(arg1, flowEnv);
-      if (type1 instanceof IntType && type2 instanceof IntType) {
-        operandIsNonNull(arg2, flowEnv);
-        IntType iType1 = (IntType) type1;
-        IntType iType2 = (IntType) type2;
+      operandIsNonNull(arg2, flowEnv);
 
+      if (asConstant2 != null) {
         switch (operator) {
         case ADD:
-          return iType1.add(iType2);
+          if (asConstant1 != null) {
+            return DoubleType.constant(asConstant1.doubleValue() + asConstant2);
+          }
+          return DOUBLE_NON_NULL_TYPE;
         case SUB:
-          return iType1.sub(iType2);
+          if (asConstant1 != null) {
+            return DoubleType.constant(asConstant1.doubleValue() - asConstant2);
+          }
+          return DOUBLE_NON_NULL_TYPE;
         case MOD:
-          return iType1.mod(iType2);
+          if (asConstant1 != null) {
+            return DoubleType.constant(asConstant1.doubleValue() % asConstant2);
+          }
+          return DOUBLE_NON_NULL_TYPE;
         case BIT_AND:
-          return iType1.bitAnd(iType2);
+          if (asConstant1 != null) {
+            return IntType.constant(asConstant1.and(BigInteger.valueOf(asConstant2.longValue())));
+          }
+          return DOUBLE_NON_NULL_TYPE;
         case BIT_OR:
-          return iType1.bitOr(iType2);
-        default:
+          if (asConstant1 != null) {
+            return IntType.constant(asConstant1.or(BigInteger.valueOf(asConstant2.longValue())));
+          }
+          return DOUBLE_NON_NULL_TYPE;
+        case BIT_XOR:
+          if (asConstant1 != null) {
+            return IntType.constant(asConstant1.xor(BigInteger.valueOf(asConstant2.longValue())));
+          }
+          return DOUBLE_NON_NULL_TYPE;
         }
+      } else {
+        // asConstant2 == null
+        return DOUBLE_NON_NULL_TYPE;
       }
-      if (type1 instanceof UnionType) {
-        UnionType utype = (UnionType) type1;
-        switch (operator) {
-        case ADD:
-          return utype.add(type2);
-        case SUB:
-          return utype.sub(type2);
-        case MOD:
-          return utype.mod(type2);
-        default:
-        }
-      }
-      if (type2 instanceof UnionType) {
-        UnionType utype = (UnionType) type2;
-        switch (operator) {
-        case ADD:
-          return utype.add(type1);
-        case SUB:
-          return utype.sub(type1);
-        case MOD:
-          return utype.mod(type1);
-        default:
-          
-        }
-      }
-      if (type1 instanceof DoubleType || type2 instanceof DoubleType) {
-        operandIsNonNull(arg2, flowEnv);
-        DoubleType dtype1, dtype2;
-        if (type1 instanceof IntType) {
-          IntType iType1 = (IntType) type1;
-          dtype1 = iType1.asDouble();
-          dtype2 = (DoubleType) type2;
-        } else if (type2 instanceof IntType) {
-          IntType iType2 = (IntType) type2;
-          dtype1 = (DoubleType) type1;
-          dtype2 = iType2.asDouble();
-        } else {
-          dtype1 = (DoubleType) type1;
-          dtype2 = (DoubleType) type2;
-        }
-        switch (operator) {
-        case ADD:
-          return dtype1.add(dtype2);
-        case SUB:
-          return dtype1.sub(dtype2);
-        case MOD:
-          return dtype1.mod(dtype2);
-        default:
-        }
-      }
-
-      // it's not a primitive operation, so it's a method call
-      break;
     default:
-      throw new AssertionError("Binary Expr: " + operator + " (" + operator.name() + ") not implemented");
+      throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
+    }
+  }
+
+  /*TODO 
+  private */static  Type opDoubleInt(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
+    DoubleType dType1 = (DoubleType) type1;
+    IntType iType2 = (IntType) type2;
+
+    Double asConstant1 = dType1.asConstant();
+    BigInteger maxBound = iType2.getMaxBound();
+    BigInteger minBound = iType2.getMinBound();
+    BigInteger asConstant2 = iType2.asConstant();
+    switch (operator) {
+    case NE:
+    case NE_STRICT:
+      if (dType1.isIncludeIn(iType2)) {
+        if (asConstant1 != null) {
+          return FALSE_TYPE;
+        }
+        return BOOL_NON_NULL_TYPE;
+      }
+      return TRUE_TYPE;
+    case EQ:
+    case EQ_STRICT:
+      if (dType1.isIncludeIn(iType2)) {
+        if (asConstant1 != null) {
+          return TRUE_TYPE;
+        }
+        return BOOL_NON_NULL_TYPE;
+      }
+      return FALSE_TYPE;
+    case LT:
+      if (maxBound != null && (asConstant1 < maxBound.doubleValue())) {
+        return TRUE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+    case LTE:
+      if (maxBound != null && (asConstant1 <= maxBound.doubleValue())) {
+        return TRUE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+    case GT:
+      if (minBound != null && (asConstant1 > maxBound.doubleValue())) {
+        return TRUE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+    case GTE:
+      if (minBound != null && (asConstant1 >= maxBound.doubleValue())) {
+        return TRUE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+
+    case ADD:
+    case SUB:
+    case MOD:
+    case BIT_AND:
+    case BIT_OR:
+    case BIT_XOR:
+      operandIsNonNull(arg1, flowEnv);
+      operandIsNonNull(arg2, flowEnv);
+
+      if (asConstant2 != null) {
+        switch (operator) {
+        case ADD:
+          if (asConstant1 != null) {
+            return DoubleType.constant(asConstant1 + asConstant2.doubleValue());
+          }
+          return DOUBLE_NON_NULL_TYPE;
+        case SUB:
+          if (asConstant1 != null) {
+            return DoubleType.constant(asConstant1 - asConstant2.doubleValue());
+          }
+          return DOUBLE_NON_NULL_TYPE;
+        case MOD:
+          if (asConstant1 != null) {
+            return DoubleType.constant(asConstant1 % asConstant2.doubleValue());
+          }
+          return DOUBLE_NON_NULL_TYPE;
+        case BIT_AND:
+          if (asConstant1 != null) {
+            return IntType.constant(asConstant2.and(BigInteger.valueOf(asConstant1.longValue())));
+          }
+          return DOUBLE_NON_NULL_TYPE;
+        case BIT_OR:
+          if (asConstant1 != null) {
+            return IntType.constant(asConstant2.or(BigInteger.valueOf(asConstant1.longValue())));
+          }
+          return DOUBLE_NON_NULL_TYPE;
+        case BIT_XOR:
+          if (asConstant1 != null) {
+            return IntType.constant(asConstant2.xor(BigInteger.valueOf(asConstant1.longValue())));
+          }
+          return DOUBLE_NON_NULL_TYPE;
+        }
+      } else {
+        // asConstant2 == null
+        return DOUBLE_NON_NULL_TYPE;
+      }
+    default:
+      throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
+    }
+  }
+
+  /*TODO 
+  private */static Type opBoolBool(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
+    BoolType bType1 = (BoolType) type1;
+    BoolType bType2 = (BoolType) type2;
+    Boolean asConstant1 = bType1.asConstant();
+    Boolean asConstant2 = bType2.asConstant();
+
+    switch (operator) {
+    case NE:
+    case NE_STRICT:
+      if (bType1.equals(bType2)) {
+        return FALSE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+    case EQ:
+    case EQ_STRICT:
+      if (bType1.equals(bType2)) {
+        return TRUE_TYPE;
+      }
+      return BOOL_NON_NULL_TYPE;
+    case AND:
+    case OR:
+      operandIsNonNull(arg1, flowEnv);
+      operandIsNonNull(arg2, flowEnv);
+
+      if (asConstant1 != null) {
+        switch (operator) {
+        case AND:
+          if (asConstant2 != null) {
+            return BoolType.constant(asConstant1 && asConstant2);
+          }
+          return BOOL_NON_NULL_TYPE;
+        case OR:
+          if (asConstant2 != null) {
+            return BoolType.constant(asConstant1 || asConstant2);
+          }
+          return BOOL_NON_NULL_TYPE;
+        }
+      } else {
+        // asConstant2 == null
+        return BOOL_NON_NULL_TYPE;
+      }
+    default:
+      throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
+    }
+  }
+
+  private Type visitBinaryOp(final DartBinaryExpression node, final Token operator, final DartExpression arg1, final Type type1, 
+      final DartExpression arg2, final Type type2, final FlowEnv flowEnv) {
+
+    if (type1 instanceof IntType && type2 instanceof IntType) {
+      return opIntInt(operator, arg1, type1, arg2, type2, flowEnv);
+    }
+
+    if (type1 instanceof DoubleType && type2 instanceof DoubleType) {
+      return opDoubleDouble(operator, arg1, type1, arg2, type2, flowEnv);
+    }
+
+    if (type1 instanceof DoubleType && type2 instanceof DoubleType) {
+      return opIntDouble(operator, arg1, type1, arg2, type2, flowEnv);
+    }
+
+    if (type1 instanceof DoubleType && type2 instanceof DoubleType) {
+      return opDoubleInt(operator, arg1, type1, arg2, type2, flowEnv);
+    }
+
+    if (type1 instanceof BoolType && type2 instanceof BoolType) {
+      return opBoolBool(operator, arg1, type1, arg2, type2, flowEnv);
+    }
+    
+    if (type1 instanceof DynamicType) {
+      return Types.widening(type2);
+    }
+    
+    if (type2 instanceof DynamicType) {
+      return Types.widening(type1);
+    }
+
+    if (type1 instanceof UnionType) {
+      type1.map(new TypeMapper() {
+        @Override
+        public Type transform(Type type) {
+          visitBinaryOp(node, operator, arg1, type, arg2, type2, flowEnv);
+          return null;
+        }
+      });
+    }
+
+    if (type2 instanceof UnionType) {
+      type1.map(new TypeMapper() {
+        @Override
+        public Type transform(Type type) {
+          visitBinaryOp(node, operator, arg1, type1, arg2, type, flowEnv);
+          return null;
+        }
+      });
     }
 
     // a method call that can be polymorphic
@@ -861,7 +1116,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
   }
 
   private static Type visitUnaryOperation(DartUnaryExpression node, Token operator, DartExpression arg, Type type, FlowEnv flowEnv) {
-    //FIXME Geoffrey, Dart allow to call unary/binary operators on 'num' too (the interface type)
+    // FIXME Geoffrey, Dart allow to call unary/binary operators on 'num' too
+    // (the interface type)
     switch (operator) {
     case INC:
       if (type instanceof IntType) {
@@ -872,7 +1128,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         DoubleType dType = (DoubleType) type;
         return dType.add(DoubleType.constant(1.));
       }
-      //FIXME Geoffrey, unary operator can be overriden
+      // FIXME Geoffrey, unary operator can be overriden
       return DYNAMIC_NON_NULL_TYPE;
     case SUB:
       if (type instanceof IntType) {
@@ -883,7 +1139,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         DoubleType dType = (DoubleType) type;
         return dType.unarySub();
       }
-      //FIXME Geoffrey, unary operator can be overriden
+      // FIXME Geoffrey, unary operator can be overriden
       return DYNAMIC_NON_NULL_TYPE;
     default:
       throw new UnsupportedOperationException("Unary Expr: " + operator + " (" + operator.name() + ") not implemented for " + type + ".");
@@ -1017,12 +1273,14 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     case METHOD: { // polymorphic method call on 'this'
       EnclosingElement enclosingElement = nodeElement.getEnclosingElement();
       if (enclosingElement instanceof ClassElement) {
-        Type receiverType = typeHelper.findType(false, (ClassElement)enclosingElement);
+        Type receiverType = typeHelper.findType(false, (ClassElement) enclosingElement);
         return methodCallResolver.methodCall(node.getObjectIdentifier(), receiverType, argumentTypes, flowEnv.getExpectedType(), true);
       }
-      // FIXME should use another method of the methodResolver (but it doesn't exist now)
-      return methodCallResolver.functionCall((MethodNodeElement)nodeElement, argumentTypes, flowEnv.getExpectedType());
-      //return typeHelper.asType(true, ((MethodElement) nodeElement).getReturnType());
+      // FIXME should use another method of the methodResolver (but it doesn't
+      // exist now)
+      return methodCallResolver.functionCall((MethodNodeElement) nodeElement, argumentTypes, flowEnv.getExpectedType());
+      // return typeHelper.asType(true, ((MethodElement)
+      // nodeElement).getReturnType());
     }
 
     case FIELD: // function call

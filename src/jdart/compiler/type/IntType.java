@@ -230,18 +230,48 @@ public class IntType extends PrimitiveType implements NumType {
     if (minBound == null && maxBound == null) {
       return INT_NON_NULL_TYPE;
     }
+    if (minBound.compareTo(maxBound) > 0) {
+      return new IntType(false, maxBound, minBound);
+    }
     return new IntType(false, minBound, maxBound);
   }
 
-  /*
-   * public IntType mul(IntType type) { BigInteger minBound = (this.minBound ==
-   * null | type.minBound == null)? null: this.minBound.multiply(type.minBound);
-   * BigInteger maxBound = (this.maxBound == null | type.maxBound == null)?
-   * null: this.maxBound.multiply(type.maxBound); if (minBound == null &&
-   * maxBound == null) { return INT_NON_NULL_TYPE; } return new IntType(false,
-   * minBound, maxBound); }
-   */
+  public IntType mul(IntType type) {
+    BigInteger minBound = (this.minBound == null | type.minBound == null) ? null : this.minBound.multiply(type.minBound);
+    BigInteger maxBound = (this.maxBound == null | type.maxBound == null) ? null : this.maxBound.multiply(type.maxBound);
+    if (minBound == null && maxBound == null) {
+      return INT_NON_NULL_TYPE;
+    }
+    return new IntType(false, minBound, maxBound);
+  }
+  
+  public IntType div(IntType type) {
+    BigInteger minBound = (this.minBound == null | type.maxBound == null) ? null : this.minBound.divide(type.maxBound);
+    BigInteger maxBound = (this.maxBound == null | type.minBound == null) ? null : this.maxBound.divide(type.minBound);
+    if (minBound == null && maxBound == null) {
+      return INT_NON_NULL_TYPE;
+    }
+    return new IntType(false, minBound, maxBound);
+  }
 
+  public Type shiftLeft(IntType type) {
+    BigInteger minBound = (this.minBound == null | type.minBound == null) ? null : this.minBound.shiftLeft(type.minBound.intValue());
+    BigInteger maxBound = (this.maxBound == null | type.maxBound == null) ? null : this.maxBound.shiftLeft(type.maxBound.intValue());
+    if (minBound == null && maxBound == null) {
+      return INT_NON_NULL_TYPE;
+    }
+    return new IntType(false, minBound, maxBound);
+  }
+  
+  public Type shiftRight(IntType type) {
+    BigInteger minBound = (this.minBound == null | type.maxBound == null) ? null : this.minBound.shiftRight(type.maxBound.intValue());
+    BigInteger maxBound = (this.maxBound == null | type.minBound == null) ? null : this.maxBound.shiftRight(type.minBound.intValue());
+    if (minBound == null && maxBound == null) {
+      return INT_NON_NULL_TYPE;
+    }
+    return new IntType(false, minBound, maxBound);
+  }
+  
   @Override
   public Type commonValuesWith(Type type) {
     if (type instanceof IntType) {
@@ -1064,6 +1094,14 @@ public class IntType extends PrimitiveType implements NumType {
   public Type bitOr(IntType other) {
     if (asConstant() != null && other.asConstant() != null) {
       BigInteger value = asConstant().or(other.asConstant());
+      return IntType.constant(value);
+    }
+    return INT_NON_NULL_TYPE;
+  }
+
+  public Type bitXor(IntType other) {
+    if (asConstant() != null && other.asConstant() != null) {
+      BigInteger value = asConstant().xor(other.asConstant());
       return IntType.constant(value);
     }
     return INT_NON_NULL_TYPE;
