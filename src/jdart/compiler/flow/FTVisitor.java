@@ -299,7 +299,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       FlowEnv envThen = new FlowEnv(parameter);
       FlowEnv envElse = new FlowEnv(parameter);
 
-      conditionVisitor.accept(condition, new ConditionEnv(parameter, envThen, envElse));
+      conditionVisitor.accept(condition, new ConditionEnv(parameter, envThen, envElse, false));
       Liveness trueLiveness = DEAD;
       if (conditionType != FALSE_TYPE) {
         trueLiveness = accept(node.getThenStatement(), envThen);
@@ -322,7 +322,6 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
     private Liveness computeLoop(DartExpression condition, DartStatement body, DartStatement /*maybenull*/init, 
         DartExpression /*maybenull*/increment, FlowEnv parameter) {
-      // FIXME the condition variable don't get the right value at the end of the loop.
       FlowEnv loopEnv = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
       FlowEnv afterLoopEnv = new FlowEnv(parameter);
       FlowEnv envCopy = new FlowEnv(parameter);
@@ -340,13 +339,13 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       FTVisitor.LoopVisitor loopVisitor = new LoopVisitor(FTVisitor.this);
       Map<VariableElement, Type> map = loopVisitor.accept(body, envCopy);
 
-      conditionVisitor.accept(condition, new ConditionEnv(paramWithInit, loopEnv, afterLoopEnv));
+      conditionVisitor.accept(condition, new ConditionEnv(paramWithInit, loopEnv, afterLoopEnv, true));
       accept(body, loopEnv);
       if (increment != null) {
         FTVisitor.this.accept(increment, loopEnv);
       }
       FTVisitor.this.accept(condition, loopEnv.expectedType(BOOL_NON_NULL_TYPE));
-      
+
       parameter.copyAll(loopEnv);
       parameter.copyAll(afterLoopEnv);
       for (Entry<VariableElement, Type> entry : map.entrySet()) {
@@ -380,11 +379,13 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     final FlowEnv trueEnv;
     final FlowEnv falseEnv;
     final FlowEnv parent;
+    final boolean loopCondition;
 
-    public ConditionEnv(FlowEnv parent, FlowEnv trueEnv, FlowEnv falseEnv) {
+    public ConditionEnv(FlowEnv parent, FlowEnv trueEnv, FlowEnv falseEnv, boolean loopCondition) {
       this.parent = parent;
       this.trueEnv = trueEnv;
       this.falseEnv = falseEnv;
+      this.loopCondition = loopCondition;
     }
 
     /**
@@ -464,8 +465,12 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
           if (lessThanOrEqualsValues != null) {
             parameter.trueEnv.register((VariableElement) element1, lessThanOrEqualsValues);
           }
-          if (greaterThanValues != null) {
-            parameter.falseEnv.register((VariableElement) element1, greaterThanValues);
+          if (parameter.loopCondition) {
+            parameter.falseEnv.register((VariableElement) element1, INT_NON_NULL_TYPE.commonValuesWith(type2));
+          } else {
+            if (greaterThanValues != null) {
+              parameter.falseEnv.register((VariableElement) element1, greaterThanValues);
+            }
           }
         }
         if (element2 != null && element2 instanceof VariableElement) {
@@ -481,8 +486,12 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
           if (greaterThanOrEqualsValues != null) {
             parameter.trueEnv.register((VariableElement) element1, greaterThanOrEqualsValues);
           }
-          if (lessThanValues != null) {
-            parameter.falseEnv.register((VariableElement) element1, lessThanValues);
+          if (parameter.loopCondition) {
+            parameter.falseEnv.register((VariableElement) element1, INT_NON_NULL_TYPE.commonValuesWith(type2));
+          } else {
+            if (lessThanValues != null) {
+              parameter.falseEnv.register((VariableElement) element1, lessThanValues);
+            }
           }
         }
         if (element2 != null && element2 instanceof VariableElement) {
@@ -498,8 +507,12 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
           if (lessThanValues != null) {
             parameter.trueEnv.register((VariableElement) element1, lessThanValues);
           }
-          if (greaterThanOrEqualsValues != null) {
-            parameter.falseEnv.register((VariableElement) element1, greaterThanOrEqualsValues);
+          if (parameter.loopCondition) {
+            parameter.falseEnv.register((VariableElement) element1, INT_NON_NULL_TYPE.commonValuesWith(type2));
+          } else {
+            if (greaterThanOrEqualsValues != null) {
+              parameter.falseEnv.register((VariableElement) element1, greaterThanOrEqualsValues);
+            }
           }
         }
         if (element2 != null && element2 instanceof VariableElement) {
@@ -515,8 +528,12 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
           if (greaterThanValues != null) {
             parameter.trueEnv.register((VariableElement) element1, greaterThanValues);
           }
-          if (lessThanOrEqualsValues != null) {
-            parameter.falseEnv.register((VariableElement) element1, lessThanOrEqualsValues);
+          if (parameter.loopCondition) {
+            parameter.falseEnv.register((VariableElement) element1, INT_NON_NULL_TYPE.commonValuesWith(type2));
+          } else {
+            if (lessThanOrEqualsValues != null) {
+              parameter.falseEnv.register((VariableElement) element1, lessThanOrEqualsValues);
+            }
           }
         }
         if (element2 != null && element2 instanceof VariableElement) {
@@ -530,7 +547,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         FlowEnv cpyFalse = new FlowEnv(parameter.falseEnv);
         FlowEnv cpyParent = new FlowEnv(parameter.parent);
 
-        FTVisitor.ConditionEnv conditionEnv = new ConditionEnv(cpyParent, cpyTrue, cpyFalse);
+        FTVisitor.ConditionEnv conditionEnv = new ConditionEnv(cpyParent, cpyTrue, cpyFalse, parameter.loopCondition);
         accept(arg1, conditionEnv);
         parameter.trueEnv.mergeCommonValues(cpyTrue);
         accept(arg2, conditionEnv);
@@ -542,7 +559,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         FlowEnv cpyFalse = new FlowEnv(parameter.falseEnv);
         FlowEnv cpyParent = new FlowEnv(parameter.parent);
 
-        FTVisitor.ConditionEnv conditionEnv = new ConditionEnv(cpyParent, cpyTrue, cpyFalse);
+        FTVisitor.ConditionEnv conditionEnv = new ConditionEnv(cpyParent, cpyTrue, cpyFalse, parameter.loopCondition);
         accept(arg1, conditionEnv);
         parameter.falseEnv.mergeCommonValues(cpyFalse);
         accept(arg2, conditionEnv);
