@@ -322,6 +322,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
     private Liveness computeLoop(DartExpression condition, DartStatement body, DartStatement /*maybenull*/init, 
         DartExpression /*maybenull*/increment, FlowEnv parameter) {
+      // FIXME the condition variable don't get the right value at the end of the loop.
       FlowEnv loopEnv = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
       FlowEnv afterLoopEnv = new FlowEnv(parameter);
       FlowEnv envCopy = new FlowEnv(parameter);
@@ -345,7 +346,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         FTVisitor.this.accept(increment, loopEnv);
       }
       FTVisitor.this.accept(condition, loopEnv.expectedType(BOOL_NON_NULL_TYPE));
-
+      
       parameter.copyAll(loopEnv);
       parameter.copyAll(afterLoopEnv);
       for (Entry<VariableElement, Type> entry : map.entrySet()) {
@@ -563,7 +564,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
   static class LoopVisitor extends ASTVisitor2<Map<VariableElement, Type>, FlowEnv> {
     private final FTVisitor ftVisitor;
-    
+
     public LoopVisitor(FTVisitor visitor) {
       ftVisitor = visitor;
     }
@@ -572,7 +573,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     protected Map<VariableElement, Type> accept(DartNode node, FlowEnv parameter) {
       return super.accept(node, parameter);
     }
-    
+
     private static void addAllWithUnion(Map<VariableElement, Type> out, Map<VariableElement, Type> in) {
       for (Entry<VariableElement, Type> entry : in.entrySet()) {
         Type previousType = out.get(entry.getKey());
@@ -1487,7 +1488,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
          Type typeOfIndex = accept(node.getKey(), parameter);
 
          operandIsNonNull(node.getTarget(), parameter);
-         
+
          // TODO node.getKey -> int32+
 
          if (!(typeOfIndex instanceof IntType)) {
