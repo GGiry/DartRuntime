@@ -2,6 +2,7 @@ package jdart.compiler.type;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
 
@@ -365,12 +366,13 @@ public class DoubleType extends PrimitiveType implements NumType {
       }
 
       IntType iType;
-      float floatValue = constant.floatValue();
-      int longValue = (int) floatValue;
-      if (floatValue == longValue) {
-        iType = new IntType(isNullable(), BigInteger.valueOf(longValue), BigInteger.valueOf(longValue));
-      } else {
-        iType = new IntType(isNullable(), BigInteger.valueOf(longValue), BigInteger.valueOf(longValue + 1));
+      BigDecimal bigDecValue = BigDecimal.valueOf(constant);
+      try {
+        BigInteger bigIntValue = bigDecValue.toBigIntegerExact();
+        iType = new IntType(isNullable(), bigIntValue, bigIntValue);
+      } catch (ArithmeticException e) {
+        BigInteger bigIntValue = bigDecValue.toBigInteger();
+        iType = new IntType(isNullable(), bigIntValue, bigIntValue.add(BigInteger.ONE));
       }
 
       return iType.isIncludeIn(other);

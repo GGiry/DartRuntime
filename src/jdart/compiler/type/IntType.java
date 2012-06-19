@@ -2,6 +2,7 @@ package jdart.compiler.type;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
 
@@ -247,7 +248,7 @@ public class IntType extends PrimitiveType implements NumType {
     }
     return new IntType(false, minBound, maxBound);
   }
-  
+
   public IntType div(IntType type) {
     BigInteger minBound = (this.minBound == null | type.maxBound == null) ? null : this.minBound.divide(type.maxBound);
     BigInteger maxBound = (this.maxBound == null | type.minBound == null) ? null : this.maxBound.divide(type.minBound);
@@ -268,7 +269,7 @@ public class IntType extends PrimitiveType implements NumType {
     }
     return new IntType(false, minBound, maxBound);
   }
-  
+
   public Type shiftRight(IntType type) {
     BigInteger minBound = (this.minBound == null | type.maxBound == null) ? null : this.minBound.shiftRight(type.maxBound.intValue());
     BigInteger maxBound = (this.maxBound == null | type.minBound == null) ? null : this.maxBound.shiftRight(type.minBound.intValue());
@@ -277,7 +278,7 @@ public class IntType extends PrimitiveType implements NumType {
     }
     return new IntType(false, minBound, maxBound);
   }
-  
+
   @Override
   public Type commonValuesWith(Type type) {
     if (type instanceof IntType) {
@@ -287,12 +288,13 @@ public class IntType extends PrimitiveType implements NumType {
     if (type instanceof DoubleType) {
       DoubleType dType = (DoubleType) type;
       double constant = dType.asConstant().doubleValue();
-
-      if (((int) constant) == constant) {
-        BigInteger valueOfCst = BigInteger.valueOf((long) constant);
+      BigDecimal bigDecValue = BigDecimal.valueOf(constant);
+      try {
+        BigInteger valueOfCst = bigDecValue.toBigIntegerExact();
         return intersect(new IntType(isNullable() && type.isNullable(), valueOfCst, valueOfCst), this);
+      } catch (ArithmeticException e) {
+        return null;
       }
-      return null;
     }
 
     if (type instanceof UnionType) {
@@ -1147,11 +1149,8 @@ public class IntType extends PrimitiveType implements NumType {
     if (other instanceof DoubleType) {
       Double doubleConstant = ((DoubleType) other).asConstant();
       if (doubleConstant != null) {
-        float floatValue = doubleConstant.floatValue();
-        if (floatValue == (int) floatValue) {
-          if (asConstant().compareTo(BigInteger.valueOf(doubleConstant.longValue())) == 0) {
-            return true;
-          }
+        if (asDouble().equals(other)) {
+          return true;
         }
         return false;
       }
@@ -1177,18 +1176,18 @@ public class IntType extends PrimitiveType implements NumType {
 
     if (other instanceof DoubleType) {
       DoubleType dType = (DoubleType) other;
-      long longValue = dType.asConstant().longValue();
-      BigInteger valueOf = BigInteger.valueOf(longValue);
-      if (dType.asConstant().floatValue() == longValue) {
-        other = new IntType(other.isNullable(), valueOf, valueOf);
-      } else {
-        other = new IntType(other.isNullable(), valueOf, valueOf.add(BigInteger.ONE));
+      BigDecimal bigDec = BigDecimal.valueOf(dType.asConstant());
+      try {
+      BigInteger bigInt = bigDec.toBigIntegerExact();
+      other = new IntType(other.isNullable(), bigInt, bigInt);
+      } catch (ArithmeticException e) {
+        BigInteger bigInt = bigDec.toBigInteger();
+        other = new IntType(other.isNullable(), bigInt, bigInt.add(BigInteger.ONE));
       }
     }
 
     if (other instanceof IntType) {
       IntType iType = (IntType) other;
-
       DiffResult diff = diff(this, iType);
 
       switch (diff) {
