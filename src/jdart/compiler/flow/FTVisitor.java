@@ -7,10 +7,9 @@ import static jdart.compiler.type.CoreTypeRepository.*;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
 
 import jdart.compiler.type.ArrayType;
 import jdart.compiler.type.BoolType;
@@ -324,27 +323,23 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     private Liveness computeLoop(DartExpression condition, DartStatement body, DartStatement /*maybenull*/init, 
         DartExpression /*maybenull*/increment, FlowEnv parameter) {
       FlowEnv loopEnv = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
-      FlowEnv afterLoopEnv = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), false);
+      FlowEnv afterLoopEnv = new FlowEnv(parameter);
+      FlowEnv envCopy = new FlowEnv(parameter);
+      FlowEnv paramWithInit = new FlowEnv(parameter);
       if (init != null) {
         accept(init, loopEnv);
+        accept(init, afterLoopEnv);
+        accept(init, paramWithInit);
       }
 
       // condition should be a boolean
       FTVisitor.this.accept(condition, loopEnv.expectedType(BOOL_NON_NULL_TYPE));
       FTVisitor.ConditionVisitor conditionVisitor = new ConditionVisitor(FTVisitor.this);
 
-      FTVisitor.LoopVisitor loopVisitor = new LoopVisitor();
-      Set<VariableElement> list = loopVisitor.accept(body, parameter);
-      System.out.println(list);
+      FTVisitor.LoopVisitor loopVisitor = new LoopVisitor(FTVisitor.this);
+      Map<VariableElement, Type> map = loopVisitor.accept(body, envCopy);
 
-      for (VariableElement element : list) {
-        Type type = parameter.getType(element);
-        if (type != null) {
-          parameter.register(element, Types.widening(type));
-        }
-      }
-
-      conditionVisitor.accept(condition, new ConditionEnv(parameter, loopEnv, afterLoopEnv));
+      conditionVisitor.accept(condition, new ConditionEnv(paramWithInit, loopEnv, afterLoopEnv));
       accept(body, loopEnv);
       if (increment != null) {
         FTVisitor.this.accept(increment, loopEnv);
@@ -353,6 +348,9 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
       parameter.copyAll(loopEnv);
       parameter.copyAll(afterLoopEnv);
+      for (Entry<VariableElement, Type> entry : map.entrySet()) {
+        parameter.register(entry.getKey(), entry.getValue());
+      }
       return ALIVE;
     }
 
@@ -563,49 +561,65 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
-  static class LoopVisitor extends ASTVisitor2<Set<VariableElement>, FlowEnv> {
-    public LoopVisitor() {
-      super();
+  static class LoopVisitor extends ASTVisitor2<Map<VariableElement, Type>, FlowEnv> {
+    private final FTVisitor ftVisitor;
+    
+    public LoopVisitor(FTVisitor visitor) {
+      ftVisitor = visitor;
     }
 
     @Override
-    protected Set<VariableElement> accept(DartNode node, FlowEnv parameter) {
+    protected Map<VariableElement, Type> accept(DartNode node, FlowEnv parameter) {
       return super.accept(node, parameter);
     }
+    
+    private static void addAllWithUnion(Map<VariableElement, Type> out, Map<VariableElement, Type> in) {
+      for (Entry<VariableElement, Type> entry : in.entrySet()) {
+        Type previousType = out.get(entry.getKey());
+        if (previousType == null) {
+          out.put(entry.getKey(), entry.getValue());
+        } else {
+          out.put(entry.getKey(), Types.union(entry.getValue(), previousType));
+        }
+      }
+    }
 
     @Override
-    public Set<VariableElement> visitBlock(DartBlock node, FlowEnv parameter) {
-      HashSet<VariableElement> list = new HashSet<>();
+    public Map<VariableElement, Type> visitBlock(DartBlock node, FlowEnv parameter) {
+      HashMap<VariableElement, Type> map = new HashMap<>();
       for (DartStatement statement : node.getStatements()) {
-        list.addAll(accept(statement, parameter));
+        Map<VariableElement, Type> acceptMap = accept(statement, parameter);
+        addAllWithUnion(map, acceptMap);
       }
-      return list;
+      return map;
     }
 
     @Override
-    public Set<VariableElement> visitIfStatement(DartIfStatement node, FlowEnv parameter) {
-      HashSet<VariableElement> list = new HashSet<>();
-      list.addAll(accept(node.getThenStatement(), parameter));
+    public Map<VariableElement, Type> visitIfStatement(DartIfStatement node, FlowEnv parameter) {
+      HashMap<VariableElement, Type> map = new HashMap<>();
+      addAllWithUnion(map, accept(node.getThenStatement(), parameter));
       if (node.getElseStatement() != null) {
-        list.addAll(accept(node.getElseStatement(), parameter));
+        addAllWithUnion(map, accept(node.getElseStatement(), parameter));
       }
-      return list;
+      return map;
     }
 
     @Override
-    public Set<VariableElement> visitExprStmt(DartExprStmt node, FlowEnv parameter) {
-      HashSet<VariableElement> list = new HashSet<>();
-      list.addAll(accept(node.getExpression(), parameter));
-      return list;
+    public Map<VariableElement, Type> visitExprStmt(DartExprStmt node, FlowEnv parameter) {
+      HashMap<VariableElement, Type> map = new HashMap<>();
+      map.putAll(accept(node.getExpression(), parameter));
+      return map;
     }
 
     @Override
-    public Set<VariableElement> visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
-      HashSet<VariableElement> list = new HashSet<>();
+    public Map<VariableElement, Type> visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
+      HashMap<VariableElement, Type> map = new HashMap<>();
       if (node.getOperator().isAssignmentOperator()) {
-        list.add((VariableElement) node.getArg1().getElement());
+        VariableElement element = (VariableElement) node.getArg1().getElement();
+        Type currentType = Types.widening(ftVisitor.accept(node, parameter));
+        map.put(element, currentType);
       }
-      return list;
+      return map;
     }
   }
 
@@ -1115,11 +1129,11 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
            return opDoubleDouble(operator, arg1, type1, arg2, type2, flowEnv);
          }
 
-         if (type1 instanceof DoubleType && type2 instanceof DoubleType) {
+         if (type1 instanceof IntType && type2 instanceof DoubleType) {
            return opIntDouble(operator, arg1, type1, arg2, type2, flowEnv);
          }
 
-         if (type1 instanceof DoubleType && type2 instanceof DoubleType) {
+         if (type1 instanceof DoubleType && type2 instanceof IntType) {
            return opDoubleInt(operator, arg1, type1, arg2, type2, flowEnv);
          }
 
