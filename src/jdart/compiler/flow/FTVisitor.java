@@ -777,6 +777,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       return BOOL_NON_NULL_TYPE;
     case ADD:
     case SUB:
+    case MUL:
+    case DIV:
     case MOD:
     case BIT_AND:
     case BIT_OR:
@@ -790,6 +792,10 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
           return DoubleType.constant(asConstant1 + asConstant2);
         case SUB:
           return DoubleType.constant(asConstant1 - asConstant2);
+        case MUL:
+          return DoubleType.constant(asConstant1 * asConstant2);
+        case DIV:
+          return DoubleType.constant(asConstant1 / asConstant2);
         case MOD:
           return DoubleType.constant(asConstant1 % asConstant2);
         case BIT_AND:
@@ -838,25 +844,39 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       if (maxBound != null && (maxBound.doubleValue() < asConstant2)) {
         return TRUE_TYPE;
       }
+      if (minBound != null && (minBound.doubleValue() >= asConstant2)) {
+        return FALSE_TYPE;
+      }
       return BOOL_NON_NULL_TYPE;
     case LTE:
       if (maxBound != null && (maxBound.doubleValue() <= asConstant2)) {
         return TRUE_TYPE;
+      }
+      if (minBound != null && (minBound.doubleValue() > asConstant2)) {
+        return FALSE_TYPE;
       }
       return BOOL_NON_NULL_TYPE;
     case GT:
       if (minBound != null && (minBound.doubleValue() > asConstant2)) {
         return TRUE_TYPE;
       }
+      if (minBound != null && (minBound.doubleValue() >= asConstant2)) {
+        return FALSE_TYPE;
+      }
       return BOOL_NON_NULL_TYPE;
     case GTE:
-      if (minBound != null && (minBound.doubleValue() > asConstant2)) {
+      if (minBound != null && (minBound.doubleValue() >= asConstant2)) {
         return TRUE_TYPE;
+      }
+      if (minBound != null && (minBound.doubleValue() > asConstant2)) {
+        return FALSE_TYPE;
       }
       return BOOL_NON_NULL_TYPE;
 
     case ADD:
     case SUB:
+    case MUL:
+    case DIV:
     case MOD:
     case BIT_AND:
     case BIT_OR:
@@ -874,6 +894,16 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         case SUB:
           if (asConstant1 != null) {
             return DoubleType.constant(asConstant1.doubleValue() - asConstant2);
+          }
+          return DOUBLE_NON_NULL_TYPE;
+        case MUL:
+          if (asConstant1 != null) {
+            return DoubleType.constant(asConstant1.doubleValue() * asConstant2);
+          }
+          return DOUBLE_NON_NULL_TYPE;
+        case DIV:
+          if (asConstant1 != null) {
+            return DoubleType.constant(asConstant1.doubleValue() / asConstant2);
           }
           return DOUBLE_NON_NULL_TYPE;
         case MOD:
@@ -919,7 +949,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     case NE:
     case NE_STRICT:
       if (dType1.isIncludeIn(iType2)) {
-        if (asConstant1 != null) {
+        if (asConstant2 != null) {
           return FALSE_TYPE;
         }
         return BOOL_NON_NULL_TYPE;
@@ -928,35 +958,49 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     case EQ:
     case EQ_STRICT:
       if (dType1.isIncludeIn(iType2)) {
-        if (asConstant1 != null) {
+        if (asConstant2 != null) {
           return TRUE_TYPE;
         }
         return BOOL_NON_NULL_TYPE;
       }
       return FALSE_TYPE;
     case LT:
-      if (maxBound != null && (asConstant1 < maxBound.doubleValue())) {
+      if (minBound != null && (asConstant1 < minBound.doubleValue())) {
         return TRUE_TYPE;
+      }
+      if (maxBound != null && (asConstant1 >= maxBound.doubleValue())) {
+        return FALSE_TYPE;
       }
       return BOOL_NON_NULL_TYPE;
     case LTE:
-      if (maxBound != null && (asConstant1 <= maxBound.doubleValue())) {
+      if (minBound != null && (asConstant1 <= minBound.doubleValue())) {
         return TRUE_TYPE;
+      }
+      if (maxBound != null && (asConstant1 > maxBound.doubleValue())) {
+        return FALSE_TYPE;
       }
       return BOOL_NON_NULL_TYPE;
     case GT:
-      if (minBound != null && (asConstant1 > maxBound.doubleValue())) {
+      if (maxBound != null && (asConstant1 > maxBound.doubleValue())) {
         return TRUE_TYPE;
+      }
+      if (minBound != null && (asConstant1 <= minBound.doubleValue())) {
+        return FALSE_TYPE;
       }
       return BOOL_NON_NULL_TYPE;
     case GTE:
-      if (minBound != null && (asConstant1 >= maxBound.doubleValue())) {
+      if (maxBound != null && (asConstant1 >= maxBound.doubleValue())) {
         return TRUE_TYPE;
+      }
+      if (minBound != null && (asConstant1 < minBound.doubleValue())) {
+        return FALSE_TYPE;
       }
       return BOOL_NON_NULL_TYPE;
 
     case ADD:
     case SUB:
+    case MUL:
+    case DIV:
     case MOD:
     case BIT_AND:
     case BIT_OR:
@@ -974,6 +1018,16 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         case SUB:
           if (asConstant1 != null) {
             return DoubleType.constant(asConstant1 - asConstant2.doubleValue());
+          }
+          return DOUBLE_NON_NULL_TYPE;
+        case MUL:
+          if (asConstant1 != null) {
+          return DoubleType.constant(asConstant1 * asConstant2.doubleValue());
+        }
+        return DOUBLE_NON_NULL_TYPE;
+        case DIV:
+          if (asConstant1 != null) {
+            return DoubleType.constant(asConstant1 / asConstant2.doubleValue());
           }
           return DOUBLE_NON_NULL_TYPE;
         case MOD:
