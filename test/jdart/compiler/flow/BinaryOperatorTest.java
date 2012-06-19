@@ -204,4 +204,27 @@ public class BinaryOperatorTest {
     Assert.assertEquals(TRUE_TYPE, FTVisitor.opDoubleInt(Token.NE, null, double1, null, int1, null));
     Assert.assertEquals(BOOL_NON_NULL_TYPE, FTVisitor.opDoubleInt(Token.NE, null, double1, null, range2, null));
   }
+  
+  @Test
+  public void testBoolBool() {
+    Assert.assertEquals(TRUE_TYPE, FTVisitor.opBoolBool(Token.EQ, null, TRUE_TYPE, null, TRUE_TYPE, null));
+    Assert.assertEquals(FALSE_TYPE, FTVisitor.opBoolBool(Token.EQ, null, TRUE_TYPE, null, FALSE_TYPE, null));
+    Assert.assertEquals(FALSE_TYPE, FTVisitor.opBoolBool(Token.EQ, null, FALSE_TYPE, null, TRUE_TYPE, null));
+    Assert.assertEquals(TRUE_TYPE, FTVisitor.opBoolBool(Token.EQ, null, FALSE_TYPE, null, FALSE_TYPE, null));
+    
+    Assert.assertEquals(FALSE_TYPE, FTVisitor.opBoolBool(Token.NE, null, TRUE_TYPE, null, TRUE_TYPE, null));
+    Assert.assertEquals(TRUE_TYPE, FTVisitor.opBoolBool(Token.NE, null, TRUE_TYPE, null, FALSE_TYPE, null));
+    Assert.assertEquals(TRUE_TYPE, FTVisitor.opBoolBool(Token.NE, null, FALSE_TYPE, null, TRUE_TYPE, null));
+    Assert.assertEquals(FALSE_TYPE, FTVisitor.opBoolBool(Token.NE, null, FALSE_TYPE, null, FALSE_TYPE, null));
+    
+    Assert.assertEquals(TRUE_TYPE, FTVisitor.opBoolBool(Token.AND, null, TRUE_TYPE, null, TRUE_TYPE, null));
+    Assert.assertEquals(FALSE_TYPE, FTVisitor.opBoolBool(Token.AND, null, TRUE_TYPE, null, FALSE_TYPE, null));
+    Assert.assertEquals(FALSE_TYPE, FTVisitor.opBoolBool(Token.AND, null, FALSE_TYPE, null, TRUE_TYPE, null));
+    Assert.assertEquals(FALSE_TYPE, FTVisitor.opBoolBool(Token.AND, null, FALSE_TYPE, null, FALSE_TYPE, null));
+    
+    Assert.assertEquals(TRUE_TYPE, FTVisitor.opBoolBool(Token.OR, null, TRUE_TYPE, null, TRUE_TYPE, null));
+    Assert.assertEquals(TRUE_TYPE, FTVisitor.opBoolBool(Token.OR, null, TRUE_TYPE, null, FALSE_TYPE, null));
+    Assert.assertEquals(TRUE_TYPE, FTVisitor.opBoolBool(Token.OR, null, FALSE_TYPE, null, TRUE_TYPE, null));
+    Assert.assertEquals(FALSE_TYPE, FTVisitor.opBoolBool(Token.OR, null, FALSE_TYPE, null, FALSE_TYPE, null));
+  }
 }
