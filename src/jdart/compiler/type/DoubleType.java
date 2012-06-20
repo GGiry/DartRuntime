@@ -21,6 +21,11 @@ public class DoubleType extends PrimitiveType implements NumType {
   }
 
   @Override
+  public Type asDouble() {
+    return this;
+  }
+  
+  @Override
   public int hashCode() {
     return (isNullable() ? 1 : 0) ^ Objects.hashCode(constant);
   }
@@ -248,6 +253,7 @@ public class DoubleType extends PrimitiveType implements NumType {
     return null;
   }
 
+  @Override
   public Type unarySub() {
     return constant(-constant);
   }

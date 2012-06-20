@@ -24,4 +24,18 @@ public interface NumType extends Type {
    * @return The result or null if other is not computable.
    */
   Type mod(Type other);
+
+  /**
+   * Returns this as DoubleType
+   * @return This as DoubleType
+   */
+  Type asDouble();
+
+  /**
+   * Returns invert of this.
+   * double[5] will return double[-5]
+   * int[4, 10] will return int[-4,10]
+   * @return Invert of this.
+   */
+  Type unarySub();
 }

@@ -354,6 +354,19 @@ public class UnionType extends NullableType implements NumType {
       }
     });
   }
+  
+  @Override
+  public Type unarySub() {
+    return map(new TypeMapper() {
+      @Override
+      public Type transform(Type type) {
+        if (type instanceof NumType)  {
+          return ((NumType) type).unarySub();
+        }
+        return null;
+      }
+    });
+  }
 
   public Type mod(final Type other) {
     return map(new TypeMapper() {
@@ -434,5 +447,10 @@ public class UnionType extends NullableType implements NumType {
       }
     }
     return true;
+  }
+
+  @Override
+  public Type asDouble() {
+    throw new UnsupportedOperationException("An union can't be converted to a Double.");
   }
 }

@@ -17,6 +17,7 @@ import jdart.compiler.type.DoubleType;
 import jdart.compiler.type.DynamicType;
 import jdart.compiler.type.IntType;
 import jdart.compiler.type.InterfaceType;
+import jdart.compiler.type.NumType;
 import jdart.compiler.type.OwnerType;
 import jdart.compiler.type.Type;
 import jdart.compiler.type.TypeMapper;
@@ -294,7 +295,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       DartExpression condition = node.getCondition();
       Type conditionType = FTVisitor.this.accept(condition, parameter.expectedType(BOOL_NON_NULL_TYPE));
 
-      FTVisitor.ConditionVisitor conditionVisitor = new ConditionVisitor(FTVisitor.this);
+      FTVisitor.ConditionVisitor conditionVisitor = new ConditionVisitor();
 
       FlowEnv envThen = new FlowEnv(parameter);
       FlowEnv envElse = new FlowEnv(parameter);
@@ -334,9 +335,9 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
       // condition should be a boolean
       FTVisitor.this.accept(condition, loopEnv.expectedType(BOOL_NON_NULL_TYPE));
-      FTVisitor.ConditionVisitor conditionVisitor = new ConditionVisitor(FTVisitor.this);
+      FTVisitor.ConditionVisitor conditionVisitor = new ConditionVisitor();
 
-      FTVisitor.LoopVisitor loopVisitor = new LoopVisitor(FTVisitor.this);
+      FTVisitor.LoopVisitor loopVisitor = new LoopVisitor();
       Map<VariableElement, Type> map = loopVisitor.accept(body, envCopy);
 
       conditionVisitor.accept(condition, new ConditionEnv(paramWithInit, loopEnv, afterLoopEnv, true));
@@ -348,6 +349,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
       parameter.copyAll(loopEnv);
       parameter.copyAll(afterLoopEnv);
+      // We register in FlowEnv variables which are already knows before loop and which change during the loop.
+      // Registered types are unions of widened possible type for each variable.
       for (Entry<VariableElement, Type> entry : map.entrySet()) {
         parameter.register(entry.getKey(), entry.getValue());
       }
@@ -410,13 +413,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
-  static class ConditionVisitor extends ASTVisitor2<Void, FTVisitor.ConditionEnv> {
-    private final FTVisitor visitor;
-
-    public ConditionVisitor(FTVisitor visitor) {
-      this.visitor = visitor;
-    }
-
+  class ConditionVisitor extends ASTVisitor2<Void, FTVisitor.ConditionEnv> {
     @Override
     protected Void accept(DartNode node, FTVisitor.ConditionEnv parameter) {
       return super.accept(node, parameter);
@@ -426,8 +423,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     public Void visitBinaryExpression(DartBinaryExpression node, FTVisitor.ConditionEnv parameter) {
       DartExpression arg1 = node.getArg1();
       DartExpression arg2 = node.getArg2();
-      Type type1 = visitor.accept(arg1, parameter.parent);
-      Type type2 = visitor.accept(arg2, parameter.parent);
+      Type type1 = FTVisitor.this.accept(arg1, parameter.parent);
+      Type type2 = FTVisitor.this.accept(arg2, parameter.parent);
       Element element1 = arg1.getElement();
       Element element2 = arg2.getElement();
       Token operator = node.getOperator();
@@ -579,19 +576,13 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
-  static class LoopVisitor extends ASTVisitor2<Map<VariableElement, Type>, FlowEnv> {
-    private final FTVisitor ftVisitor;
-
-    public LoopVisitor(FTVisitor visitor) {
-      ftVisitor = visitor;
-    }
-
+  class LoopVisitor extends ASTVisitor2<Map<VariableElement, Type>, FlowEnv> {
     @Override
     protected Map<VariableElement, Type> accept(DartNode node, FlowEnv parameter) {
       return super.accept(node, parameter);
     }
 
-    private static void addAllWithUnion(Map<VariableElement, Type> out, Map<VariableElement, Type> in) {
+    private void addAllWithUnion(Map<VariableElement, Type> out, Map<VariableElement, Type> in) {
       for (Entry<VariableElement, Type> entry : in.entrySet()) {
         Type previousType = out.get(entry.getKey());
         if (previousType == null) {
@@ -634,7 +625,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       HashMap<VariableElement, Type> map = new HashMap<>();
       if (node.getOperator().isAssignmentOperator()) {
         VariableElement element = (VariableElement) node.getArg1().getElement();
-        Type currentType = Types.widening(ftVisitor.accept(node, parameter));
+        Type currentType = Types.widening(FTVisitor.this.accept(node, parameter));
         map.put(element, currentType);
       }
       return map;
@@ -705,9 +696,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
-  /*
-   * TODO private
-   */static Type opIntInt(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
+  /* TODO 
+   private */static Type opIntInt(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
      IntType iType1 = (IntType) type1;
      IntType iType2 = (IntType) type2;
      switch (operator) {
@@ -759,800 +749,553 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
          return iType1.shiftLeft(iType2);
        case SAR:
          return iType1.shiftRight(iType2);
-       default:
        }
      default:
        throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
      }
    }
 
-   /*
-    * TODO private
-    */static Type opDoubleDouble(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
-      Double asConstant1 = ((DoubleType) type1).asConstant();
-      Double asConstant2 = ((DoubleType) type2).asConstant();
-      switch (operator) {
-      case NE:
-      case NE_STRICT:
-        if (asConstant1 != null && asConstant2 != null) {
-          return asConstant1.equals(asConstant2) ? FALSE_TYPE : TRUE_TYPE;
-        }
-        return BOOL_NON_NULL_TYPE;
-      case EQ:
-      case EQ_STRICT:
-        if (asConstant1 != null && asConstant2 != null) {
-          return asConstant1.equals(asConstant2) ? TRUE_TYPE : FALSE_TYPE;
-        }
-        return BOOL_NON_NULL_TYPE;
-      case LT:
-        if (asConstant1 != null && asConstant2 != null) {
-          return (asConstant1.compareTo(asConstant2) < 0) ? TRUE_TYPE : FALSE_TYPE;
-        }
-        return BOOL_NON_NULL_TYPE;
-      case LTE:
-        if (asConstant1 != null && asConstant2 != null) {
-          return (asConstant1.compareTo(asConstant2) <= 0) ? TRUE_TYPE : FALSE_TYPE;
-        }
-        return BOOL_NON_NULL_TYPE;
-      case GT:
-        if (asConstant1 != null && asConstant2 != null) {
-          return (asConstant1.compareTo(asConstant2) > 0) ? TRUE_TYPE : FALSE_TYPE;
-        }
-        return BOOL_NON_NULL_TYPE;
-      case GTE:
-        if (asConstant1 != null && asConstant2 != null) {
-          return (asConstant1.compareTo(asConstant2) >= 0) ? TRUE_TYPE : FALSE_TYPE;
-        }
-        return BOOL_NON_NULL_TYPE;
-      case ADD:
-      case SUB:
-      case MUL:
-      case DIV:
-      case MOD:
-      case BIT_AND:
-      case BIT_OR:
-      case BIT_XOR:
-        operandIsNonNull(arg1, flowEnv);
-        operandIsNonNull(arg2, flowEnv);
-
-        if (asConstant1 != null && asConstant2 != null) {
-          switch (operator) {
-          case ADD:
-            return DoubleType.constant(asConstant1 + asConstant2);
-          case SUB:
-            return DoubleType.constant(asConstant1 - asConstant2);
-          case MUL:
-            return DoubleType.constant(asConstant1 * asConstant2);
-          case DIV:
-            return DoubleType.constant(asConstant1 / asConstant2);
-          case MOD:
-            return DoubleType.constant(asConstant1 % asConstant2);
-          case BIT_AND:
-            return DoubleType.constant(asConstant1.byteValue() & asConstant2.byteValue());
-          case BIT_OR:
-            return DoubleType.constant(asConstant1.byteValue() | asConstant2.byteValue());
-          case BIT_XOR:
-            return DoubleType.constant(asConstant1.byteValue() ^ asConstant2.byteValue());
-          default:
-          }
-        }
-      default:
-        throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
-      }
-    }
-
-    /*
-     * TODO private
-     */static Type opIntDouble(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
-       IntType iType1 = (IntType) type1;
-       DoubleType dType2 = (DoubleType) type2;
-
-       BigInteger maxBound = iType1.getMaxBound();
-       BigInteger minBound = iType1.getMinBound();
-       Double asConstant2 = dType2.asConstant();
-       BigInteger asConstant1 = iType1.asConstant();
-       switch (operator) {
-       case NE:
-       case NE_STRICT:
-         if (dType2.isIncludeIn(iType1)) {
-           if (asConstant1 != null) {
-             return FALSE_TYPE;
-           }
-           return BOOL_NON_NULL_TYPE;
-         }
-         return TRUE_TYPE;
-       case EQ:
-       case EQ_STRICT:
-         if (dType2.isIncludeIn(iType1)) {
-           if (asConstant1 != null) {
-             return TRUE_TYPE;
-           }
-           return BOOL_NON_NULL_TYPE;
-         }
-         return FALSE_TYPE;
-       case LT:
-         if (maxBound != null && (maxBound.doubleValue() < asConstant2)) {
-           return TRUE_TYPE;
-         }
-         if (minBound != null && (minBound.doubleValue() >= asConstant2)) {
-           return FALSE_TYPE;
-         }
-         return BOOL_NON_NULL_TYPE;
-       case LTE:
-         if (maxBound != null && (maxBound.doubleValue() <= asConstant2)) {
-           return TRUE_TYPE;
-         }
-         if (minBound != null && (minBound.doubleValue() > asConstant2)) {
-           return FALSE_TYPE;
-         }
-         return BOOL_NON_NULL_TYPE;
-       case GT:
-         if (minBound != null && (minBound.doubleValue() > asConstant2)) {
-           return TRUE_TYPE;
-         }
-         if (minBound != null && (minBound.doubleValue() >= asConstant2)) {
-           return FALSE_TYPE;
-         }
-         return BOOL_NON_NULL_TYPE;
-       case GTE:
-         if (minBound != null && (minBound.doubleValue() >= asConstant2)) {
-           return TRUE_TYPE;
-         }
-         if (minBound != null && (minBound.doubleValue() > asConstant2)) {
-           return FALSE_TYPE;
-         }
-         return BOOL_NON_NULL_TYPE;
-
-       case ADD:
-       case SUB:
-       case MUL:
-       case DIV:
-       case MOD:
-       case BIT_AND:
-       case BIT_OR:
-       case BIT_XOR:
-         operandIsNonNull(arg1, flowEnv);
-         operandIsNonNull(arg2, flowEnv);
-
-         if (asConstant2 != null) {
-           switch (operator) {
-           case ADD:
-             if (asConstant1 != null) {
-               return DoubleType.constant(asConstant1.doubleValue() + asConstant2);
-             }
-             return DOUBLE_NON_NULL_TYPE;
-           case SUB:
-             if (asConstant1 != null) {
-               return DoubleType.constant(asConstant1.doubleValue() - asConstant2);
-             }
-             return DOUBLE_NON_NULL_TYPE;
-           case MUL:
-             if (asConstant1 != null) {
-               return DoubleType.constant(asConstant1.doubleValue() * asConstant2);
-             }
-             return DOUBLE_NON_NULL_TYPE;
-           case DIV:
-             if (asConstant1 != null) {
-               return DoubleType.constant(asConstant1.doubleValue() / asConstant2);
-             }
-             return DOUBLE_NON_NULL_TYPE;
-           case MOD:
-             if (asConstant1 != null) {
-               return DoubleType.constant(asConstant1.doubleValue() % asConstant2);
-             }
-             return DOUBLE_NON_NULL_TYPE;
-           case BIT_AND:
-             if (asConstant1 != null) {
-               return IntType.constant(asConstant1.and(BigInteger.valueOf(asConstant2.longValue())));
-             }
-             return DOUBLE_NON_NULL_TYPE;
-           case BIT_OR:
-             if (asConstant1 != null) {
-               return IntType.constant(asConstant1.or(BigInteger.valueOf(asConstant2.longValue())));
-             }
-             return DOUBLE_NON_NULL_TYPE;
-           case BIT_XOR:
-             if (asConstant1 != null) {
-               return IntType.constant(asConstant1.xor(BigInteger.valueOf(asConstant2.longValue())));
-             }
-             return DOUBLE_NON_NULL_TYPE;
-           }
-         } else {
-           // asConstant2 == null
-           return DOUBLE_NON_NULL_TYPE;
-         }
-       default:
-         throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
+   /* TODO 
+   private */static Type opDoubleDouble(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
+     Double asConstant1 = ((DoubleType) type1).asConstant();
+     Double asConstant2 = ((DoubleType) type2).asConstant();
+     switch (operator) {
+     case NE:
+     case NE_STRICT:
+       if (asConstant1 != null && asConstant2 != null) {
+         return asConstant1.equals(asConstant2) ? FALSE_TYPE : TRUE_TYPE;
        }
+       return BOOL_NON_NULL_TYPE;
+     case EQ:
+     case EQ_STRICT:
+       if (asConstant1 != null && asConstant2 != null) {
+         return asConstant1.equals(asConstant2) ? TRUE_TYPE : FALSE_TYPE;
+       }
+       return BOOL_NON_NULL_TYPE;
+     case LT:
+       if (asConstant1 != null && asConstant2 != null) {
+         return (asConstant1.compareTo(asConstant2) < 0) ? TRUE_TYPE : FALSE_TYPE;
+       }
+       return BOOL_NON_NULL_TYPE;
+     case LTE:
+       if (asConstant1 != null && asConstant2 != null) {
+         return (asConstant1.compareTo(asConstant2) <= 0) ? TRUE_TYPE : FALSE_TYPE;
+       }
+       return BOOL_NON_NULL_TYPE;
+     case GT:
+       if (asConstant1 != null && asConstant2 != null) {
+         return (asConstant1.compareTo(asConstant2) > 0) ? TRUE_TYPE : FALSE_TYPE;
+       }
+       return BOOL_NON_NULL_TYPE;
+     case GTE:
+       if (asConstant1 != null && asConstant2 != null) {
+         return (asConstant1.compareTo(asConstant2) >= 0) ? TRUE_TYPE : FALSE_TYPE;
+       }
+       return BOOL_NON_NULL_TYPE;
+     case ADD:
+     case SUB:
+     case MUL:
+     case DIV:
+     case MOD:
+       /*
+     case BIT_AND:
+     case BIT_OR:
+     case BIT_XOR:
+     */
+       operandIsNonNull(arg1, flowEnv);
+       operandIsNonNull(arg2, flowEnv);
+
+       if (asConstant1 != null && asConstant2 != null) {
+         switch (operator) {
+         case ADD:
+           return DoubleType.constant(asConstant1 + asConstant2);
+         case SUB:
+           return DoubleType.constant(asConstant1 - asConstant2);
+         case MUL:
+           return DoubleType.constant(asConstant1 * asConstant2);
+         case DIV:
+           return DoubleType.constant(asConstant1 / asConstant2);
+         case MOD:
+           return DoubleType.constant(asConstant1 % asConstant2);
+           /*
+         case BIT_AND:
+           return DoubleType.constant(asConstant1.byteValue() & asConstant2.byteValue());
+         case BIT_OR:
+           return DoubleType.constant(asConstant1.byteValue() | asConstant2.byteValue());
+         case BIT_XOR:
+           return DoubleType.constant(asConstant1.byteValue() ^ asConstant2.byteValue());
+           */
+         }
+       }
+     default:
+       throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
      }
+   }
 
-     /* TODO
-      private */static Type opDoubleInt(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
-        DoubleType dType1 = (DoubleType) type1;
-        IntType iType2 = (IntType) type2;
+   /* TODO 
+      private */static Type opBoolBool(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
+        BoolType bType1 = (BoolType) type1;
+        BoolType bType2 = (BoolType) type2;
+        Boolean asConstant1 = bType1.asConstant();
+        Boolean asConstant2 = bType2.asConstant();
 
-        Double asConstant1 = dType1.asConstant();
-        BigInteger maxBound = iType2.getMaxBound();
-        BigInteger minBound = iType2.getMinBound();
-        BigInteger asConstant2 = iType2.asConstant();
+        if (asConstant1 == null || asConstant2 == null) {
+          if (operator == Token.AND || operator == Token.OR) {
+            operandIsNonNull(arg1, flowEnv);
+            operandIsNonNull(arg2, flowEnv);
+          }
+
+          return BOOL_NON_NULL_TYPE;
+        }
+
         switch (operator) {
         case NE:
         case NE_STRICT:
-          if (dType1.isIncludeIn(iType2)) {
-            if (asConstant2 != null) {
-              return FALSE_TYPE;
-            }
-            return BOOL_NON_NULL_TYPE;
+          if (bType1.equals(bType2)) {
+            return FALSE_TYPE;
           }
           return TRUE_TYPE;
         case EQ:
         case EQ_STRICT:
-          if (dType1.isIncludeIn(iType2)) {
-            if (asConstant2 != null) {
-              return TRUE_TYPE;
-            }
-            return BOOL_NON_NULL_TYPE;
+          if (bType1.equals(bType2)) {
+            return TRUE_TYPE;
           }
           return FALSE_TYPE;
-        case LT:
-          if (minBound != null && (asConstant1 < minBound.doubleValue())) {
-            return TRUE_TYPE;
-          }
-          if (maxBound != null && (asConstant1 >= maxBound.doubleValue())) {
-            return FALSE_TYPE;
-          }
-          return BOOL_NON_NULL_TYPE;
-        case LTE:
-          if (minBound != null && (asConstant1 <= minBound.doubleValue())) {
-            return TRUE_TYPE;
-          }
-          if (maxBound != null && (asConstant1 > maxBound.doubleValue())) {
-            return FALSE_TYPE;
-          }
-          return BOOL_NON_NULL_TYPE;
-        case GT:
-          if (maxBound != null && (asConstant1 > maxBound.doubleValue())) {
-            return TRUE_TYPE;
-          }
-          if (minBound != null && (asConstant1 <= minBound.doubleValue())) {
-            return FALSE_TYPE;
-          }
-          return BOOL_NON_NULL_TYPE;
-        case GTE:
-          if (maxBound != null && (asConstant1 >= maxBound.doubleValue())) {
-            return TRUE_TYPE;
-          }
-          if (minBound != null && (asConstant1 < minBound.doubleValue())) {
-            return FALSE_TYPE;
-          }
-          return BOOL_NON_NULL_TYPE;
-
-        case ADD:
-        case SUB:
-        case MUL:
-        case DIV:
-        case MOD:
-        case BIT_AND:
-        case BIT_OR:
-        case BIT_XOR:
+        case AND:
+        case OR:
           operandIsNonNull(arg1, flowEnv);
           operandIsNonNull(arg2, flowEnv);
 
-          if (asConstant2 != null) {
-            switch (operator) {
-            case ADD:
-              if (asConstant1 != null) {
-                return DoubleType.constant(asConstant1 + asConstant2.doubleValue());
-              }
-              return DOUBLE_NON_NULL_TYPE;
-            case SUB:
-              if (asConstant1 != null) {
-                return DoubleType.constant(asConstant1 - asConstant2.doubleValue());
-              }
-              return DOUBLE_NON_NULL_TYPE;
-            case MUL:
-              if (asConstant1 != null) {
-                return DoubleType.constant(asConstant1 * asConstant2.doubleValue());
-              }
-              return DOUBLE_NON_NULL_TYPE;
-            case DIV:
-              if (asConstant1 != null) {
-                return DoubleType.constant(asConstant1 / asConstant2.doubleValue());
-              }
-              return DOUBLE_NON_NULL_TYPE;
-            case MOD:
-              if (asConstant1 != null) {
-                return DoubleType.constant(asConstant1 % asConstant2.doubleValue());
-              }
-              return DOUBLE_NON_NULL_TYPE;
-            case BIT_AND:
-              if (asConstant1 != null) {
-                return IntType.constant(asConstant2.and(BigInteger.valueOf(asConstant1.longValue())));
-              }
-              return DOUBLE_NON_NULL_TYPE;
-            case BIT_OR:
-              if (asConstant1 != null) {
-                return IntType.constant(asConstant2.or(BigInteger.valueOf(asConstant1.longValue())));
-              }
-              return DOUBLE_NON_NULL_TYPE;
-            case BIT_XOR:
-              if (asConstant1 != null) {
-                return IntType.constant(asConstant2.xor(BigInteger.valueOf(asConstant1.longValue())));
-              }
-              return DOUBLE_NON_NULL_TYPE;
-            }
-          } else {
-            // asConstant2 == null
-            return DOUBLE_NON_NULL_TYPE;
+          switch (operator) {
+          case AND:
+            return BoolType.constant(asConstant1 && asConstant2);
+          case OR:
+            return BoolType.constant(asConstant1 || asConstant2);
           }
         default:
           throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
         }
       }
 
-      /*
-       * TODO private
-       */static Type opBoolBool(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
-         BoolType bType1 = (BoolType) type1;
-         BoolType bType2 = (BoolType) type2;
-         Boolean asConstant1 = bType1.asConstant();
-         Boolean asConstant2 = bType2.asConstant();
-
-         if (asConstant1 == null || asConstant2 == null) {
-           if (operator == Token.AND || operator == Token.OR) {
-             operandIsNonNull(arg1, flowEnv);
-             operandIsNonNull(arg2, flowEnv);
-           }
-
-           return BOOL_NON_NULL_TYPE;
-         }
-
-         switch (operator) {
-         case NE:
-         case NE_STRICT:
-           if (bType1.equals(bType2)) {
-             return FALSE_TYPE;
-           }
-           return TRUE_TYPE;
-         case EQ:
-         case EQ_STRICT:
-           if (bType1.equals(bType2)) {
-             return TRUE_TYPE;
-           }
-           return FALSE_TYPE;
-         case AND:
-         case OR:
-           operandIsNonNull(arg1, flowEnv);
-           operandIsNonNull(arg2, flowEnv);
-
-           switch (operator) {
-           case AND:
-             return BoolType.constant(asConstant1 && asConstant2);
-           case OR:
-             return BoolType.constant(asConstant1 || asConstant2);
-           }
-         default:
-           throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
-         }
-       }
-
-       private Type visitBinaryOp(final DartBinaryExpression node, final Token operator, final DartExpression arg1, final Type type1, final DartExpression arg2,
-           final Type type2, final FlowEnv flowEnv) {
-
-         if (type1 instanceof IntType && type2 instanceof IntType) {
-           return opIntInt(operator, arg1, type1, arg2, type2, flowEnv);
-         }
-
-         if (type1 instanceof DoubleType && type2 instanceof DoubleType) {
-           return opDoubleDouble(operator, arg1, type1, arg2, type2, flowEnv);
-         }
-
-         if (type1 instanceof IntType && type2 instanceof DoubleType) {
-           return opIntDouble(operator, arg1, type1, arg2, type2, flowEnv);
-         }
-
-         if (type1 instanceof DoubleType && type2 instanceof IntType) {
-           return opDoubleInt(operator, arg1, type1, arg2, type2, flowEnv);
-         }
-
-         if (type1 instanceof BoolType && type2 instanceof BoolType) {
-           return opBoolBool(operator, arg1, type1, arg2, type2, flowEnv);
-         }
-
-         if (type1 instanceof DynamicType) {
-           return Types.widening(type2);
-         }
-
-         if (type2 instanceof DynamicType) {
-           return Types.widening(type1);
-         }
-
-         if (type1 instanceof UnionType) {
-           type1.map(new TypeMapper() {
-             @Override
-             public Type transform(Type type) {
-               visitBinaryOp(node, operator, arg1, type, arg2, type2, flowEnv);
-               return null;
-             }
-           });
-         }
-
-         if (type2 instanceof UnionType) {
-           type1.map(new TypeMapper() {
-             @Override
-             public Type transform(Type type) {
-               visitBinaryOp(node, operator, arg1, type1, arg2, type, flowEnv);
-               return null;
-             }
-           });
-         }
-
-         // a method call that can be polymorphic
-         if (node.getElement() == null) {
-           // FIXME A setter with a dynamic parameter will make the field dynamic.
-           // (see PropertyAccess2.dart)
-           System.err.println("NoSuchMethodException: " + node.getOperator() + " for type: " + type1 + ", " + type2);
-           return DYNAMIC_TYPE;
-         }
-         return typeHelper.asType(true, node.getElement().getFunctionType().getReturnType());
-       }
-
-       @Override
-       public Type visitUnaryExpression(DartUnaryExpression node, FlowEnv parameter) {
-         DartExpression arg = node.getArg();
-         return visitUnaryOperation(node, node.getOperator(), arg, accept(arg, parameter), parameter);
-       }
-
-       private static Type visitUnaryOperation(DartUnaryExpression node, Token operator, DartExpression arg, Type type, FlowEnv flowEnv) {
-         // FIXME Geoffrey, Dart allow to call unary/binary operators on 'num' too
-         // (the interface type)
-         switch (operator) {
-         case INC:
-           if (type instanceof IntType) {
-             IntType iType = (IntType) type;
-             return iType.add(IntType.constant(BigInteger.ONE));
-           }
-           if (type instanceof DoubleType) {
-             DoubleType dType = (DoubleType) type;
-             return dType.add(DoubleType.constant(1.));
-           }
-           // FIXME Geoffrey, unary operator can be overriden
-           return DYNAMIC_NON_NULL_TYPE;
-         case SUB:
-           if (type instanceof IntType) {
-             IntType iType = (IntType) type;
-             return iType.unarySub();
-           }
-           if (type instanceof DoubleType) {
-             DoubleType dType = (DoubleType) type;
-             return dType.unarySub();
-           }
-           // FIXME Geoffrey, unary operator can be overriden
-           return DYNAMIC_NON_NULL_TYPE;
-         default:
-           throw new UnsupportedOperationException("Unary Expr: " + operator + " (" + operator.name() + ") not implemented for " + type + ".");
-         }
-       }
-
-       @Override
-       public Type visitNewExpression(DartNewExpression node, FlowEnv flowEnv) {
-         ArrayList<Type> argumentTypes = new ArrayList<>();
-         for (DartExpression argument : node.getArguments()) {
-           argumentTypes.add(accept(argument, flowEnv));
-         }
-
-         ClassElement element = node.getElement().getConstructorType();
-         return typeHelper.findType(false, element);
-       }
-
-       @Override
-       public Type visitSuperExpression(DartSuperExpression node, FlowEnv parameter) {
-         if (parameter.getThisType() == null) {
-           return DYNAMIC_TYPE;
-         }
-
-         Type type = ((OwnerType) parameter.getThisType()).getSuperType();
-         return type;
-       }
-
-       @Override
-       public Type visitParenthesizedExpression(DartParenthesizedExpression node, FlowEnv parameter) {
-         return accept(node.getExpression(), parameter);
-       }
-
-       // --- Invocation
-
-       @Override
-       public Type visitMethodInvocation(final DartMethodInvocation node, FlowEnv flowEnv) {
-         ArrayList<Type> argumentTypes = new ArrayList<>();
-         for (DartExpression argument : node.getArguments()) {
-           argumentTypes.add(accept(argument, flowEnv));
-         }
-
-         Element targetElement = node.getTarget().getElement();
-         if (targetElement != null) {
-           switch (targetElement.getKind()) {
-           case CLASS: // static field or method
-           case SUPER: // super field or method
-           case LIBRARY: // library call
-
-             NodeElement nodeElement = node.getElement();
-             switch (nodeElement.getKind()) {
-             case FIELD: // field access
-               return Types.getReturnType(typeHelper.asType(true, ((FieldElement) nodeElement).getType()));
-
-             case METHOD: { // statically resolved method call
-               /*
-                * emulate a call FIXME FlowEnv newFlowEnv = new FlowEnv(null);
-                * for(Type argumentType: argumentTypes) {
-                * newFlowEnv.register(variable, argumentType); } return new
-                * FTVisitor(
-                * typeRepository).accept(((MethodNodeElement)element).getNode(),
-                * newFlowEnv);
-                */
-               return typeHelper.asType(true, ((MethodElement) nodeElement).getReturnType());
-             }
-
-             default:
-               throw new UnsupportedOperationException();
-             }
-
-           default: // polymorphic method call
-           }
-         }
-
-         Type receiverType = accept(node.getTarget(), flowEnv);
-
-         // call on 'null' (statically proven), will never succeed at runtime
-         if (receiverType == NULL_TYPE) {
-           return DYNAMIC_NON_NULL_TYPE;
-         }
-
-         // if the receiver is null, it will raise an exception at runtime
-         // so mark it non null after that call
-         operandIsNonNull(node.getTarget(), flowEnv);
-
-         // you can call what you want on dynamic
-         if (receiverType instanceof DynamicType) {
-           operandIsNonNull(node.getTarget(), flowEnv);
-           return receiverType;
-         }
-
-         return receiverType.map(new TypeMapper() {
-           @Override
-           public Type transform(Type type) {
-             OwnerType ownerType = (OwnerType) type;
-             Element element = ownerType.lookupMember(node.getFunctionNameString());
-
-             // element can be null because the receiverType can be an union
-             if (element == null) {
-               return null;
-             }
-
-             // here when you should use the Class Hierarchy analysis and
-             // typeflow all overridden methods
-             // but let do something simple for now.
-             return typeHelper.asType(true, ((MethodElement) element).getReturnType());
-           }
-         });
-       }
-
-       @Override
-       public Type visitUnqualifiedInvocation(DartUnqualifiedInvocation node, FlowEnv flowEnv) {
-         ArrayList<Type> argumentTypes = new ArrayList<>();
-         for (DartExpression argument : node.getArguments()) {
-           argumentTypes.add(accept(argument, flowEnv));
-         }
-
-         // weird, element is set on target ?
-         NodeElement nodeElement = node.getTarget().getElement();
-         if (nodeElement == null) {
-           // here we are in trouble, I don't know why this can appear
-           // for the moment, log the error and say that the result is dynamic
-           System.err.println("Unqualified Invocation: Element null: " + node);
-
-           // Element element = ((OwnerType)
-           // flowEnv.getThisType()).lookupMember(node.getTarget().getName());
-           return DYNAMIC_TYPE;
-         }
-
-         // Because of invoke, the parser doesn't set the value of element.
-         switch (nodeElement.getKind()) {
-         case METHOD: { // polymorphic method call on 'this'
-           EnclosingElement enclosingElement = nodeElement.getEnclosingElement();
-           if (enclosingElement instanceof ClassElement) {
-             Type receiverType = typeHelper.findType(false, (ClassElement) enclosingElement);
-             return methodCallResolver.methodCall(node.getObjectIdentifier(), receiverType, argumentTypes, flowEnv.getExpectedType(), true);
-           }
-           // FIXME should use another method of the methodResolver (but it doesn't
-           // exist now)
-           return methodCallResolver.functionCall((MethodNodeElement) nodeElement, argumentTypes, flowEnv.getExpectedType());
-           // return typeHelper.asType(true, ((MethodElement)
-           // nodeElement).getReturnType());
-         }
-
-         case FIELD: // function call
-         case PARAMETER:
-           return Types.getReturnType(typeHelper.asType(true, nodeElement.getType()));
-         case VARIABLE:
-           return Types.getReturnType(flowEnv.getType((VariableElement) nodeElement));
-
-         default: // FUNCTION_OBJECT ??
-           throw new UnsupportedOperationException();
-         }
-       }
-
-       @Override
-       public Type visitFunctionObjectInvocation(DartFunctionObjectInvocation node, FlowEnv parameter) {
-         // FIXME Geoffrey, a function object is when you have a function stored in
-         // a parameter/variable or a result of another call that you call as a
-         // function
-         // something like :
-         // int foo(int i) { return i; }
-         // var a = foo;
-         // a(); <--- function object invocation
-         // so either it's a call to dynamic or a function type (so uses
-         // Types.getReturnType())
-
-         // FIXME
-         // The test file DartTest/FunctionObject.dart seems to not call
-         // visitFunctionObjectInvocation but UnqualifiedInvocation.
-
-         Type targetType = accept(node.getTarget(), parameter);
-
-         // We need to setElement.
-         node.setElement(((OwnerType) parameter.getThisType()).getSuperType().getElement());
-         // TODO be sure only super is called.
-         System.out.println("visitFunctionObjectInvoke: " + node + " : " + node.getElement());
-
-         return null;
-       }
-
-       // --- literals
-
-       @Override
-       public Type visitIntegerLiteral(DartIntegerLiteral node, FlowEnv unused) {
-         return IntType.constant(node.getValue());
-       }
-
-       @Override
-       public Type visitDoubleLiteral(DartDoubleLiteral node, FlowEnv unused) {
-         return DoubleType.constant(node.getValue());
-       }
-
-       @Override
-       public Type visitBooleanLiteral(DartBooleanLiteral node, FlowEnv unused) {
-         return BoolType.constant(node.getValue());
-       }
-
-       @Override
-       public Type visitStringLiteral(DartStringLiteral node, FlowEnv parameter) {
-         return typeHelper.asType(false, node.getType());
-       }
-
-       @Override
-       public Type visitNullLiteral(DartNullLiteral node, FlowEnv parameter) {
-         return NULL_TYPE;
-       }
-
-       @Override
-       public Type visitArrayLiteral(DartArrayLiteral node, FlowEnv parameter) {
-         ArrayList<Type> types = new ArrayList<>();
-         for (DartExpression expr : node.getExpressions()) {
-           types.add(accept(expr, parameter));
-         }
-         return ArrayType.constant(types);
-       }
-
-       // ---- Access
-
-       /**
-        * Returns the correct type of the property, depending of the
-        * {@link ElementKind kind}.
-        * 
-        * @param type
-        *          Nullable type of the node.
-        * @param kind
-        *          Kind of the element to test.
-        * @return Type of the property.
-        */
-       static Type propertyType(Type type, ElementKind kind) {
-         switch (kind) {
-         case METHOD:
-         case CONSTRUCTOR:
-           return type.asNonNull();
-         default:
-           return type;
-         }
-       }
-
-       @Override
-       public Type visitPropertyAccess(final DartPropertyAccess node, FlowEnv parameter) {
-         NodeElement nodeElement = node.getElement();
-         if (nodeElement != null) {
-           return propertyType(typeHelper.asType(true, node.getType()), nodeElement.getKind());
-         }
-         DartNode qualifier = node.getQualifier();
-         Type qualifierType = accept(qualifier, parameter);
-
-         return qualifierType.map(new TypeMapper() {
-           @Override
-           public Type transform(Type type) {
-             if (type instanceof DynamicType) { // you can always qualify dynamic
-               return type;
-             }
-             OwnerType ownerType = (OwnerType) type;
-             Element element = ownerType.lookupMember(node.getPropertyName());
-
-             // TypeAnalyzer set some elements.
-             // FIXME, don't set the element if we don't needed when generating the
-             // bytecode.
-             // We need to set the element to compile DartTest/PropertyAcces.dart
-             node.setElement(element);
-
-             return propertyType(typeHelper.asType(true, element.getType()), element.getKind());
-           }
-         });
-       }
-
-       @Override
-       public Type visitArrayAccess(DartArrayAccess node, FlowEnv parameter) {
-         // FIXME Geoffrey, you have to take a look to the parent to know
-         // if it represent a[12] or a[12] = ...
-         // or perhaps this check should be done in visitBinary for ASSIGN
-
-         Type typeOfArray = accept(node.getTarget(), parameter);
-         Type typeOfIndex = accept(node.getKey(), parameter);
-
-         operandIsNonNull(node.getTarget(), parameter);
-
-         // TODO node.getKey -> int32+
-
-         if (!(typeOfIndex instanceof IntType)) {
-           return DYNAMIC_NON_NULL_TYPE;
-         }
-         if (!((IntType) typeOfIndex).isIncludeIn(POSITIVE_INT32_TYPE)) {
-           return DYNAMIC_NON_NULL_TYPE;
-         }
-
-         if (!(typeOfArray instanceof ArrayType)) {
-           if (!(typeOfArray instanceof InterfaceType)) {
-             return DYNAMIC_NON_NULL_TYPE;
-           }
-           InterfaceType interfaceArray = (InterfaceType) typeOfArray;
-
-           Element element = interfaceArray.lookupMember("operator []");
-           if (element == null) {
-             element = interfaceArray.lookupMember("operator []=");
-           }
-           if (element == null || !(element instanceof MethodElement)) {
-             // the class doesn't provide any operator []
-             return DYNAMIC_NON_NULL_TYPE;
-           }
-           return typeHelper.asType(true, ((MethodElement) element).getReturnType());
-         }
-
-         IntType index = (IntType) typeOfIndex;
-         ArrayType array = (ArrayType) typeOfArray;
-
-         // is it a constant array ?
-         List<Type> constant = array.asConstant();
-         if (constant == null) {
-           return array.getComponentType();
-         }
-
-         int max = index.getMaxBound().intValue();
-         BigInteger arrayMaxBound = array.getLength().getMaxBound();
-         if (max >= arrayMaxBound.intValue()) {
-           // we may access to a index which is bigger than length of the array
-           return array.getComponentType();
-         }
-
-         int min = index.getMinBound().intValue();
-         Type type = constant.get(min);
-         for (int i = min + 1; i <= max; i++) {
-           type = Types.union(type, constant.get(i));
-         }
-         return type;
-       }
+      private Type visitBinaryOp(final DartBinaryExpression node, final Token operator, final DartExpression arg1, final Type type1, final DartExpression arg2,
+          final Type type2, final FlowEnv flowEnv) {
+        if (type1 instanceof UnionType) {
+          type1.map(new TypeMapper() {
+            @Override
+            public Type transform(Type type) {
+              return visitBinaryOp(node, operator, arg1, type, arg2, type2, flowEnv);
+            }
+          });
+        }
+
+        if (type2 instanceof UnionType) {
+          type1.map(new TypeMapper() {
+            @Override
+            public Type transform(Type type) {
+              return visitBinaryOp(node, operator, arg1, type1, arg2, type, flowEnv);
+            }
+          });
+        }
+        
+        Class<? extends Type> class1 = type1.getClass();
+        Class<? extends Type> class2 = type2.getClass();
+        
+        if (class1.equals(class2)) {
+          if (type1 instanceof IntType) {
+            return opIntInt(operator, arg1, type1, arg2, type2, flowEnv);
+          }
+          if (type1 instanceof DoubleType) {
+            return opDoubleDouble(operator, arg1, type1, arg2, type2, flowEnv);
+          }
+          if (type1 instanceof BoolType) {
+            return opBoolBool(operator, arg1, type1, arg2, type2, flowEnv);
+          }
+        }
+        if (type1 instanceof NumType && type2 instanceof NumType) {
+          return opDoubleDouble(operator, arg1, ((NumType) type1).asDouble(), arg2, ((NumType) type2).asDouble(), flowEnv);
+        }
+        
+        if (type1 instanceof DynamicType) {
+          return Types.widening(type2);
+        }
+
+        if (type2 instanceof DynamicType) {
+          return Types.widening(type1);
+        }
+
+        // a method call that can be polymorphic
+        if (node.getElement() == null) {
+          // FIXME A setter with a dynamic parameter will make the field dynamic.
+          // (see PropertyAccess2.dart)
+          System.err.println("NoSuchMethodException: " + node.getOperator() + " for type: " + type1 + ", " + type2);
+          return DYNAMIC_TYPE;
+        }
+        return typeHelper.asType(true, node.getElement().getFunctionType().getReturnType());
+      }
+
+      @Override
+      public Type visitUnaryExpression(DartUnaryExpression node, FlowEnv parameter) {
+        DartExpression arg = node.getArg();
+        return visitUnaryOperation(node, node.getOperator(), arg, accept(arg, parameter), parameter);
+      }
+
+      private Type visitUnaryOperation(DartUnaryExpression node, Token operator, DartExpression arg, Type type, FlowEnv flowEnv) {
+        // FIXME Geoffrey, Dart allow to call unary/binary operators on 'num' too
+        // (the interface type)
+        switch (operator) {
+        case NOT:
+          if (type instanceof BoolType) {
+            return ((BoolType) type).not();
+          }
+          break;
+        case BIT_NOT:
+          // TODO
+          throw new UnsupportedOperationException("Unary Expr: " + operator + " (" + operator.name() + ") not implemented for " + type + ".");
+        case INC:
+          if (type instanceof NumType) {
+            return ((NumType) type).add(IntType.constant(BigInteger.ONE));
+          }
+          break;
+        case DEC:
+          if (type instanceof NumType) {
+            return ((NumType) type).sub(IntType.constant(BigInteger.ONE));
+          }
+          break;
+        case SUB:
+          if (type instanceof NumType) {
+            return ((NumType) type).unarySub();
+          }
+          break;
+        default:
+          throw new UnsupportedOperationException("Unary Expr: " + operator + " (" + operator.name() + ") not implemented for " + type + ".");
+        }
+        
+        if (node.getElement() == null) {
+          System.err.println("NoSuchMethodException: " + node.getOperator() + " for type: " + type);
+          return DYNAMIC_TYPE;
+        }
+        return typeHelper.asType(true, node.getElement().getFunctionType().getReturnType());
+      }
+
+      @Override
+      public Type visitNewExpression(DartNewExpression node, FlowEnv flowEnv) {
+        ArrayList<Type> argumentTypes = new ArrayList<>();
+        for (DartExpression argument : node.getArguments()) {
+          argumentTypes.add(accept(argument, flowEnv));
+        }
+
+        ClassElement element = node.getElement().getConstructorType();
+        return typeHelper.findType(false, element);
+      }
+
+      @Override
+      public Type visitSuperExpression(DartSuperExpression node, FlowEnv parameter) {
+        if (parameter.getThisType() == null) {
+          return DYNAMIC_TYPE;
+        }
+
+        Type type = ((OwnerType) parameter.getThisType()).getSuperType();
+        return type;
+      }
+
+      @Override
+      public Type visitParenthesizedExpression(DartParenthesizedExpression node, FlowEnv parameter) {
+        return accept(node.getExpression(), parameter);
+      }
+
+      // --- Invocation
+
+      @Override
+      public Type visitMethodInvocation(final DartMethodInvocation node, FlowEnv flowEnv) {
+        ArrayList<Type> argumentTypes = new ArrayList<>();
+        for (DartExpression argument : node.getArguments()) {
+          argumentTypes.add(accept(argument, flowEnv));
+        }
+
+        Element targetElement = node.getTarget().getElement();
+        if (targetElement != null) {
+          switch (targetElement.getKind()) {
+          case CLASS: // static field or method
+          case SUPER: // super field or method
+          case LIBRARY: // library call
+
+            NodeElement nodeElement = node.getElement();
+            switch (nodeElement.getKind()) {
+            case FIELD: // field access
+              return Types.getReturnType(typeHelper.asType(true, ((FieldElement) nodeElement).getType()));
+
+            case METHOD: { // statically resolved method call
+              /*
+               * emulate a call FIXME FlowEnv newFlowEnv = new FlowEnv(null);
+               * for(Type argumentType: argumentTypes) {
+               * newFlowEnv.register(variable, argumentType); } return new
+               * FTVisitor(
+               * typeRepository).accept(((MethodNodeElement)element).getNode(),
+               * newFlowEnv);
+               */
+              return typeHelper.asType(true, ((MethodElement) nodeElement).getReturnType());
+            }
+
+            default:
+              throw new UnsupportedOperationException();
+            }
+
+          default: // polymorphic method call
+          }
+        }
+
+        Type receiverType = accept(node.getTarget(), flowEnv);
+
+        // call on 'null' (statically proven), will never succeed at runtime
+        if (receiverType == NULL_TYPE) {
+          return DYNAMIC_NON_NULL_TYPE;
+        }
+
+        // if the receiver is null, it will raise an exception at runtime
+        // so mark it non null after that call
+        operandIsNonNull(node.getTarget(), flowEnv);
+
+        // you can call what you want on dynamic
+        if (receiverType instanceof DynamicType) {
+          operandIsNonNull(node.getTarget(), flowEnv);
+          return receiverType;
+        }
+
+        return receiverType.map(new TypeMapper() {
+          @Override
+          public Type transform(Type type) {
+            OwnerType ownerType = (OwnerType) type;
+            Element element = ownerType.lookupMember(node.getFunctionNameString());
+
+            // element can be null because the receiverType can be an union
+            if (element == null) {
+              return null;
+            }
+
+            // here when you should use the Class Hierarchy analysis and
+            // typeflow all overridden methods
+            // but let do something simple for now.
+            return typeHelper.asType(true, ((MethodElement) element).getReturnType());
+          }
+        });
+      }
+
+      @Override
+      public Type visitUnqualifiedInvocation(DartUnqualifiedInvocation node, FlowEnv flowEnv) {
+        ArrayList<Type> argumentTypes = new ArrayList<>();
+        for (DartExpression argument : node.getArguments()) {
+          argumentTypes.add(accept(argument, flowEnv));
+        }
+
+        // weird, element is set on target ?
+        NodeElement nodeElement = node.getTarget().getElement();
+        if (nodeElement == null) {
+          // here we are in trouble, I don't know why this can appear
+          // for the moment, log the error and say that the result is dynamic
+          System.err.println("Unqualified Invocation: Element null: " + node);
+
+          // Element element = ((OwnerType)
+          // flowEnv.getThisType()).lookupMember(node.getTarget().getName());
+          return DYNAMIC_TYPE;
+        }
+
+        // Because of invoke, the parser doesn't set the value of element.
+        switch (nodeElement.getKind()) {
+        case METHOD: { // polymorphic method call on 'this'
+          EnclosingElement enclosingElement = nodeElement.getEnclosingElement();
+          if (enclosingElement instanceof ClassElement) {
+            Type receiverType = typeHelper.findType(false, (ClassElement) enclosingElement);
+            return methodCallResolver.methodCall(node.getObjectIdentifier(), receiverType, argumentTypes, flowEnv.getExpectedType(), true);
+          }
+          // FIXME should use another method of the methodResolver (but it doesn't
+          // exist now)
+          return methodCallResolver.functionCall((MethodNodeElement) nodeElement, argumentTypes, flowEnv.getExpectedType());
+          // return typeHelper.asType(true, ((MethodElement)
+          // nodeElement).getReturnType());
+        }
+
+        case FIELD: // function call
+        case PARAMETER:
+          return Types.getReturnType(typeHelper.asType(true, nodeElement.getType()));
+        case VARIABLE:
+          return Types.getReturnType(flowEnv.getType((VariableElement) nodeElement));
+
+        default: // FUNCTION_OBJECT ??
+          throw new UnsupportedOperationException();
+        }
+      }
+
+      @Override
+      public Type visitFunctionObjectInvocation(DartFunctionObjectInvocation node, FlowEnv parameter) {
+        // FIXME Geoffrey, a function object is when you have a function stored in
+        // a parameter/variable or a result of another call that you call as a
+        // function
+        // something like :
+        // int foo(int i) { return i; }
+        // var a = foo;
+        // a(); <--- function object invocation
+        // so either it's a call to dynamic or a function type (so uses
+        // Types.getReturnType())
+
+        // FIXME
+        // The test file DartTest/FunctionObject.dart seems to not call
+        // visitFunctionObjectInvocation but UnqualifiedInvocation.
+
+        Type targetType = accept(node.getTarget(), parameter);
+
+        // We need to setElement.
+        node.setElement(((OwnerType) parameter.getThisType()).getSuperType().getElement());
+        // TODO be sure only super is called.
+        System.out.println("visitFunctionObjectInvoke: " + node + " : " + node.getElement());
+
+        return null;
+      }
+
+      // --- literals
+
+      @Override
+      public Type visitIntegerLiteral(DartIntegerLiteral node, FlowEnv unused) {
+        return IntType.constant(node.getValue());
+      }
+
+      @Override
+      public Type visitDoubleLiteral(DartDoubleLiteral node, FlowEnv unused) {
+        return DoubleType.constant(node.getValue());
+      }
+
+      @Override
+      public Type visitBooleanLiteral(DartBooleanLiteral node, FlowEnv unused) {
+        return BoolType.constant(node.getValue());
+      }
+
+      @Override
+      public Type visitStringLiteral(DartStringLiteral node, FlowEnv parameter) {
+        return typeHelper.asType(false, node.getType());
+      }
+
+      @Override
+      public Type visitNullLiteral(DartNullLiteral node, FlowEnv parameter) {
+        return NULL_TYPE;
+      }
+
+      @Override
+      public Type visitArrayLiteral(DartArrayLiteral node, FlowEnv parameter) {
+        ArrayList<Type> types = new ArrayList<>();
+        for (DartExpression expr : node.getExpressions()) {
+          types.add(accept(expr, parameter));
+        }
+        return ArrayType.constant(types);
+      }
+
+      // ---- Access
+
+      /**
+       * Returns the correct type of the property, depending of the
+       * {@link ElementKind kind}.
+       * 
+       * @param type
+       *          Nullable type of the node.
+       * @param kind
+       *          Kind of the element to test.
+       * @return Type of the property.
+       */
+      static Type propertyType(Type type, ElementKind kind) {
+        switch (kind) {
+        case METHOD:
+        case CONSTRUCTOR:
+          return type.asNonNull();
+        default:
+          return type;
+        }
+      }
+
+      @Override
+      public Type visitPropertyAccess(final DartPropertyAccess node, FlowEnv parameter) {
+        NodeElement nodeElement = node.getElement();
+        if (nodeElement != null) {
+          return propertyType(typeHelper.asType(true, node.getType()), nodeElement.getKind());
+        }
+        DartNode qualifier = node.getQualifier();
+        Type qualifierType = accept(qualifier, parameter);
+
+        return qualifierType.map(new TypeMapper() {
+          @Override
+          public Type transform(Type type) {
+            if (type instanceof DynamicType) { // you can always qualify dynamic
+              return type;
+            }
+            OwnerType ownerType = (OwnerType) type;
+            Element element = ownerType.lookupMember(node.getPropertyName());
+
+            // TypeAnalyzer set some elements.
+            // FIXME, don't set the element if we don't needed when generating the
+            // bytecode.
+            // We need to set the element to compile DartTest/PropertyAcces.dart
+            node.setElement(element);
+
+            return propertyType(typeHelper.asType(true, element.getType()), element.getKind());
+          }
+        });
+      }
+
+      @Override
+      public Type visitArrayAccess(DartArrayAccess node, FlowEnv parameter) {
+        // FIXME Geoffrey, you have to take a look to the parent to know
+        // if it represent a[12] or a[12] = ...
+        // or perhaps this check should be done in visitBinary for ASSIGN
+
+        Type typeOfArray = accept(node.getTarget(), parameter);
+        Type typeOfIndex = accept(node.getKey(), parameter);
+
+        operandIsNonNull(node.getTarget(), parameter);
+
+        // TODO node.getKey -> int32+
+
+        if (!(typeOfIndex instanceof IntType)) {
+          return DYNAMIC_NON_NULL_TYPE;
+        }
+        if (!((IntType) typeOfIndex).isIncludeIn(POSITIVE_INT32_TYPE)) {
+          return DYNAMIC_NON_NULL_TYPE;
+        }
+
+        if (!(typeOfArray instanceof ArrayType)) {
+          if (!(typeOfArray instanceof InterfaceType)) {
+            return DYNAMIC_NON_NULL_TYPE;
+          }
+          InterfaceType interfaceArray = (InterfaceType) typeOfArray;
+
+          Element element = interfaceArray.lookupMember("operator []");
+          if (element == null) {
+            element = interfaceArray.lookupMember("operator []=");
+          }
+          if (element == null || !(element instanceof MethodElement)) {
+            // the class doesn't provide any operator []
+            return DYNAMIC_NON_NULL_TYPE;
+          }
+          return typeHelper.asType(true, ((MethodElement) element).getReturnType());
+        }
+
+        IntType index = (IntType) typeOfIndex;
+        ArrayType array = (ArrayType) typeOfArray;
+
+        // is it a constant array ?
+        List<Type> constant = array.asConstant();
+        if (constant == null) {
+          return array.getComponentType();
+        }
+
+        int max = index.getMaxBound().intValue();
+        BigInteger arrayMaxBound = array.getLength().getMaxBound();
+        if (max >= arrayMaxBound.intValue()) {
+          // we may access to a index which is bigger than length of the array
+          return array.getComponentType();
+        }
+
+        int min = index.getMinBound().intValue();
+        Type type = constant.get(min);
+        for (int i = min + 1; i <= max; i++) {
+          type = Types.union(type, constant.get(i));
+        }
+        return type;
+      }
 }

@@ -965,8 +965,28 @@ public class IntType extends PrimitiveType implements NumType {
     }
   }
 
+  @Override
   public Type unarySub() {
-    return new IntType(isNullable(), minBound.subtract(minBound).subtract(minBound), maxBound.subtract(maxBound).subtract(maxBound));
+    BigInteger min;
+    BigInteger max;
+
+    if (minBound != null) {
+      max = minBound.negate();
+    } else {
+      max = null;
+    }
+
+    if (maxBound != null) {
+      min = maxBound.negate();
+    } else {
+      min = null;
+    }
+
+    if (min == null && max == null) {
+      return this;
+    }
+
+    return new IntType(isNullable(), min, max);
   }
 
   @Override
@@ -1178,8 +1198,8 @@ public class IntType extends PrimitiveType implements NumType {
       DoubleType dType = (DoubleType) other;
       BigDecimal bigDec = BigDecimal.valueOf(dType.asConstant());
       try {
-      BigInteger bigInt = bigDec.toBigIntegerExact();
-      other = new IntType(other.isNullable(), bigInt, bigInt);
+        BigInteger bigInt = bigDec.toBigIntegerExact();
+        other = new IntType(other.isNullable(), bigInt, bigInt);
       } catch (ArithmeticException e) {
         BigInteger bigInt = bigDec.toBigInteger();
         other = new IntType(other.isNullable(), bigInt, bigInt.add(BigInteger.ONE));

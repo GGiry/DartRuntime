@@ -220,4 +220,11 @@ public class BoolType extends PrimitiveType {
 
     return false;
   }
+
+  public Type not() {
+    if (constant != null) {
+      return constant(!constant);
+    }
+    return BOOL_NON_NULL_TYPE;
+  }
 }
