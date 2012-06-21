@@ -9,6 +9,10 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class UnionTest {
+  public static UnionType union(NullableType nullable1, NullableType nullable2) {
+    return UnionType.createUnionType(nullable1, nullable2);
+  }
+  
   @Test
   public void intUnion() {
     Assert.assertEquals(INT_TYPE, Types.union(INT_TYPE, INT_TYPE));

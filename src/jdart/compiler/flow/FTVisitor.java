@@ -783,9 +783,9 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
        operandIsNonNull(arg1, flowEnv);
        operandIsNonNull(arg2, flowEnv);
        int compareTo;
-       
+
        if (asConstant1 != null && asConstant2 != null) {
-          compareTo = asConstant1.compareTo(asConstant2);
+         compareTo = asConstant1.compareTo(asConstant2);
        } else {
          return BOOL_NON_NULL_TYPE;
        }
@@ -805,23 +805,24 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
      case MUL:
      case DIV:
      case MOD:
-
        operandIsNonNull(arg1, flowEnv);
        operandIsNonNull(arg2, flowEnv);
 
-       if (asConstant1 != null && asConstant2 != null) {
-         switch (operator) {
-         case ADD:
-           return DoubleType.constant(asConstant1 + asConstant2);
-         case SUB:
-           return DoubleType.constant(asConstant1 - asConstant2);
-         case MUL:
-           return DoubleType.constant(asConstant1 * asConstant2);
-         case DIV:
-           return DoubleType.constant(asConstant1 / asConstant2);
-         case MOD:
-           return DoubleType.constant(asConstant1 % asConstant2);
-         }
+       if (asConstant1 == null || asConstant2 == null) {
+         return DOUBLE_NON_NULL_TYPE;
+       }
+
+       switch (operator) {
+       case ADD:
+         return DoubleType.constant(asConstant1 + asConstant2);
+       case SUB:
+         return DoubleType.constant(asConstant1 - asConstant2);
+       case MUL:
+         return DoubleType.constant(asConstant1 * asConstant2);
+       case DIV:
+         return DoubleType.constant(asConstant1 / asConstant2);
+       case MOD:
+         return DoubleType.constant(asConstant1 % asConstant2);
        }
      default:
        throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
@@ -886,7 +887,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         }
 
         if (type2 instanceof UnionType) {
-          return type1.map(new TypeMapper() {
+          return type2.map(new TypeMapper() {
             @Override
             public Type transform(Type type) {
               return visitBinaryOp(node, operator, arg1, type1, arg2, type, flowEnv);
@@ -913,11 +914,14 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         }
 
         if (type1 instanceof DynamicType) {
-          return Types.widening(type2);
+          return DYNAMIC_NON_NULL_TYPE;
         }
 
         if (type2 instanceof DynamicType) {
-          return Types.widening(type1);
+          if (type1 instanceof DoubleType) {
+            return DOUBLE_NON_NULL_TYPE;
+          }
+          return DYNAMIC_NON_NULL_TYPE;
         }
 
         // a method call that can be polymorphic
