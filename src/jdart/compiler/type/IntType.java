@@ -1230,4 +1230,16 @@ public class IntType extends PrimitiveType implements NumType {
 
     return false;
   }
+
+  /**
+   * Return a IntType whose value is (~constant).
+   * @return {@link IntType} with constant value or INT_NON_NULL_TYPE
+   */
+  public Type bitNot() {
+    BigInteger constant = asConstant();
+    if (constant != null) {
+      return constant(constant.not());
+    }
+    return INT_NON_NULL_TYPE;
+  }
 }

@@ -708,13 +708,9 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
      case EQ_STRICT:
        return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : FALSE_TYPE;
      case LT:
-       return iType1.isStrictLT(iType2) ? TRUE_TYPE : iType2.isStrictLTE(iType1) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
      case LTE:
-       return iType1.isStrictLTE(iType2) ? TRUE_TYPE : iType2.isStrictLT(iType1) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
      case GT:
-       return iType2.isStrictLT(iType1) ? TRUE_TYPE : iType1.isStrictLTE(iType2) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
      case GTE:
-       return iType2.isStrictLTE(iType1) ? TRUE_TYPE : iType1.isStrictLT(iType2) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
      case ADD:
      case SUB:
      case MUL:
@@ -729,6 +725,14 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
        operandIsNonNull(arg2, flowEnv);
 
        switch (operator) {
+       case LT:
+         return iType1.isStrictLT(iType2) ? TRUE_TYPE : iType2.isStrictLTE(iType1) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
+       case LTE:
+         return iType1.isStrictLTE(iType2) ? TRUE_TYPE : iType2.isStrictLT(iType1) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
+       case GT:
+         return iType2.isStrictLT(iType1) ? TRUE_TYPE : iType1.isStrictLTE(iType2) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
+       case GTE:
+         return iType2.isStrictLTE(iType1) ? TRUE_TYPE : iType1.isStrictLT(iType2) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
        case ADD:
          return iType1.add(iType2);
        case SUB:
@@ -773,35 +777,35 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
        }
        return BOOL_NON_NULL_TYPE;
      case LT:
-       if (asConstant1 != null && asConstant2 != null) {
-         return (asConstant1.compareTo(asConstant2) < 0) ? TRUE_TYPE : FALSE_TYPE;
-       }
-       return BOOL_NON_NULL_TYPE;
      case LTE:
-       if (asConstant1 != null && asConstant2 != null) {
-         return (asConstant1.compareTo(asConstant2) <= 0) ? TRUE_TYPE : FALSE_TYPE;
-       }
-       return BOOL_NON_NULL_TYPE;
      case GT:
-       if (asConstant1 != null && asConstant2 != null) {
-         return (asConstant1.compareTo(asConstant2) > 0) ? TRUE_TYPE : FALSE_TYPE;
-       }
-       return BOOL_NON_NULL_TYPE;
      case GTE:
+       operandIsNonNull(arg1, flowEnv);
+       operandIsNonNull(arg2, flowEnv);
+       int compareTo;
+       
        if (asConstant1 != null && asConstant2 != null) {
-         return (asConstant1.compareTo(asConstant2) >= 0) ? TRUE_TYPE : FALSE_TYPE;
+          compareTo = asConstant1.compareTo(asConstant2);
+       } else {
+         return BOOL_NON_NULL_TYPE;
        }
-       return BOOL_NON_NULL_TYPE;
+
+       switch (operator) {
+       case LT:
+         return (compareTo < 0) ? TRUE_TYPE : FALSE_TYPE;
+       case LTE:
+         return (compareTo <= 0) ? TRUE_TYPE : FALSE_TYPE;
+       case GT:
+         return (compareTo > 0) ? TRUE_TYPE : FALSE_TYPE;
+       case GTE:
+         return (compareTo >= 0) ? TRUE_TYPE : FALSE_TYPE;
+       }
      case ADD:
      case SUB:
      case MUL:
      case DIV:
      case MOD:
-       /*
-     case BIT_AND:
-     case BIT_OR:
-     case BIT_XOR:
-     */
+
        operandIsNonNull(arg1, flowEnv);
        operandIsNonNull(arg2, flowEnv);
 
@@ -817,14 +821,6 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
            return DoubleType.constant(asConstant1 / asConstant2);
          case MOD:
            return DoubleType.constant(asConstant1 % asConstant2);
-           /*
-         case BIT_AND:
-           return DoubleType.constant(asConstant1.byteValue() & asConstant2.byteValue());
-         case BIT_OR:
-           return DoubleType.constant(asConstant1.byteValue() | asConstant2.byteValue());
-         case BIT_XOR:
-           return DoubleType.constant(asConstant1.byteValue() ^ asConstant2.byteValue());
-           */
          }
        }
      default:
@@ -877,10 +873,11 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         }
       }
 
-      private Type visitBinaryOp(final DartBinaryExpression node, final Token operator, final DartExpression arg1, final Type type1, final DartExpression arg2,
+      /* TODO
+      private*/ Type visitBinaryOp(final DartBinaryExpression node, final Token operator, final DartExpression arg1, final Type type1, final DartExpression arg2,
           final Type type2, final FlowEnv flowEnv) {
         if (type1 instanceof UnionType) {
-          type1.map(new TypeMapper() {
+          return type1.map(new TypeMapper() {
             @Override
             public Type transform(Type type) {
               return visitBinaryOp(node, operator, arg1, type, arg2, type2, flowEnv);
@@ -889,18 +886,18 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         }
 
         if (type2 instanceof UnionType) {
-          type1.map(new TypeMapper() {
+          return type1.map(new TypeMapper() {
             @Override
             public Type transform(Type type) {
               return visitBinaryOp(node, operator, arg1, type1, arg2, type, flowEnv);
             }
           });
         }
-        
-        Class<? extends Type> class1 = type1.getClass();
-        Class<? extends Type> class2 = type2.getClass();
-        
-        if (class1.equals(class2)) {
+
+        Class<?> class1 = type1.getClass();
+        Class<?> class2 = type2.getClass();
+
+        if (class1 == class2) {
           if (type1 instanceof IntType) {
             return opIntInt(operator, arg1, type1, arg2, type2, flowEnv);
           }
@@ -914,7 +911,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         if (type1 instanceof NumType && type2 instanceof NumType) {
           return opDoubleDouble(operator, arg1, ((NumType) type1).asDouble(), arg2, ((NumType) type2).asDouble(), flowEnv);
         }
-        
+
         if (type1 instanceof DynamicType) {
           return Types.widening(type2);
         }
@@ -949,8 +946,10 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
           }
           break;
         case BIT_NOT:
-          // TODO
-          throw new UnsupportedOperationException("Unary Expr: " + operator + " (" + operator.name() + ") not implemented for " + type + ".");
+          if (type instanceof IntType) {
+            return ((IntType) type).bitNot();
+          }
+          break;
         case INC:
           if (type instanceof NumType) {
             return ((NumType) type).add(IntType.constant(BigInteger.ONE));
@@ -969,7 +968,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         default:
           throw new UnsupportedOperationException("Unary Expr: " + operator + " (" + operator.name() + ") not implemented for " + type + ".");
         }
-        
+
         if (node.getElement() == null) {
           System.err.println("NoSuchMethodException: " + node.getOperator() + " for type: " + type);
           return DYNAMIC_TYPE;

@@ -257,7 +257,7 @@ public class DoubleType extends PrimitiveType implements NumType {
   public Type unarySub() {
     return constant(-constant);
   }
-
+  
   @Override
   public Type exclude(Type other) {
     if (other instanceof DoubleType) {
