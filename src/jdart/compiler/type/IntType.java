@@ -164,6 +164,7 @@ public class IntType extends PrimitiveType implements NumType {
     return new IntType(nullable, min, max);
   }
 
+  @Override
   public DoubleType asDouble() {
     if (minBound != null && minBound == maxBound) {
       DoubleType type = DoubleType.constant(minBound.doubleValue());
@@ -624,6 +625,7 @@ public class IntType extends PrimitiveType implements NumType {
           if (minBound.equals(oCst)) {
             return other;
           }
+        //$FALL-THROUGH$
         case SECOND_IS_LEFT:
           return null;
         case FIRST_IS_LEFT:
@@ -1163,6 +1165,9 @@ public class IntType extends PrimitiveType implements NumType {
           return true;
         }
         return false;
+        
+      default:
+        throw new IllegalStateException();
       }
     }
 

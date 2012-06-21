@@ -645,9 +645,8 @@ public class BigInt implements Comparable<BigInt> {
       if (n == Integer.MIN_VALUE) {
         throw new ArithmeticException(
             "Shift distance of Integer.MIN_VALUE not supported.");
-      } else {
-        return shiftRight(-n);
       }
+      return shiftRight(-n);
     }
     int[] newMag = shiftLeft(mag, n);
 
@@ -705,9 +704,8 @@ public class BigInt implements Comparable<BigInt> {
       if (n == Integer.MIN_VALUE) {
         throw new ArithmeticException(
             "Shift distance of Integer.MIN_VALUE not supported.");
-      } else {
-        return shiftLeft(-n);
       }
+      return shiftLeft(-n);
     }
 
     int nInts = n >>> 5;
@@ -1072,21 +1070,20 @@ public class BigInt implements Comparable<BigInt> {
         return ((a & LONG_MASK) < (b & LONG_MASK)) ? -1 : 1;
       }
       return 0;
-    } else {
-      if (len < 2)
-        return -1;
-      int a = m1[0];
-      int b = highWord;
-      if (a != b) {
-        return ((a & LONG_MASK) < (b & LONG_MASK)) ? -1 : 1;
-      }
-      a = m1[1];
-      b = (int) val;
-      if (a != b) {
-        return ((a & LONG_MASK) < (b & LONG_MASK)) ? -1 : 1;
-      }
-      return 0;
     }
+    if (len < 2)
+      return -1;
+    int a = m1[0];
+    int b = highWord;
+    if (a != b) {
+      return ((a & LONG_MASK) < (b & LONG_MASK)) ? -1 : 1;
+    }
+    a = m1[1];
+    b = (int) val;
+    if (a != b) {
+      return ((a & LONG_MASK) < (b & LONG_MASK)) ? -1 : 1;
+    }
+    return 0;
   }
 
   /**
@@ -1175,14 +1172,14 @@ public class BigInt implements Comparable<BigInt> {
    * case for {@code Integer.toString}). The digit-to-character mapping provided
    * by {@code Character.forDigit} is used, and a minus sign is prepended if
    * appropriate. (This representation is compatible with the
-   * {@link #BigInteger(String, int) (String, int)} constructor.)
+   * {@link #BigInt(String, int) (String, int)} constructor.)
    * 
    * @param radix
    *          radix of the String representation.
    * @return String representation of this BigInteger in the given radix.
    * @see Integer#toString
    * @see Character#forDigit
-   * @see #BigInteger(java.lang.String, int)
+   * @see #BigInt(java.lang.String, int)
    */
   private String toString(int radix) {
     if (signum == 0)
@@ -1280,7 +1277,6 @@ public class BigInt implements Comparable<BigInt> {
    * BigInteger value as well as return a result with the opposite sign.
    * 
    * @return this BigInteger converted to a {@code long}.
-   * @see #longValueExact()
    */
   private long longValue() {
     long result = 0;

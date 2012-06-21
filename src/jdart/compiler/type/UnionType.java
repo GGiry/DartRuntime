@@ -174,7 +174,7 @@ public class UnionType extends NullableType {
    * 
    * Only sort the {@link IntType} instances.
    * 
-   * @param newUnionSet Set to sort.
+   * @param unionSet Set to sort.
    * @return Sorted set.
    */
   private static LinkedHashSet<NullableType> sortUnionSet(LinkedHashSet<NullableType> unionSet) {

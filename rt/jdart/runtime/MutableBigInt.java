@@ -380,8 +380,7 @@ class MutableBigInt {
         // Unnormalize
         if (shift > 0)
             return rem % divisor;
-        else
-            return rem;
+        return rem;
     }
 
     /**
@@ -430,9 +429,8 @@ class MutableBigInt {
                 if (r == 0)
                     return new MutableBigInt();
                 return new MutableBigInt(r);
-            } else {
-                return null;
             }
+            return null;
         }
         return divideMagnitude(b, quotient, needReminder);
     }
