@@ -894,10 +894,9 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
             }
           });
         }
-        
+
         Class<?> class1 = type1.getClass();
         Class<?> class2 = type2.getClass();
-        
         if (class1 == class2) {
           if (type1 instanceof IntType) {
             return opIntInt(operator, arg1, type1, arg2, type2, flowEnv);

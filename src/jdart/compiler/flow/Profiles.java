@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import jdart.compiler.type.Type;
+import jdart.compiler.type.Types;
 
 public class Profiles {
   final LinkedHashMap<List<Type>, ProfileInfo> profileMap = new LinkedHashMap<>();
@@ -26,7 +27,7 @@ public class Profiles {
     }
     
     for(Entry<List<Type>, ProfileInfo> entry: profileMap.entrySet()) {
-     if (InterProceduralMethodCallResolver.isCompatible(entry.getKey(), argumentTypes)) {
+     if (Types.isCompatible(entry.getKey(), argumentTypes)) {
         return entry.getValue().getReturnType();
       }
     }

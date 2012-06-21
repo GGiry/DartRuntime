@@ -4,13 +4,16 @@ import static jdart.compiler.type.CoreTypeRepository.DYNAMIC_TYPE;
 import static jdart.compiler.type.CoreTypeRepository.VOID_TYPE;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import jdart.compiler.cha.ClassHierarchyAnalysisPhase;
+import jdart.compiler.type.CoreTypeRepository;
 import jdart.compiler.type.DynamicType;
 import jdart.compiler.type.FunctionType;
+import jdart.compiler.type.IntType;
 import jdart.compiler.type.OwnerType;
 import jdart.compiler.type.Type;
 import jdart.compiler.type.TypeVisitor;
@@ -37,25 +40,6 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
   
   public Map<DartMethodDefinition, Profiles> getMethodMap() {
     return methodMap;
-  }
-  
-  static boolean isCompatible(Type parameterType, Type argumentType) {
-    return argumentType.isIncludeIn(parameterType);
-  }
-  
-  static boolean isCompatible(List<Type> parameterTypes, List<Type> argumentTypes) {
-    assert parameterTypes.size() == argumentTypes.size();
-    
-    for(int i=0; i<parameterTypes.size(); i++) {
-      if (!isCompatible(parameterTypes.get(i), argumentTypes.get(i))) {
-        return false;
-      }
-      
-      /*if (!parameterType.equals(argumentType)) {
-        return false;
-      }*/
-    }
-    return true;
   }
 
   private Type actualCall(DartMethodDefinition node, /*maybenull*/OwnerType receiverType, List<Type> argumentTypes, Type expectedType) {
@@ -86,31 +70,31 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
       argumentTypes = windenedArgumentTypes;
     }
     
-    ProfileInfo profileInfo = doActualCall(node, receiverType, argumentTypes, profiles);
-    
-    // try to remove signatures too specific
-    /* FIXME, don't work because with recursive calls, we try to compare with something
-       that is a temporary signature.
-       
-    if (signatures.signatureMap.size() > 1) {
-      signatures.signatureMap.remove(argumentTypes);
-      System.out.println("map before cleaning " +signatures.signatureMap);
-      
-      for(Iterator<Entry<List<Type>,Type>> it = signatures.signatureMap.entrySet().iterator(); it.hasNext();) {
-        Entry<List<Type>, Type> entry = it.next();
-        
-        System.out.println("  check rtypes "+returnType+" "+entry.getValue());
-        System.out.println("  check argtypes "+argumentTypes+" "+entry.getKey());
-        
-        if (isCompatible(returnType, entry.getValue()) && isCompatible(argumentTypes, entry.getKey())) {
-          System.out.println("--> clean up "+entry);
-          it.remove();   
-        }
+    // separate profiles if an integer is too big to fit in int32
+    Type[] preciseArgumentTypes = null; // lazy allocated
+    for(int i=0; i<argumentTypes.size(); i++) {
+      Type argumentType = argumentTypes.get(i);
+      if (preciseArgumentTypes != null) {
+        preciseArgumentTypes[i] = argumentType;
       }
-      
-      System.out.println("clean map " +signatures.signatureMap);
-    }*/
+      if (argumentType instanceof IntType) {
+        IntType intArgumentType = (IntType)argumentType;
+        
+        if (intArgumentType.isIncludeIn(CoreTypeRepository.INT32_TYPE) ||
+            !intArgumentType.hasCommonValuesWith(CoreTypeRepository.INT32_TYPE)) {
+          continue;
+        }
+        if (preciseArgumentTypes == null) {
+          preciseArgumentTypes = argumentTypes.subList(0, i).toArray(new Type[argumentTypes.size()]);
+        }
+        preciseArgumentTypes[i] = CoreTypeRepository.INT32_TYPE;
+      }
+    }
+    if (preciseArgumentTypes != null) {
+      actualCall(node, receiverType, Arrays.asList(preciseArgumentTypes), expectedType);
+    }
     
+    ProfileInfo profileInfo = doActualCall(node, receiverType, argumentTypes, profiles);
     profiles.profileMap.put(argumentTypes, profileInfo);
     
     Type returnType = profileInfo.getReturnType();
@@ -126,7 +110,7 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
     DartFunction function = node.getFunction();
     if (function == null) {
       // native function use declared return type
-      return new ProfileInfo(typeHelper.asType(true, node.getType()), null);
+      return new ProfileInfo(typeHelper.asType(true, node.getType()), argumentTypes, null);
     }
     
     // We should allow to propagate the type of 'this' in the flow env
@@ -148,7 +132,7 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
     Type returnType = ((FunctionType) typeHelper.asType(false, element.getType())).getReturnType();
 
     // register temporary signature with declared return type for recursive function 
-    profiles.profileMap.put(argumentTypes, new ProfileInfo(returnType, null));
+    profiles.profileMap.put(argumentTypes, new ProfileInfo(returnType, argumentTypes, null));
     
     FTVisitor flowTypeVisitor = new FTVisitor(typeHelper, this);
     FlowEnv flowEnv = new FlowEnv(new FlowEnv(thisType), returnType, VOID_TYPE, false);
@@ -165,7 +149,7 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
       returnType = flowTypeVisitor.getInferredReturnType(returnType);
       typeMap = flowTypeVisitor.getTypeMap();
     }
-    return new ProfileInfo(returnType, typeMap);
+    return new ProfileInfo(returnType, argumentTypes, typeMap);
   }
   
   Type directCall(MethodNodeElement element, OwnerType receiverType, List<Type> argumentType, Type expectedType, boolean virtual) {

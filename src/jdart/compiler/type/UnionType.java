@@ -11,8 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 
-// TODO not sure if it need to implements NumType or just add the methods without @Override annotation
-public class UnionType extends NullableType implements NumType {
+public class UnionType extends NullableType {
   // each component type should be non nullable and not a union type
   private final LinkedHashSet<NullableType> types;
 
@@ -328,7 +327,6 @@ public class UnionType extends NullableType implements NumType {
     });
   }
 
-  @Override
   public Type add(final Type other) {
     return map(new TypeMapper() {
 
@@ -355,7 +353,6 @@ public class UnionType extends NullableType implements NumType {
     });
   }
   
-  @Override
   public Type unarySub() {
     return map(new TypeMapper() {
       @Override
@@ -447,10 +444,5 @@ public class UnionType extends NullableType implements NumType {
       }
     }
     return true;
-  }
-
-  @Override
-  public Type asDouble() {
-    throw new UnsupportedOperationException("An union can't be converted to a Double.");
   }
 }
