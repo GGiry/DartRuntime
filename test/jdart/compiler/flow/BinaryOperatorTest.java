@@ -6,9 +6,6 @@ import static jdart.compiler.type.IntTest.range;
 import jdart.compiler.type.DoubleType;
 import jdart.compiler.type.DynamicType;
 import jdart.compiler.type.IntType;
-import jdart.compiler.type.NullType;
-import jdart.compiler.type.Type;
-import jdart.compiler.type.Types;
 import jdart.compiler.type.UnionTest;
 import jdart.compiler.type.UnionType;
 

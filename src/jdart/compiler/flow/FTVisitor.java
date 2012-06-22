@@ -874,8 +874,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         }
       }
 
-      /* TODO
-      private*/ Type visitBinaryOp(final DartBinaryExpression node, final Token operator, final DartExpression arg1, final Type type1, final DartExpression arg2,
+      /* TODO private*/ Type visitBinaryOp(final DartBinaryExpression node, final Token operator, final DartExpression arg1, final Type type1, final DartExpression arg2,
           final Type type2, final FlowEnv flowEnv) {
         if (type1 instanceof UnionType) {
           return type1.map(new TypeMapper() {
@@ -926,8 +925,6 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
         // a method call that can be polymorphic
         if (node.getElement() == null) {
-          // FIXME A setter with a dynamic parameter will make the field dynamic.
-          // (see PropertyAccess2.dart)
           System.err.println("NoSuchMethodException: " + node.getOperator() + " for type: " + type1 + ", " + type2);
           return DYNAMIC_TYPE;
         }
@@ -941,8 +938,6 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       }
 
       private Type visitUnaryOperation(DartUnaryExpression node, Token operator, DartExpression arg, Type type, FlowEnv flowEnv) {
-        // FIXME Geoffrey, Dart allow to call unary/binary operators on 'num' too
-        // (the interface type)
         switch (operator) {
         case NOT:
           if (type instanceof BoolType) {
