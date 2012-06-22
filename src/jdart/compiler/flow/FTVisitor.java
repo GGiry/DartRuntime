@@ -78,6 +78,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
   private final StatementVisitor statementVisitor;
   private Type inferredReturnType;
 
+  private final HashMap<DartNode, HashMap<VariableElement, Type>> phiTable = new HashMap<>();
+
   public FTVisitor(TypeHelper typeHelper, MethodCallResolver methodCallResolver) {
     this.typeHelper = typeHelper;
     this.methodCallResolver = methodCallResolver;
@@ -133,6 +135,19 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     VariableElement variable = (VariableElement) element;
     Type type = flowEnv.getType(variable);
     flowEnv.register(variable, type.asNonNull());
+  }
+
+  private static void operandIsPositiveInt(DartExpression expr, FlowEnv flowEnv) {
+    if (!(expr instanceof DartIdentifier)) {
+      return;
+    }
+    Element element = expr.getElement();
+    if (!(element instanceof VariableElement)) {
+      return;
+    }
+    VariableElement variable = (VariableElement) element;
+    Type type = flowEnv.getType(variable);
+    flowEnv.register(variable, type.commonValuesWith(POSITIVE_INT32_TYPE));
   }
 
   void changeOperandsTypes(Type type, DartBinaryExpression node, FlowEnv parameter) {
@@ -292,11 +307,11 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
     @Override
     public Liveness visitIfStatement(DartIfStatement node, FlowEnv parameter) {
+      HashMap<VariableElement, Type> beforeConditionMap = parameter.getMap();
+
       DartExpression condition = node.getCondition();
       Type conditionType = FTVisitor.this.accept(condition, parameter.expectedType(BOOL_NON_NULL_TYPE));
-
       FTVisitor.ConditionVisitor conditionVisitor = new ConditionVisitor();
-
       FlowEnv envThen = new FlowEnv(parameter);
       FlowEnv envElse = new FlowEnv(parameter);
 
@@ -318,11 +333,14 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
           parameter.copyAll(envElse);
         }
       }
+      phiTable.put(node, parameter.mapDiff(beforeConditionMap));
       return (trueLiveness == ALIVE && falseLiveness == ALIVE) ? ALIVE : DEAD;
     }
 
-    private Liveness computeLoop(DartExpression condition, DartStatement body, DartStatement /*maybenull*/init, 
+    private Liveness computeLoop(DartStatement node, DartExpression condition, DartStatement body, DartStatement /*maybenull*/init, 
         DartExpression /*maybenull*/increment, FlowEnv parameter) {
+      HashMap<VariableElement, Type> beforeLoopMap = parameter.getMap();
+      
       FlowEnv loopEnv = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
       FlowEnv afterLoopEnv = new FlowEnv(parameter);
       FlowEnv envCopy = new FlowEnv(parameter);
@@ -354,22 +372,23 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       for (Entry<VariableElement, Type> entry : map.entrySet()) {
         parameter.register(entry.getKey(), entry.getValue());
       }
+      phiTable.put(node, parameter.mapDiff(beforeLoopMap));
       return ALIVE;
     }
 
     @Override
     public Liveness visitForStatement(DartForStatement node, FlowEnv parameter) {
-      return computeLoop(node.getCondition(), node.getBody(), node.getInit(), node.getIncrement(), parameter);
+      return computeLoop(node, node.getCondition(), node.getBody(), node.getInit(), node.getIncrement(), parameter);
     }
 
     @Override
     public Liveness visitWhileStatement(DartWhileStatement node, FlowEnv parameter) {
-      return computeLoop(node.getCondition(), node.getBody(), null, null, parameter);
+      return computeLoop(node, node.getCondition(), node.getBody(), null, null, parameter);
     }
 
     @Override
     public Liveness visitDoWhileStatement(DartDoWhileStatement node, FlowEnv parameter) {
-      return computeLoop(node.getCondition(), node.getBody(), null, null, parameter);
+      return computeLoop(node, node.getCondition(), node.getBody(), null, null, parameter);
     }
 
     @Override
@@ -576,6 +595,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
+  // LoopVisitor returns all variables which had change during loop.
   class LoopVisitor extends ASTVisitor2<Map<VariableElement, Type>, FlowEnv> {
     @Override
     protected Map<VariableElement, Type> accept(DartNode node, FlowEnv parameter) {
@@ -616,7 +636,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     @Override
     public Map<VariableElement, Type> visitExprStmt(DartExprStmt node, FlowEnv parameter) {
       HashMap<VariableElement, Type> map = new HashMap<>();
-      map.putAll(accept(node.getExpression(), parameter));
+      addAllWithUnion(map, accept(node.getExpression(), parameter));
       return map;
     }
 
@@ -624,6 +644,10 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     public Map<VariableElement, Type> visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
       HashMap<VariableElement, Type> map = new HashMap<>();
       if (node.getOperator().isAssignmentOperator()) {
+
+        // We need to remember all variable's changes during the loop.
+        // Because we don't look at loop's iteration time we need widened types.
+
         VariableElement element = (VariableElement) node.getArg1().getElement();
         Type currentType = Types.widening(FTVisitor.this.accept(node, parameter));
         map.put(element, currentType);
@@ -1237,16 +1261,11 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
       @Override
       public Type visitArrayAccess(DartArrayAccess node, FlowEnv parameter) {
-        // FIXME Geoffrey, you have to take a look to the parent to know
-        // if it represent a[12] or a[12] = ...
-        // or perhaps this check should be done in visitBinary for ASSIGN
-
         Type typeOfArray = accept(node.getTarget(), parameter);
         Type typeOfIndex = accept(node.getKey(), parameter);
 
         operandIsNonNull(node.getTarget(), parameter);
-
-        // TODO node.getKey -> int32+
+        operandIsPositiveInt(node.getKey(), parameter);
 
         if (!(typeOfIndex instanceof IntType)) {
           return DYNAMIC_NON_NULL_TYPE;
@@ -1266,7 +1285,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
             element = interfaceArray.lookupMember("operator []=");
           }
           if (element == null || !(element instanceof MethodElement)) {
-            // the class doesn't provide any operator []
+            // the class doesn't provide any operator [] ou []=
             return DYNAMIC_NON_NULL_TYPE;
           }
           return typeHelper.asType(true, ((MethodElement) element).getReturnType());

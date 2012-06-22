@@ -63,27 +63,27 @@ public class Toto {
     String sdkPath = "../../dart-sdk/";
 
     String[] paths = { 
-     "DartTest/For2.dart",
+         "DartTest/For2.dart",
+        "DartTest/FunctionObject.dart",
         // "DartTest/If7.dart",
-        "DartTest/BinaryOp.dart",
-    // "DartTest/For.dart",
-    // "DartTest/If4.dart",
-    // "DartTest/While.dart"
-    // "DartTest/If6.dart",
-    // "DartTest/If5.dart",
-    // "DartTest/If3.dart",
-    // "DartTest/If2.dart",
-    // "DartTest/If.dart",
-    // "DartTest/Array.dart",
-    // "DartTest/PropertyAccess2.dart",
-    // "DartTest/GetterSetter.dart",
-    // "DartTest/EmptyStatement.dart",
-    // "DartTest/Throw.dart",
-    // "DartTest/FunctionObject.dart",
-    // "DartTest/Super.dart",
-    // "DartTest/PropertyAccess.dart",
-    // "DartTest/Invocation.dart",
-    // "Hello.dart"
+        // "DartTest/BinaryOp.dart",
+        // "DartTest/For.dart",
+        // "DartTest/If4.dart",
+        // "DartTest/While.dart"
+        // "DartTest/If6.dart",
+        // "DartTest/If5.dart",
+        // "DartTest/If3.dart",
+        // "DartTest/If2.dart",
+        // "DartTest/If.dart",
+        // "DartTest/Array.dart",
+        // "DartTest/PropertyAccess2.dart",
+        // "DartTest/GetterSetter.dart",
+        // "DartTest/EmptyStatement.dart",
+        // "DartTest/Throw.dart",
+        // "DartTest/Super.dart",
+        // "DartTest/PropertyAccess.dart",
+        // "DartTest/Invocation.dart",
+        // "Hello.dart"
     };
 
     for (String path : paths) {
