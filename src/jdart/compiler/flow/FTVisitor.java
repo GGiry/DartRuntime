@@ -78,7 +78,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
   private final StatementVisitor statementVisitor;
   private Type inferredReturnType;
 
-  private final HashMap<DartNode, HashMap<VariableElement, Type>> phiTable = new HashMap<>();
+  final HashMap<DartNode, HashMap<VariableElement, Type>> phiTable = new HashMap<>();
 
   public FTVisitor(TypeHelper typeHelper, MethodCallResolver methodCallResolver) {
     this.typeHelper = typeHelper;
@@ -720,6 +720,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
+  //FIXME Geoffrey, add TRUNC (~/) operator
   private static Type opIntInt(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
     IntType iType1 = (IntType) type1;
     IntType iType2 = (IntType) type2;
@@ -730,23 +731,10 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     case EQ:
     case EQ_STRICT:
       return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : FALSE_TYPE;
-    case LT:
-    case LTE:
-    case GT:
-    case GTE:
-    case ADD:
-    case SUB:
-    case MUL:
-    case DIV:
-    case MOD:
-    case BIT_AND:
-    case BIT_OR:
-    case BIT_XOR:
-    case SHL:
-    case SAR:
+    
+    default:
       operandIsNonNull(arg1, flowEnv);
       operandIsNonNull(arg2, flowEnv);
-
       switch (operator) {
       case LT:
         return iType1.isStrictLT(iType2) ? TRUE_TYPE : iType2.isStrictLTE(iType1) ? FALSE_TYPE : BOOL_NON_NULL_TYPE;
@@ -776,12 +764,13 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         return iType1.shiftLeft(iType2);
       case SAR:
         return iType1.shiftRight(iType2);
+      default:
+        throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
       }
-    default:
-      throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
     }
   }
 
+  //FIXME Geoffrey, add TRUNC (~/) operator
   private static Type opDoubleDouble(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
     Double asConstant1 = ((DoubleType) type1).asConstant();
     Double asConstant2 = ((DoubleType) type2).asConstant();
@@ -821,6 +810,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         return (compareTo > 0) ? TRUE_TYPE : FALSE_TYPE;
       case GTE:
         return (compareTo >= 0) ? TRUE_TYPE : FALSE_TYPE;
+      default:
+        throw new AssertionError();
       }
     case ADD:
     case SUB:
@@ -845,12 +836,15 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         return DoubleType.constant(asConstant1 / asConstant2);
       case MOD:
         return DoubleType.constant(asConstant1 % asConstant2);
+      default:
+        throw new AssertionError();
       }
     default:
       throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
     }
   }
 
+  //FIXME Geoffrey, BIT_OR, BIT_AND and BIT_XOR are valid operators on boolean (at least in Java)
   private static Type opBoolBool(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
     BoolType bType1 = (BoolType) type1;
     BoolType bType2 = (BoolType) type2;
@@ -869,18 +863,12 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     switch (operator) {
     case NE:
     case NE_STRICT:
-      if (bType1.equals(bType2)) {
-        return FALSE_TYPE;
-      }
-      return TRUE_TYPE;
+      return (bType1.equals(bType2))? FALSE_TYPE: TRUE_TYPE;
     case EQ:
     case EQ_STRICT:
-      if (bType1.equals(bType2)) {
-        return TRUE_TYPE;
-      }
-      return FALSE_TYPE;
-    case AND:
-    case OR:
+      return (bType1.equals(bType2))? TRUE_TYPE: FALSE_TYPE;
+      
+    default: // AND, OR
       operandIsNonNull(arg1, flowEnv);
       operandIsNonNull(arg2, flowEnv);
 
@@ -889,13 +877,13 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         return BoolType.constant(asConstant1 && asConstant2);
       case OR:
         return BoolType.constant(asConstant1 || asConstant2);
+      default:
+        throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
       }
-    default:
-      throw new AssertionError("Binary Expr: " + type1 + " " + operator + " " + type2 + " (" + operator.name() + ") not implemented");
     }
   }
 
-  private Type visitBinaryOp(final DartBinaryExpression node, final Token operator, final DartExpression arg1, final Type type1, final DartExpression arg2,
+  Type visitBinaryOp(final DartBinaryExpression node, final Token operator, final DartExpression arg1, final Type type1, final DartExpression arg2,
       final Type type2, final FlowEnv flowEnv) {
     if (type1 instanceof UnionType) {
       return type1.map(new TypeMapper() {
@@ -954,10 +942,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
   @Override
   public Type visitUnaryExpression(DartUnaryExpression node, FlowEnv parameter) {
     DartExpression arg = node.getArg();
-    return visitUnaryOperation(node, node.getOperator(), arg, accept(arg, parameter), parameter);
-  }
-
-  private Type visitUnaryOperation(DartUnaryExpression node, Token operator, DartExpression arg, Type type, FlowEnv flowEnv) {
+    Token operator = node.getOperator();
+    Type type = accept(arg, parameter);
     switch (operator) {
     case NOT:
       if (type instanceof BoolType) {

@@ -245,7 +245,6 @@ public class FlowEnv {
   /** TODO
    * Returns a Map containing all values of this which are not in the specified {@link FlowEnv environment}.
    * @param beforeLoopMap 
-   * @return 
    */
   HashMap<VariableElement, Type> mapDiff(Map<VariableElement, Type> beforeLoopMap) {
     HashMap<VariableElement, Type> result = new HashMap<>();
@@ -258,6 +257,6 @@ public class FlowEnv {
   }
 
   HashMap<VariableElement, Type> getMap() {
-    return new HashMap<VariableElement, Type>(variableTypeMap);
+    return new HashMap<>(variableTypeMap);
   }
 }
