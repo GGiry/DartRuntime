@@ -75,8 +75,8 @@ public class BinaryOperatorTest {
   public void testDoubleDouble() {
     DoubleType double1 = DoubleType.constant(3.5);
     DoubleType double2 = DoubleType.constant(5.3);
-    DoubleType doubleRound1 = DoubleType.constant(6);;
-    DoubleType doubleRound2 = DoubleType.constant(10);;
+    DoubleType doubleRound1 = DoubleType.constant(6);
+    DoubleType doubleRound2 = DoubleType.constant(10);
 
     Assert.assertEquals(DoubleType.constant(8.8), FTVisitor.opDoubleDouble(Token.ADD, null, double1, null, double2, null));
     Assert.assertEquals(DoubleType.constant(16), FTVisitor.opDoubleDouble(Token.ADD, null, doubleRound1, null, doubleRound2, null));

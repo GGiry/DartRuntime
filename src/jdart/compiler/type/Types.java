@@ -8,9 +8,25 @@ import static jdart.compiler.type.CoreTypeRepository.NEGATIVE_INT32_TYPE;
 import static jdart.compiler.type.CoreTypeRepository.NULL_TYPE;
 import static jdart.compiler.type.CoreTypeRepository.POSITIVE_INT32_TYPE;
 
+import java.util.List;
 import java.util.Objects;
 
 public class Types {
+  public static boolean isCompatible(Type parameterType, Type argumentType) {
+    return argumentType.isIncludeIn(parameterType);
+  }
+  
+  public static boolean isCompatible(List<Type> parameterTypes, List<Type> argumentTypes) {
+    assert parameterTypes.size() == argumentTypes.size();
+    
+    for(int i=0; i<parameterTypes.size(); i++) {
+      if (!isCompatible(parameterTypes.get(i), argumentTypes.get(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
   public static Type union(Type type1, Type type2) {
     Objects.requireNonNull(type1);
     Objects.requireNonNull(type2);
