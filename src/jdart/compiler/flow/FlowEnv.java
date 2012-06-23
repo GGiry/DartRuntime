@@ -2,7 +2,6 @@ package jdart.compiler.flow;
 
 import static jdart.compiler.type.CoreTypeRepository.*;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -13,7 +12,6 @@ import jdart.compiler.type.Type;
 import jdart.compiler.type.Types;
 import jdart.compiler.type.UnionType;
 
-import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.resolver.VariableElement;
 
 public class FlowEnv {
@@ -246,7 +244,7 @@ public class FlowEnv {
    * Returns a Map containing all values of this which are not in the specified {@link FlowEnv environment}.
    * @param beforeLoopMap 
    */
-  HashMap<VariableElement, Type> mapDiff(Map<VariableElement, Type> beforeLoopMap) {
+  public Map<VariableElement, Type> mapDiff(Map<VariableElement, Type> beforeLoopMap) {
     HashMap<VariableElement, Type> result = new HashMap<>();
     for (Entry<VariableElement, Type> entry : variableTypeMap.entrySet()) {
       if (!entry.getValue().equals(beforeLoopMap.get(entry.getKey()))) {
@@ -256,7 +254,7 @@ public class FlowEnv {
     return result;
   }
 
-  HashMap<VariableElement, Type> getMap() {
+  public Map<VariableElement, Type> getClonedMap() {
     return new HashMap<>(variableTypeMap);
   }
 }
