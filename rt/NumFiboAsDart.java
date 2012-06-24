@@ -43,7 +43,7 @@ public class NumFiboAsDart {
     if (_r3 == null) {
       return r3;
     }
-    throw ControlFlowException.value(_r3); 
+    throw ControlFlowException.valueOf(_r3); 
   }
 
   public static void main(String[] args) {

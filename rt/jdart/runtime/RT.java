@@ -1,5 +1,11 @@
 package jdart.runtime;
 
+import java.lang.invoke.CallSite;
+import java.lang.invoke.ConstantCallSite;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.invoke.MethodType;
+
 /*
  * This class use methods java.Math.*exact from OpenJDK.
  * All introduced bugs are mine. Remi
@@ -10,6 +16,16 @@ package jdart.runtime;
  *
  */
 public class RT {
+  // load a BigInt as a constant from a String
+  public CallSite ldcBSM(Lookup lookup, String name, MethodType methodType, String bigIntAsString) {
+    return new ConstantCallSite(MethodHandles.constant(BigInt.class, BigInt.valueOf(bigIntAsString)));
+  }
+  
+//load a Double as a constant from a double
+ public CallSite ldcBSM(Lookup lookup, String name, MethodType methodType, double value) {
+   return new ConstantCallSite(MethodHandles.constant(double.class, Double.valueOf(value)));
+ }
+  
   public static void throwArithmeticException() {
     throw new ArithmeticException();
   }

@@ -165,7 +165,7 @@ public class FiboSampleGen {
     
     mv.visitLabel(l5);
     mv.visitVarInsn(ALOAD, 6);
-    mv.visitMethodInsn(INVOKESTATIC, "jdart/runtime/ControlFlowException", "value", "(Ljdart/runtime/BigInt;)Ljdart/runtime/ControlFlowException;");
+    mv.visitMethodInsn(INVOKESTATIC, "jdart/runtime/ControlFlowException", "valueOf", "(Ljdart/runtime/BigInt;)Ljdart/runtime/ControlFlowException;");
     mv.visitInsn(ATHROW);
     
     mv.visitMaxs(0, 0);

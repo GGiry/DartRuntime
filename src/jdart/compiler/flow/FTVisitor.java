@@ -1,7 +1,7 @@
 package jdart.compiler.flow;
 
-import static jdart.compiler.flow.FTVisitor.Liveness.ALIVE;
-import static jdart.compiler.flow.FTVisitor.Liveness.DEAD;
+import static jdart.compiler.flow.Liveness.ALIVE;
+import static jdart.compiler.flow.Liveness.DEAD;
 import static jdart.compiler.type.CoreTypeRepository.*;
 
 import java.math.BigInteger;
@@ -73,12 +73,13 @@ import com.google.dart.compiler.resolver.VariableElement;
 
 public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
   final TypeHelper typeHelper;
-  private final HashMap<DartNode, Type> typeMap = new HashMap<>();
   private final MethodCallResolver methodCallResolver;
   private final StatementVisitor statementVisitor;
+  
+  private final HashMap<DartNode, Type> typeMap = new HashMap<>();
+  final HashMap<DartNode, Liveness> livenessMap = new HashMap<>();
+  final HashMap<DartNode, Map<VariableElement, Type>> phiTableMap = new HashMap<>();
   private Type inferredReturnType;
-
-  final HashMap<DartNode, HashMap<VariableElement, Type>> phiTable = new HashMap<>();
 
   public FTVisitor(TypeHelper typeHelper, MethodCallResolver methodCallResolver) {
     this.typeHelper = typeHelper;
@@ -107,10 +108,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
   public Map<DartNode, Type> getTypeMap() {
     return typeMap;
   }
-
-  enum Liveness {
-    ALIVE,
-    DEAD
+  public Map<DartNode, Liveness> getLivenessMap() {
+    return livenessMap;
   }
 
   // entry points
@@ -230,6 +229,13 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     Liveness liveness(DartNode node, FlowEnv flowEnv) {
       return accept(node, flowEnv);
     }
+    
+    @Override
+    protected Liveness accept(DartNode node, FlowEnv flowEnv) {
+      Liveness liveness = super.accept(node, flowEnv);
+      livenessMap.put(node, liveness);
+      return liveness;
+    }
 
     @Override
     public Liveness visitBlock(DartBlock node, FlowEnv flowEnv) {
@@ -302,49 +308,49 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         // statement expression expression should return void
         FTVisitor.this.accept(expression, flowEnv.expectedType(VOID_TYPE));
       }
-      return null;
+      return ALIVE;
     }
 
     @Override
-    public Liveness visitIfStatement(DartIfStatement node, FlowEnv parameter) {
-      HashMap<VariableElement, Type> beforeConditionMap = parameter.getMap();
+    public Liveness visitIfStatement(DartIfStatement node, FlowEnv flowEnv) {
+      Map<VariableElement, Type> beforeConditionMap = flowEnv.getClonedMap();
 
       DartExpression condition = node.getCondition();
-      Type conditionType = FTVisitor.this.accept(condition, parameter.expectedType(BOOL_NON_NULL_TYPE));
+      Type conditionType = FTVisitor.this.accept(condition, flowEnv.expectedType(BOOL_NON_NULL_TYPE));
       FTVisitor.ConditionVisitor conditionVisitor = new ConditionVisitor();
-      FlowEnv envThen = new FlowEnv(parameter);
-      FlowEnv envElse = new FlowEnv(parameter);
+      FlowEnv envThen = new FlowEnv(flowEnv);
+      FlowEnv envElse = new FlowEnv(flowEnv);
 
-      conditionVisitor.accept(condition, new ConditionEnv(parameter, envThen, envElse, false));
+      conditionVisitor.accept(condition, new ConditionEnv(flowEnv, envThen, envElse, false));
       Liveness trueLiveness = DEAD;
       if (conditionType != FALSE_TYPE) {
         trueLiveness = accept(node.getThenStatement(), envThen);
-        parameter.merge(envThen);
+        flowEnv.merge(envThen);
       }
       Liveness falseLiveness = ALIVE;
       if (node.getElseStatement() != null) {
         falseLiveness = DEAD;
         if (conditionType != TRUE_TYPE) {
           falseLiveness = accept(node.getElseStatement(), envElse);
-          parameter.merge(envElse);
+          flowEnv.merge(envElse);
         }
       } else {
         if (trueLiveness == DEAD) {
-          parameter.copyAll(envElse);
+          flowEnv.copyAll(envElse);
         }
       }
-      phiTable.put(node, parameter.mapDiff(beforeConditionMap));
+      phiTableMap.put(node, flowEnv.mapDiff(beforeConditionMap));
       return (trueLiveness == ALIVE && falseLiveness == ALIVE) ? ALIVE : DEAD;
     }
 
     private Liveness computeLoop(DartStatement node, DartExpression condition, DartStatement body, DartStatement /*maybenull*/init, 
-        DartExpression /*maybenull*/increment, FlowEnv parameter) {
-      HashMap<VariableElement, Type> beforeLoopMap = parameter.getMap();
+        DartExpression /*maybenull*/increment, FlowEnv flowEnv) {
+      Map<VariableElement, Type> beforeLoopMap = flowEnv.getClonedMap();
 
-      FlowEnv loopEnv = new FlowEnv(parameter, parameter.getReturnType(), parameter.getExpectedType(), true);
-      FlowEnv afterLoopEnv = new FlowEnv(parameter);
-      FlowEnv envCopy = new FlowEnv(parameter);
-      FlowEnv paramWithInit = new FlowEnv(parameter);
+      FlowEnv loopEnv = new FlowEnv(flowEnv, flowEnv.getReturnType(), flowEnv.getExpectedType(), true);
+      FlowEnv afterLoopEnv = new FlowEnv(flowEnv);
+      FlowEnv envCopy = new FlowEnv(flowEnv);
+      FlowEnv paramWithInit = new FlowEnv(flowEnv);
       if (init != null) {
         accept(init, loopEnv);
         accept(init, afterLoopEnv);
@@ -365,14 +371,14 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       }
       FTVisitor.this.accept(condition, loopEnv.expectedType(BOOL_NON_NULL_TYPE));
 
-      parameter.copyAll(loopEnv);
-      parameter.copyAll(afterLoopEnv);
+      flowEnv.copyAll(loopEnv);
+      flowEnv.copyAll(afterLoopEnv);
       // We register in FlowEnv variables which are already knows before loop and which change during the loop.
       // Registered types are unions of widened possible type for each variable.
       for (Entry<VariableElement, Type> entry : map.entrySet()) {
-        parameter.register(entry.getKey(), entry.getValue());
+        flowEnv.register(entry.getKey(), entry.getValue());
       }
-      phiTable.put(node, parameter.mapDiff(beforeLoopMap));
+      phiTableMap.put(node, flowEnv.mapDiff(beforeLoopMap));
       return ALIVE;
     }
 
@@ -1111,8 +1117,6 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         Type receiverType = typeHelper.findType(false, (ClassElement) enclosingElement);
         return methodCallResolver.methodCall(node.getObjectIdentifier(), receiverType, argumentTypes, flowEnv.getExpectedType(), true);
       }
-      // FIXME should use another method of the methodResolver (but it doesn't
-      // exist now)
       return methodCallResolver.functionCall((MethodNodeElement) nodeElement, argumentTypes, flowEnv.getExpectedType());
       // return typeHelper.asType(true, ((MethodElement)
       // nodeElement).getReturnType());

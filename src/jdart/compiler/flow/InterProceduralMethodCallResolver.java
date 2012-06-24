@@ -110,7 +110,7 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
     DartFunction function = node.getFunction();
     if (function == null) {
       // native function use declared return type
-      return new ProfileInfo(typeHelper.asType(true, node.getType()), argumentTypes, null);
+      return new ProfileInfo(typeHelper.asType(true, node.getType()), argumentTypes, null, null);
     }
     
     // We should allow to propagate the type of 'this' in the flow env
@@ -132,7 +132,7 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
     Type returnType = ((FunctionType) typeHelper.asType(false, element.getType())).getReturnType();
 
     // register temporary signature with declared return type for recursive function 
-    profiles.profileMap.put(argumentTypes, new ProfileInfo(returnType, argumentTypes, null));
+    profiles.profileMap.put(argumentTypes, new ProfileInfo(returnType, argumentTypes, null, null));
     
     FTVisitor flowTypeVisitor = new FTVisitor(typeHelper, this);
     FlowEnv flowEnv = new FlowEnv(new FlowEnv(thisType), returnType, VOID_TYPE, false);
@@ -143,13 +143,15 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
     }
 
     Map<DartNode, Type> typeMap = null;
+    Map<DartNode, Liveness> livenessMap = null;
     DartBlock body = function.getBody();
     if (body != null) {
       flowTypeVisitor.liveness(body, flowEnv);
       returnType = flowTypeVisitor.getInferredReturnType(returnType);
       typeMap = flowTypeVisitor.getTypeMap();
+      livenessMap = flowTypeVisitor.getLivenessMap();
     }
-    return new ProfileInfo(returnType, argumentTypes, typeMap);
+    return new ProfileInfo(returnType, argumentTypes, typeMap, livenessMap);
   }
   
   Type directCall(MethodNodeElement element, OwnerType receiverType, List<Type> argumentType, Type expectedType, boolean virtual) {

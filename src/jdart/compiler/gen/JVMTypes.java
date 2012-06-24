@@ -26,6 +26,7 @@ import static org.objectweb.asm.Type.*;
 class JVMTypes {
   static final Type OBJECT_TYPE = Type.getType(Object.class);
   static final Type BIGINT_TYPE = Type.getType(BigInt.class);
+  static final Type MIXEDINT_TYPE = Type.getType(long.class);  // fake type, but should occupy two slots
   static final Type BOXED_BOOLEAN_TYPE = Type.getType(Boolean.class);
   static final Type BOXED_DOUBLE_TYPE = Type.getType(Double.class);
   static final Type FUNCTION_TYPE = Type.getType(MethodHandle.class);
@@ -53,23 +54,20 @@ class JVMTypes {
     }
   }*/
   
-  public static List<Type> asJVMTypes(List<jdart.compiler.type.Type> parameterTypes) {
+  public enum TypeContext {
+    PARAMETER_TYPE,
+    RETURN_TYPE,
+    VAR_TYPE
+  }
+  
+  public static List<Type> asJVMTypes(List<jdart.compiler.type.Type> parameterTypes, TypeContext typeContext) {
     ArrayList<Type> typeList = new ArrayList<>(parameterTypes.size());
     for(jdart.compiler.type.Type type: parameterTypes) {
-      typeList.add(asJVMType(type, false));
+      typeList.add(asJVMType(type, typeContext));
     }
     return typeList;
   }
-  
-  public static Type asJVMParameterType(jdart.compiler.type.Type type) {
-    return asJVMType(type, false);
-  }
-  
-  public static Type asJVMReturnType(jdart.compiler.type.Type type) {
-    return asJVMType(type, true);
-  }
-  
-  private static Type asJVMType(jdart.compiler.type.Type type, final boolean isReturnType) {
+  public static Type asJVMType(jdart.compiler.type.Type type, final TypeContext typeContext) {
     return type.accept(new TypeVisitor<Type, Void>() {
       @Override
       public Type visitBoolType(BoolType type, Void unused) {
@@ -82,8 +80,14 @@ class JVMTypes {
         if (type.isIncludeIn(CoreTypeRepository.INT32_TYPE)) {
           return INT_TYPE;
         }
-        if (type.hasCommonValuesWith(CoreTypeRepository.INT32_TYPE) && isReturnType) {
-          return INT_TYPE;
+        if (type.hasCommonValuesWith(CoreTypeRepository.INT32_TYPE)) {
+          if (typeContext == TypeContext.RETURN_TYPE) {
+            return INT_TYPE;
+          }
+          if (typeContext == TypeContext.PARAMETER_TYPE) {
+            return BIGINT_TYPE;
+          }
+          return MIXEDINT_TYPE;
         }
         return BIGINT_TYPE;
       }

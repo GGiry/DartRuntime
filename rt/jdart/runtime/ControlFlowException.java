@@ -9,7 +9,7 @@ public class ControlFlowException extends RuntimeException {
     super(null, null, false, false);
   }
 
-  public static ControlFlowException value(BigInt value) {
+  public static ControlFlowException valueOf(BigInt value) {
     ControlFlowException e = CACHE.get();
     e.value =  value;
     return e;

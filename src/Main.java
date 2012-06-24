@@ -80,8 +80,7 @@ public class Main {
     InterProceduralMethodCallResolver methodCallResolver = new InterProceduralMethodCallResolver(typeHelper);
     methodCallResolver.functionCall(mainMethod, Collections.<Type>emptyList(), CoreTypeRepository.VOID_TYPE);
     
-    Gen gen = new Gen();
-    gen.gen(methodCallResolver.getMethodMap());
+    Gen.genAll(methodCallResolver.getMethodMap());
   }
 
   public static void main(String[] args) throws IOException {
