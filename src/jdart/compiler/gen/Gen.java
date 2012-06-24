@@ -3,7 +3,6 @@ package jdart.compiler.gen;
 import static jdart.compiler.gen.JVMTypes.BIGINT_TYPE;
 import static jdart.compiler.gen.JVMTypes.MIXEDINT_TYPE;
 import static jdart.compiler.gen.JVMTypes.*;
-import static jdart.compiler.gen.JVMTypes.asJVMType;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
@@ -22,6 +21,7 @@ import static org.objectweb.asm.Opcodes.POP;
 import static org.objectweb.asm.Opcodes.POP2;
 import static org.objectweb.asm.Opcodes.V1_7;
 import static jdart.compiler.flow.Liveness.*;
+import static org.objectweb.asm.Type.*;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -55,8 +55,6 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.util.CheckClassAdapter;
-import org.objectweb.asm.util.Textifier;
-import org.objectweb.asm.util.TraceMethodVisitor;
 
 import com.google.dart.compiler.ast.DartArrayLiteral;
 import com.google.dart.compiler.ast.DartBinaryExpression;
@@ -91,17 +89,19 @@ import com.google.dart.compiler.resolver.VariableElement;
 import com.google.dart.compiler.type.InterfaceType;
 
 public class Gen extends ASTVisitor2<GenResult, GenEnv> {
+  final Type unitType;
   private final Map<DartNode, jdart.compiler.type.Type> typeMap;
   private final Map<DartNode, Liveness> livenessMap;
-
-  Gen(Map<DartNode, jdart.compiler.type.Type> typeMap, Map<DartNode, Liveness> livenessMap) {
+  
+  Gen(Type unitType, Map<DartNode, jdart.compiler.type.Type> typeMap, Map<DartNode, Liveness> livenessMap) {
+    this.unitType = unitType;
     this.typeMap = typeMap;
     this.livenessMap = livenessMap;
   }
 
   // helper methods
   
-  private static String getInternalName(Element element) {
+  static String getInternalName(Element element) {
     switch(element.getKind()) {
     case CLASS: {
       ClassElement classElement = (ClassElement)element;
@@ -141,7 +141,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
   private static String getBSMDesc(Class<?>... classes) {
     String desc = "Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;";
     if (classes.length == 0) {
-      return '('+desc+"Ljava/lang/invoke/CallSite;";
+      return '('+desc+")Ljava/lang/invoke/CallSite;";
     }
     StringBuilder builder = new StringBuilder(64);
     builder.append('(').append(desc);
@@ -150,6 +150,22 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     }
     builder.append(')').append("Ljava/lang/invoke/CallSite;");
     return builder.toString();
+  }
+  
+  private static void ldcInteger(MethodVisitor mv, int value) {
+    if (value >= -1 && value <= 5) {
+      mv.visitInsn(ICONST_0 + value);
+      return;
+    }
+    if (value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE) {
+      mv.visitIntInsn(BIPUSH, value);
+      return;
+    }
+    if (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE) {
+      mv.visitIntInsn(SIPUSH, value);
+      return;
+    }
+    mv.visitLdcInsn(value);
   }
   
   private static void generateDefaultReturn(MethodVisitor mv, Type returnType) {
@@ -186,11 +202,12 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
   
   // --- bootstrap method reference
   
-  private static final String RT_CLASS = getInternalClassName(RT.class);
+  static final String RT_CLASS = getInternalClassName(RT.class);
   static final String BIGINT_CLASS = getInternalClassName(BigInt.class);
   static final String BIGINT_DESC = 'L' + BIGINT_CLASS +';';
   static final String CONTROLFLOWEXCEPTION_CLASS = getInternalClassName(ControlFlowException.class);
   static final String CONTROLFLOWEXCEPTION_DESC = 'L' + CONTROLFLOWEXCEPTION_CLASS +';';
+  static final String ARITHMETHICEXCEPTION_CLASS = getInternalClassName(ArithmeticException.class);
   private static final Handle LDC_BIGINT_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
       "ldcBSM", getBSMDesc(String.class));
   private static final Handle LDC_DOUBLE_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
@@ -198,7 +215,11 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
   static final Handle METHOD_CALL_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
       "methodCallBSM", getBSMDesc());
   static final Handle FUNCTION_CALL_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
-      "functionCallBSM", getBSMDesc());
+      "functionCallBSM", getBSMDesc(Class.class));
+  static final Handle OPERATOR_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
+      "operatorBSM", getBSMDesc());
+  static final Handle OPERATOR_OVERFLOW_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
+      "operatorOverflowBSM", getBSMDesc());
   
   // entry point
   public static void genAll(Map<DartMethodDefinition, Profiles> methodMap) throws IOException {
@@ -226,7 +247,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
   private static void genUnit(EnclosingElement enclosingElement, ArrayList<Entry<DartMethodDefinition, Profiles>> methodList) throws IOException {
     ClassWriter cv = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
     
-    String name = getInternalName(enclosingElement);
+    String unitName = getInternalName(enclosingElement);
     String superName;
     String[] interfaces;
     if (enclosingElement instanceof ClassElement) {
@@ -242,11 +263,12 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       interfaces = null;
     }
     
-    cv.visit(V1_7, ACC_PUBLIC|ACC_SUPER, name, null, superName, interfaces);
+    Type unitType = Type.getObjectType(unitName);
+    cv.visit(V1_7, ACC_PUBLIC|ACC_SUPER, unitName, null, superName, interfaces);
     //cv.visitSource(enclosingElement.getSourceInfo().getSource().getName(), null);
     
     for(Entry<DartMethodDefinition, Profiles> methodEntry: methodList) {
-      genMethod(cv, methodEntry.getKey(), methodEntry.getValue());
+      genMethod(cv, unitType, methodEntry.getKey(), methodEntry.getValue());
     }
     
     cv.visitEnd();
@@ -254,7 +276,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     
     CheckClassAdapter.verify(new ClassReader(byteArray), true, new PrintWriter(System.err));
     
-    Path path = Paths.get(name+".class");
+    Path path = Paths.get(unitName+".class");
     Path directory = path.getParent();
     if (directory != null) {
       Files.createDirectories(directory);
@@ -294,16 +316,20 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     return map;
   }
   
-  private static void genMethod(ClassVisitor cv, DartMethodDefinition methodDefinition, Profiles profiles) {
+  private static void genMethod(ClassVisitor cv, Type unitType, DartMethodDefinition methodDefinition, Profiles profiles) {
     Map<List<jdart.compiler.type.Type>, ProfileInfo> signatureMap = profiles.getSignatureMap();
     Map<FunctionDescriptor, ProfileInfo> functionDescripotorMap = computeFunctionDescriptorMap(signatureMap);
     for(Entry<FunctionDescriptor, ProfileInfo> entry: functionDescripotorMap.entrySet()) {
-      genMethodWithProfile(cv, methodDefinition, entry.getKey(), entry.getValue());
+      genMethodWithProfile(cv, unitType, methodDefinition, entry.getKey(), entry.getValue());
     }
   }
 
-  private static void genMethodWithProfile(ClassVisitor cv, DartMethodDefinition methodDefinition, FunctionDescriptor functionDescriptor, ProfileInfo profileInfo) {
+  private static void genMethodWithProfile(ClassVisitor cv, Type unitType, DartMethodDefinition methodDefinition, FunctionDescriptor functionDescriptor, ProfileInfo profileInfo) {
     boolean isStatic = methodDefinition.getModifiers().isStatic();
+    if (!(methodDefinition.getElement().getEnclosingElement() instanceof ClassElement)) {
+      isStatic = true;
+    }
+    
     MethodVisitor mv = cv.visitMethod(ACC_PUBLIC | ((isStatic)? ACC_STATIC: 0),
         methodDefinition.getElement().getName(), functionDescriptor.getDescriptor(), null, null);
     
@@ -317,7 +343,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       
       Map<DartNode, Liveness> livenessMap = profileInfo.getLivenessMap();
       Map<DartNode, jdart.compiler.type.Type> typeMap = profileInfo.getTypeMap();
-      Gen gen = new Gen(typeMap, livenessMap);
+      Gen gen = new Gen(unitType, typeMap, livenessMap);
       MethodRecorder methodRecorder = new MethodRecorder();
       GenEnv env = new GenEnv(mv, methodRecorder, functionDescriptor.getReturnType(), (isStatic)? 0: 1);
       
@@ -374,42 +400,44 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     if (type != MIXEDINT_TYPE) {
       accept(expr, env);
       splitPathGenerator.genDefaultPath(type, env);
-    } else { // split-path
+      return;
+    } 
+    
+    // split-path
+    MethodRecorder recorder = new MethodRecorder();
+    GenResult result = accept(expr, env.newSplitPathEnv(recorder, 0));
+    splitPathGenerator.genIntPath(result, env);
 
-      MethodRecorder recorder = new MethodRecorder();
-      GenResult result = accept(expr, env.newSplitPathEnv(recorder, 0));
-      splitPathGenerator.genIntPath(result, env);
+    Set<Var> dependencies = result.getDependencies();
+    Label bigPathLabel = new Label();
+    for(Var dependency: dependencies) {
+      mv.visitVarInsn(ALOAD, 1 + dependency.getSlot());
+      mv.visitJumpInsn(IFNONNULL, bigPathLabel);
+    }
+    recorder.replay(mv);
+    Label endLabel = new Label();
+    mv.visitJumpInsn(GOTO, endLabel);
+    mv.visitLabel(bigPathLabel);
 
-      Set<Var> dependencies = result.getDependencies();
-      Label bigPathLabel = new Label();
+    if (dependencies.size() > 1) { // box if needed
       for(Var dependency: dependencies) {
         mv.visitVarInsn(ALOAD, 1 + dependency.getSlot());
-        mv.visitJumpInsn(IFNONNULL, bigPathLabel);
+        Label boxLabel = new Label();
+        mv.visitJumpInsn(IFNONNULL, boxLabel);
+        mv.visitVarInsn(ILOAD, dependency.getSlot());
+        mv.visitMethodInsn(INVOKESTATIC, BIGINT_CLASS, "valueOf", "(I)"+BIGINT_DESC);
+        mv.visitVarInsn(ASTORE, 1 + dependency.getSlot());
+        mv.visitLabel(boxLabel);
       }
-      recorder.replay(mv);
-      Label endLabel = new Label();
-      mv.visitJumpInsn(GOTO, endLabel);
-      mv.visitLabel(bigPathLabel);
-
-      if (dependencies.size() > 1) { // box if needed
-        for(Var dependency: dependencies) {
-          mv.visitVarInsn(ALOAD, 1 + dependency.getSlot());
-          Label boxLabel = new Label();
-          mv.visitJumpInsn(IFNONNULL, boxLabel);
-          mv.visitVarInsn(ILOAD, dependency.getSlot());
-          mv.visitMethodInsn(INVOKESTATIC, BIGINT_CLASS, "valueOf", "(I)"+BIGINT_DESC);
-          mv.visitVarInsn(ASTORE, 1 + dependency.getSlot());
-          mv.visitLabel(boxLabel);
-        }
-      }
-
-      GenResult result2 = accept(expr, env.newSplitPathEnv(mv, 1));
-      splitPathGenerator.genBigIntPath(result2, env);
-
-      mv.visitLabel(endLabel);
     }
+
+    GenResult result2 = accept(expr, env.newSplitPathEnv(mv, 1));
+    splitPathGenerator.genBigIntPath(result2, env);
+
+    mv.visitLabel(endLabel);
   }
   
+  /*
   interface SplitPathGenerator2 {
     public void genDefaultPath(Type type1, Type type2, GenEnv env);
     public void genIntPath(GenResult result, GenResult result2, GenEnv env);
@@ -479,7 +507,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
 
       mv.visitLabel(endLabel);
     }
-  }
+  }*/
   
   @Override
   public GenResult visitVariable(DartVariable node, GenEnv env) {
@@ -568,35 +596,35 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
   
   @Override
   public GenResult visitReturnStatement(DartReturnStatement node, GenEnv env) {
+    MethodVisitor mv = env.getMethodVisitor();
     Type returnType = env.getReturnType();
     DartExpression value = node.getValue();
-    if (value == null) {
-      generateDefaultReturn(env.getMethodVisitor(), returnType);
+    if (value == null) {  
+      generateDefaultReturn(mv, returnType);
       return null;
     }
     
-    genSplitPathExpr(value, returnType, env, new SplitPathGenerator() {
-      @Override
-      public void genDefaultPath(Type type, GenEnv env) {
-        env.getMethodVisitor().visitInsn(type.getOpcode(IRETURN));
-      }
-      
-      @Override
-      public void genIntPath(GenResult result, GenEnv env) {
-        MethodVisitor mv = env.getMethodVisitor();
-        mv.visitVarInsn(ILOAD, result.getVarSlot());
-        mv.visitInsn(IRETURN);
-      }
-      
-      @Override
-      public void genBigIntPath(GenResult result, GenEnv env) {
-        MethodVisitor mv = env.getMethodVisitor();
-        mv.visitVarInsn(ALOAD, result.getVarSlot());
-        mv.visitMethodInsn(INVOKESTATIC, CONTROLFLOWEXCEPTION_CLASS, "valueOf",
-            '('+BIGINT_DESC+')'+CONTROLFLOWEXCEPTION_DESC);
-        mv.visitInsn(ATHROW);
-      }
-    });
+    Type exprType = asJVMType(typeMap.get(value), TypeContext.VAR_TYPE);
+    if (exprType != MIXEDINT_TYPE) {
+      accept(value, env);
+      mv.visitInsn(returnType.getOpcode(IRETURN));
+      return null;
+    }
+    
+    GenResult result = accept(value, env);
+    
+    Label bigPathLabel = new Label();
+    mv.visitVarInsn(ALOAD, 1 + result.getVarSlot());
+    mv.visitJumpInsn(IFNONNULL, bigPathLabel);
+    
+    mv.visitVarInsn(ILOAD, result.getVarSlot());
+    mv.visitInsn(IRETURN);
+    
+    mv.visitLabel(bigPathLabel);
+    mv.visitVarInsn(ALOAD, 1 + result.getVarSlot());
+    mv.visitMethodInsn(INVOKESTATIC, CONTROLFLOWEXCEPTION_CLASS, "valueOf",
+        '('+BIGINT_DESC+')'+CONTROLFLOWEXCEPTION_DESC);
+    mv.visitInsn(ATHROW);
     return null;
   }
   
@@ -635,23 +663,186 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     return null;
   }
   
+  
+  interface BinaryGenerator {
+    void genBinaryNoOverFlow(Type returnType, Type type1, Type type2, GenEnv env);
+
+    void genRawBinaryWithOverFlow(Type returnType, Type type1, Type type2, GenEnv env);
+
+    void genBinaryOverFlowed(Type returnType, Type type1, Type type2, GenEnv env);
+  }
+  
+  private GenResult genBinary(DartExpression expr1, DartExpression expr2, Type returnType, GenEnv env, BinaryGenerator binaryGenerator) {
+    MethodVisitor mv = env.getMethodVisitor();
+    
+    Type type1 = asJVMType(typeMap.get(expr1), TypeContext.VAR_TYPE);
+    Type type2 = asJVMType(typeMap.get(expr2), TypeContext.VAR_TYPE);
+    
+    boolean needToSpill = returnType == MIXEDINT_TYPE || type1 == MIXEDINT_TYPE || type2 == MIXEDINT_TYPE;
+    
+    if (!needToSpill) {
+      accept(expr1, env);
+      accept(expr2, env);
+      
+      binaryGenerator.genBinaryNoOverFlow(returnType, type1, type2, env);
+      return null;
+    }
+    
+    Label try_start = new Label();
+    Label try_end = new Label();
+    Label handler = new Label();
+    
+    int resultVarSlot;
+    GenResult genResult;
+    if (returnType == MIXEDINT_TYPE) {
+      mv.visitTryCatchBlock(try_start, try_end, handler, ARITHMETHICEXCEPTION_CLASS); 
+      Var resultVar = env.newVar(MIXEDINT_TYPE);
+      resultVarSlot = resultVar.getSlot();
+      genResult = new GenResult(resultVarSlot, resultVar);
+    } else { // never used, just here to please the compiler
+      resultVarSlot = 0;
+      genResult = null;
+    }
+    
+    // spill & gather dependencies
+    HashSet<Var> dependencies = new HashSet<>();
+    int slot1;
+    GenResult result1 = accept(expr1, env);
+    if (result1 == null) {
+      Var var = env.newVar(type1);
+      slot1 = var.getSlot();
+      mv.visitVarInsn(type1.getOpcode(ISTORE), slot1);
+    } else {
+      slot1 = result1.getVarSlot();
+      dependencies.addAll(result1.getDependencies());
+    }
+    int slot2;
+    GenResult result2 = accept(expr2, env);
+    if (result2 == null) {
+      Var var = env.newVar(type2);
+      slot2 = var.getSlot();
+      mv.visitVarInsn(type1.getOpcode(ISTORE), slot2);
+    } else {
+      slot2 = result2.getVarSlot();
+      dependencies.addAll(result2.getDependencies());
+    }
+    
+    // check dependency vars
+    Label bigPathLabel = new Label();
+    for(Var dependency: dependencies) {
+      mv.visitVarInsn(ALOAD, 1 + dependency.getSlot());
+      mv.visitJumpInsn(IFNONNULL, bigPathLabel);
+    }
+    
+    Type smallType1 = type1, smallType2 = type2,
+         smallReturnType = returnType;
+    if (type1 == MIXEDINT_TYPE) {
+      smallType1 = Type.INT_TYPE;
+    }
+    if (type2 == MIXEDINT_TYPE) {
+      smallType2 = Type.INT_TYPE;
+    }
+    if (returnType == MIXEDINT_TYPE) {
+      smallReturnType = Type.INT_TYPE;
+    }
+    
+    // load spilled vars on stack
+    mv.visitVarInsn(smallType1.getOpcode(ILOAD), slot1);
+    mv.visitVarInsn(smallType2.getOpcode(ILOAD), slot2);
+    
+    mv.visitLabel(try_start);
+    binaryGenerator.genRawBinaryWithOverFlow(smallReturnType, smallType1, smallType2, env);
+    mv.visitLabel(try_end);
+    
+    if (returnType == MIXEDINT_TYPE) {
+      mv.visitVarInsn(ISTORE, resultVarSlot);
+      mv.visitInsn(ACONST_NULL);
+      mv.visitVarInsn(ASTORE, 1 + resultVarSlot);
+    }
+    
+    Label endLabel = new Label();
+    mv.visitJumpInsn(GOTO, endLabel);
+    
+    // exception handler
+    MethodVisitor sideMV = env.getSideMethodVisitor();
+    if (returnType == MIXEDINT_TYPE) { 
+      sideMV.visitLabel(handler);
+      sideMV.visitInsn(POP);
+      
+      // reload spilled values
+      sideMV.visitVarInsn(smallType1.getOpcode(ILOAD), slot1);
+      sideMV.visitVarInsn(smallType2.getOpcode(ILOAD), slot2);
+      
+      binaryGenerator.genBinaryOverFlowed(BIGINT_TYPE, smallType1, smallType2, env.newSplitPathEnv(sideMV, 0));  //FIXME
+      sideMV.visitVarInsn(ASTORE, 1 + resultVarSlot);
+      sideMV.visitInsn(ICONST_0);
+      sideMV.visitVarInsn(ISTORE, resultVarSlot);
+      sideMV.visitJumpInsn(GOTO, endLabel);
+    }
+    
+    mv.visitLabel(bigPathLabel);
+    
+    /*if (dependencies.size() > 1) { // box if needed
+      for(Var dependency: dependencies) {
+        mv.visitVarInsn(ALOAD, 1 + dependency.getSlot());
+        Label boxLabel = new Label();
+        mv.visitJumpInsn(IFNONNULL, boxLabel);
+        mv.visitVarInsn(ILOAD, dependency.getSlot());
+        mv.visitMethodInsn(INVOKESTATIC, BIGINT_CLASS, "valueOf", "(I)"+BIGINT_DESC);
+        mv.visitVarInsn(ASTORE, 1 + dependency.getSlot());
+        mv.visitLabel(boxLabel);
+      }
+    }*/
+    
+    Type bigType1 = type1, bigType2 = type2,
+         bigReturnType = returnType;
+    int bigSlot1 = slot1, bigSlot2 = slot2;
+    if (type1 == MIXEDINT_TYPE) {
+      bigType1 = BIGINT_TYPE;
+      bigSlot1++;
+    }
+    if (type2 == MIXEDINT_TYPE) {
+      bigType2 = BIGINT_TYPE;
+      bigSlot2++;
+    }
+    if (returnType == MIXEDINT_TYPE) {
+      bigReturnType = BIGINT_TYPE;
+    }
+    
+    // load spilled variables
+    mv.visitVarInsn(bigType1.getOpcode(ILOAD), bigSlot1);
+    mv.visitVarInsn(bigType2.getOpcode(ILOAD), bigSlot2);
+    
+    binaryGenerator.genBinaryNoOverFlow(bigReturnType, bigType1, bigType2, env);
+    
+    if (returnType == MIXEDINT_TYPE) {
+      mv.visitVarInsn(ASTORE, 1 + resultVarSlot);
+      mv.visitInsn(ICONST_0);
+      mv.visitVarInsn(ISTORE, resultVarSlot);
+    }
+    
+    mv.visitLabel(endLabel);
+    return genResult;
+  }
+  
+  
   @Override
   public GenResult visitBinaryExpression(DartBinaryExpression node, GenEnv env) {
     MethodVisitor mv = env.getMethodVisitor();
     GenEnv subEnv = env.newIf(null);
     DartExpression expr1 = node.getArg1();
-    accept(expr1, subEnv);
     DartExpression expr2 = node.getArg2();
-    accept(expr2, subEnv);
     
-    Type type1 = asJVMType(typeMap.get(expr1), TypeContext.VAR_TYPE);
-    Type type2 = asJVMType(typeMap.get(expr2), TypeContext.VAR_TYPE);
+    Type returnType = asJVMType(typeMap.get(node), TypeContext.VAR_TYPE);
     
     final Token operator = node.getOperator();
     IfBranches ifBranches = env.getIfBranches();
     if (ifBranches != null) {
       int opcode;
       boolean inversed = ifBranches.isInversed();
+      
+      accept(expr1, subEnv);
+      accept(expr2, subEnv);
       
       //FIXME, check argument types
       
@@ -669,7 +860,59 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     switch(operator) {
     case SUB:
     case ADD:
-      genSplitPathTwoExprs(expr1, type1, expr2, type2, subEnv, new SplitPathGenerator2() {
+      return genBinary(expr1, expr2, returnType, subEnv, new BinaryGenerator() {
+        @Override
+        public void genBinaryNoOverFlow(Type returnType, Type type1, Type type2, GenEnv env) {
+          MethodVisitor mv = env.getMethodVisitor();
+          int sort1 = type1.getSort();
+          int sort2 = type2.getSort();
+          if (sort1 == Type.INT && sort2 == Type.INT) { //FIXME add support of doubles
+            switch(operator) {
+            case ADD:
+              mv.visitInsn(IADD);
+              return;
+            case SUB:
+              mv.visitInsn(ISUB);
+              return;
+            default:
+              throw new UnsupportedOperationException("binary no overflow "+returnType+" "+type1+" "+type2);
+            }
+          }
+          
+          mv.visitInvokeDynamicInsn(operator.name(),
+              Type.getMethodDescriptor(returnType, type1, type2),
+              OPERATOR_BSM);
+          
+          //throw new UnsupportedOperationException("binary no overflow "+returnType+" "+type1+" "+type2);
+        }
+
+        @Override
+        public void genRawBinaryWithOverFlow(Type returnType, Type type1, Type type2, GenEnv env) {
+          MethodVisitor mv = env.getMethodVisitor();
+          if (type1 == Type.INT_TYPE && type2 == Type.INT_TYPE) {
+            switch(operator) {
+            case ADD:
+              mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "addExact", "(II)I");
+              return;
+            case SUB:
+              mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "subtractExact", "(II)I");
+              return;
+            default:
+            }
+          }
+          throw new UnsupportedOperationException("binary with overflow "+returnType+" "+type1+" "+type2);
+        }
+
+        @Override
+        public void genBinaryOverFlowed(Type returnType, Type type1, Type type2, GenEnv env) {
+          MethodVisitor mv = env.getMethodVisitor();
+          mv.visitInvokeDynamicInsn(operator.name(),
+              Type.getMethodDescriptor(returnType, type1, type2),
+              OPERATOR_OVERFLOW_BSM);
+          return;
+        }
+        
+        /*
         @Override
         public void genIntPath(GenResult result, GenResult result2, GenEnv env) {
           MethodVisitor mv = env.getMethodVisitor();
@@ -728,8 +971,9 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         public void genAsymetricPath(GenResult result, Type type1, GenResult result2, Type type2, GenEnv env) {
           throw new UnsupportedOperationException("operator "+operator+" "+type1+" "+type2);
         }
+
+        */
       });
-      return null;
       
     default:
       // so it's a boolean operator
@@ -930,14 +1174,13 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         switch (nodeElement.getKind()) {
         case METHOD:
           EnclosingElement enclosingElement = nodeElement.getEnclosingElement();
-          Handle bsm;
+          String methodDesc = Type.getMethodDescriptor(returnType, parameterType);
           if (enclosingElement instanceof ClassElement) {
-            bsm = METHOD_CALL_BSM;
+            mv.visitInvokeDynamicInsn(nodeElement.getName(), methodDesc, METHOD_CALL_BSM);
           } else {
-            bsm = FUNCTION_CALL_BSM;
+            Type libraryType = Type.getObjectType(getInternalName(enclosingElement));
+            mv.visitInvokeDynamicInsn(nodeElement.getName(), methodDesc, FUNCTION_CALL_BSM, libraryType);
           }
-          
-          mv.visitInvokeDynamicInsn(nodeElement.getName(), Type.getMethodDescriptor(returnType, parameterType), bsm);
           return;
           
         default:
@@ -958,7 +1201,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     int intValue = value.intValue();
     BigInteger intBigValue = BigInteger.valueOf(intValue);
     if (value.equals(intBigValue)) {  // it's a small int constant
-      mv.visitLdcInsn(intValue);
+      ldcInteger(mv, intValue);
       return null;
     }
     

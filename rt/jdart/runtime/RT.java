@@ -2,6 +2,7 @@ package jdart.runtime;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.MethodType;
@@ -17,14 +18,26 @@ import java.lang.invoke.MethodType;
  */
 public class RT {
   // load a BigInt as a constant from a String
-  public CallSite ldcBSM(Lookup lookup, String name, MethodType methodType, String bigIntAsString) {
+  public static CallSite ldcBSM(Lookup lookup, String name, MethodType methodType, String bigIntAsString) {
     return new ConstantCallSite(MethodHandles.constant(BigInt.class, BigInt.valueOf(bigIntAsString)));
   }
   
-//load a Double as a constant from a double
- public CallSite ldcBSM(Lookup lookup, String name, MethodType methodType, double value) {
-   return new ConstantCallSite(MethodHandles.constant(double.class, Double.valueOf(value)));
- }
+  //load a Double as a constant from a double
+  public static CallSite ldcBSM(Lookup lookup, String name, MethodType methodType, double value) {
+    return new ConstantCallSite(MethodHandles.constant(double.class, Double.valueOf(value)));
+  }
+  
+  public static CallSite functionCallBSM(Lookup lookup, String name, MethodType methodType, Class<?> unitType) {
+    //FIXME do callsite adaptations
+    MethodHandle mh;
+    try {
+      mh = MethodHandles.lookup().findStatic(unitType, name, methodType);
+    } catch (NoSuchMethodException | IllegalAccessException e) {
+      throw new BootstrapMethodError(e);
+    }
+    
+    return new ConstantCallSite(mh);
+  }
   
   public static void throwArithmeticException() {
     throw new ArithmeticException();
