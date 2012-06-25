@@ -5,6 +5,6 @@ int fibo(int n) {
 }
 
 void main() {
-  print(fibo(40));
+  print(fibo(47));
 }
 
