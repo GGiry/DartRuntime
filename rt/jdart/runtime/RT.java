@@ -47,6 +47,7 @@ public class RT {
       return new ConstantCallSite(mh.asType(methodType));
     }
     
+    // function call
     MethodHandle mh;
     try {
       mh = MethodHandles.lookup().findStatic(unitType, name, methodType);
