@@ -1,13 +1,19 @@
-class A  {
-  int id(int n) {
-    return n;
+typedef int F(int,int);
+
+class Foo {
+  F operation;
+  
+  Foo(int f(int a, int b)) {
+    operation = f;
   }
+  
+  F calc() => operation;
 }
 
-void main() {
-  A a = new A();
+int add(int a, int b) => a + b; 
+
+main() {
+  Foo foo = new Foo(add);
   
-  var foo = a.id;
-  
-  var b = foo(5);
+  var c = foo.calc()(2, 3);
 }

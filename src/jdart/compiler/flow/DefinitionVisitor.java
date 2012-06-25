@@ -10,6 +10,7 @@ import com.google.dart.compiler.ast.DartBlock;
 import com.google.dart.compiler.ast.DartClass;
 import com.google.dart.compiler.ast.DartFieldDefinition;
 import com.google.dart.compiler.ast.DartFunction;
+import com.google.dart.compiler.ast.DartFunctionTypeAlias;
 import com.google.dart.compiler.ast.DartMethodDefinition;
 import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.ast.DartParameter;
@@ -96,6 +97,12 @@ class DefinitionVisitor extends ASTVisitor2<Void, FlowEnv> {
     // TODO test display, to remove.
     System.out.println(flowEnv);
 
+    return null;
+  }
+  
+  @Override
+  public Void visitFunctionTypeAlias(DartFunctionTypeAlias node, FlowEnv parameter) {
+    // TODO nothing to do ? 
     return null;
   }
 }

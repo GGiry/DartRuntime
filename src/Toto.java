@@ -63,10 +63,11 @@ public class Toto {
     String sdkPath = "../../dart-sdk/";
 
     String[] paths = { 
+        "DartTest/FunctionObject.dart",
+        "DartTest/Super.dart",
         "DartTest/BinaryOpDoubles.dart",
         "DartTest/Clazz.dart",
         // "DartTest/For2.dart",
-        // "DartTest/FunctionObject.dart",
         // "DartTest/If7.dart",
         // "DartTest/For.dart",
         // "DartTest/If4.dart",
@@ -81,7 +82,6 @@ public class Toto {
         // "DartTest/GetterSetter.dart",
         // "DartTest/EmptyStatement.dart",
         // "DartTest/Throw.dart",
-        // "DartTest/Super.dart",
         // "DartTest/PropertyAccess.dart",
         // "DartTest/Invocation.dart",
         // "Hello.dart"

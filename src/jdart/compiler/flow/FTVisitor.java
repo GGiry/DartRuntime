@@ -15,6 +15,7 @@ import jdart.compiler.type.ArrayType;
 import jdart.compiler.type.BoolType;
 import jdart.compiler.type.DoubleType;
 import jdart.compiler.type.DynamicType;
+import jdart.compiler.type.FunctionType;
 import jdart.compiler.type.IntType;
 import jdart.compiler.type.InterfaceType;
 import jdart.compiler.type.NumType;
@@ -75,7 +76,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
   final TypeHelper typeHelper;
   private final MethodCallResolver methodCallResolver;
   private final StatementVisitor statementVisitor;
-  
+
   private final HashMap<DartNode, Type> typeMap = new HashMap<>();
   final HashMap<DartNode, Liveness> livenessMap = new HashMap<>();
   final HashMap<DartNode, Map<VariableElement, Type>> phiTableMap = new HashMap<>();
@@ -229,7 +230,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     Liveness liveness(DartNode node, FlowEnv flowEnv) {
       return accept(node, flowEnv);
     }
-    
+
     @Override
     protected Liveness accept(DartNode node, FlowEnv flowEnv) {
       Liveness liveness = super.accept(node, flowEnv);
@@ -736,7 +737,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     case EQ:
     case EQ_STRICT:
       return iType1.hasCommonValuesWith(iType2) ? BOOL_NON_NULL_TYPE : FALSE_TYPE;
-    
+
     default:
       operandIsNonNull(arg1, flowEnv);
       operandIsNonNull(arg2, flowEnv);
@@ -874,7 +875,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     case EQ:
     case EQ_STRICT:
       return (bType1.equals(bType2))? TRUE_TYPE: FALSE_TYPE;
-      
+
     default: // AND, OR
       operandIsNonNull(arg1, flowEnv);
       operandIsNonNull(arg2, flowEnv);
@@ -1136,28 +1137,24 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
   @Override
   public Type visitFunctionObjectInvocation(DartFunctionObjectInvocation node, FlowEnv parameter) {
-    // FIXME Geoffrey, a function object is when you have a function stored in
-    // a parameter/variable or a result of another call that you call as a
-    // function
-    // something like :
-    // int foo(int i) { return i; }
-    // var a = foo;
-    // a(); <--- function object invocation
-    // so either it's a call to dynamic or a function type (so uses
-    // Types.getReturnType())
-
-    // FIXME
-    // The test file DartTest/FunctionObject.dart seems to not call
-    // visitFunctionObjectInvocation but UnqualifiedInvocation.
-
     Type targetType = accept(node.getTarget(), parameter);
 
-    // We need to setElement.
-    node.setElement(((OwnerType) parameter.getThisType()).getSuperType().getElement());
-    // TODO be sure only super is called.
-    System.out.println("visitFunctionObjectInvoke: " + node + " : " + node.getElement());
+    if (node.getTarget().getElement() != null) {
+      if (node.getTarget().getElement().getKind() == ElementKind.SUPER) {
+        if (parameter.getThisType() instanceof OwnerType) {
+          ClassElement element = ((OwnerType) parameter.getThisType()).getSuperType().getElement();
+          node.setElement(element);
+          return typeHelper.asType(false, element.getType());
+        }
+      }
+    }
 
-    return null;
+    if (targetType instanceof FunctionType) {
+      return ((FunctionType) targetType).getReturnType();
+    }
+
+    // TODO Work In Progress
+    throw null;
   }
 
   // --- literals
