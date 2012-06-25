@@ -1,5 +1,6 @@
 package jdart.runtime;
 
+import java.io.PrintStream;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
@@ -29,6 +30,23 @@ public class RT {
   
   public static CallSite functionCallBSM(Lookup lookup, String name, MethodType methodType, Class<?> unitType) {
     //FIXME do callsite adaptations
+    
+    // temporary hack, trap print()
+    if (name.equals("print") && unitType.getName().equals("core_runtime")) {
+      MethodType lookupMethodType = methodType;
+      if (!methodType.parameterType(0).isPrimitive()) {
+        lookupMethodType = methodType.changeParameterType(0, Object.class);
+      }
+      MethodHandle mh;
+      try {
+        mh = MethodHandles.lookup().findVirtual(PrintStream.class, "println", lookupMethodType);
+      } catch (NoSuchMethodException | IllegalAccessException e) {
+        throw new BootstrapMethodError(e);
+      }
+      mh = mh.bindTo(System.out);
+      return new ConstantCallSite(mh.asType(methodType));
+    }
+    
     MethodHandle mh;
     try {
       mh = MethodHandles.lookup().findStatic(unitType, name, methodType);
