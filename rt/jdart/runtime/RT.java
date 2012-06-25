@@ -23,9 +23,64 @@ public class RT {
     return new ConstantCallSite(MethodHandles.constant(BigInt.class, BigInt.valueOf(bigIntAsString)));
   }
   
-  //load a Double as a constant from a double
-  public static CallSite ldcBSM(Lookup lookup, String name, MethodType methodType, double value) {
-    return new ConstantCallSite(MethodHandles.constant(double.class, Double.valueOf(value)));
+  public static CallSite operatorBSM(Lookup lookup, String name, MethodType methodType) {
+    String methodName;
+    switch(name) {
+    case "ADD":
+      methodName = "add";
+      break;
+    default:
+      throw new BootstrapMethodError("operation "+name+" not implemented yet");
+    }
+    
+    MethodHandle mh;
+    try {
+      mh = MethodHandles.lookup().findVirtual(BigInt.class, methodName, MethodType.methodType(BigInt.class, BigInt.class));
+    } catch (NoSuchMethodException | IllegalAccessException e) {
+      throw new BootstrapMethodError(e);
+    }
+    
+    return new ConstantCallSite(mh);
+  }
+  
+  public static CallSite operatorOverflowBSM(Lookup lookup, String name, MethodType methodType) {
+    String methodName;
+    switch(name) {
+    case "ADD":
+      methodName = "addOverflowed";
+      break;
+    default:
+      throw new BootstrapMethodError("operation "+name+" not implemented yet");
+    }
+    
+    MethodHandle mh;
+    try {
+      mh = MethodHandles.lookup().findStatic(RT.class, methodName, methodType);
+    } catch (NoSuchMethodException | IllegalAccessException e) {
+      throw new BootstrapMethodError(e);
+    }
+    
+    return new ConstantCallSite(mh);
+  }
+  
+  public static CallSite operatorBigBSM(Lookup lookup, String name, MethodType methodType) {
+    String methodName;
+    switch(name) {
+    case "ADD":
+      methodName = "addBig";
+      break;
+    default:
+      throw new BootstrapMethodError("operation "+name+" not implemented yet");
+    }
+    
+    MethodHandle mh;
+    try {
+      mh = MethodHandles.lookup().findStatic(RT.class, methodName, methodType);
+    } catch (NoSuchMethodException | IllegalAccessException e) {
+      throw new BootstrapMethodError(e);
+    }
+    
+    return new ConstantCallSite(mh);
   }
   
   public static CallSite functionCallBSM(Lookup lookup, String name, MethodType methodType, Class<?> unitType) {

@@ -185,8 +185,6 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         mv.visitInvokeDynamicInsn("ldc", "()"+BIGINT_DESC, LDC_BIGINT_BSM, "0");
       } if (returnType == BOXED_BOOLEAN_TYPE) {
         mv.visitFieldInsn(GETSTATIC, "java/lang/Boolean", "FALSE", "Ljava/lang/Boolean;");
-      } if (returnType == BOXED_DOUBLE_TYPE) {
-        mv.visitInvokeDynamicInsn("ldc", "()Ljava/lang/Double;", LDC_DOUBLE_BSM, 0.0);
       } else {
         mv.visitInsn(ACONST_NULL);
       }
@@ -211,8 +209,6 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
   static final String ARITHMETHICEXCEPTION_CLASS = getInternalClassName(ArithmeticException.class);
   private static final Handle LDC_BIGINT_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
       "ldcBSM", getBSMDesc(String.class));
-  private static final Handle LDC_DOUBLE_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
-      "ldcBSM", getBSMDesc(double.class));
   static final Handle METHOD_CALL_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
       "methodCallBSM", getBSMDesc());
   static final Handle FUNCTION_CALL_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
@@ -221,6 +217,8 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       "operatorBSM", getBSMDesc());
   static final Handle OPERATOR_OVERFLOW_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
       "operatorOverflowBSM", getBSMDesc());
+  static final Handle OPERATOR_BIG_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
+      "operatorBigBSM", getBSMDesc());
   
   // entry point
   public static void genAll(MethodNodeElement mainMethod, Map<DartMethodDefinition, Profiles> methodMap) throws IOException {
@@ -683,6 +681,8 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     void genRawBinaryWithOverFlow(Type returnType, Type type1, Type type2, GenEnv env);
 
     void genBinaryOverFlowed(Type returnType, Type type1, Type type2, GenEnv env);
+
+    void genBinaryBig(Type returnType, List<Type> types, GenEnv env);
   }
   
   private GenResult genBinary(DartExpression expr1, DartExpression expr2, Type returnType, GenEnv env, BinaryGenerator binaryGenerator) {
@@ -807,26 +807,29 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       }
     }*/
     
-    Type bigType1 = type1, bigType2 = type2,
-         bigReturnType = returnType;
-    int bigSlot1 = slot1, bigSlot2 = slot2;
+    // load all spilled variables
+    ArrayList<Type> bigTypes = new ArrayList<>(4);
     if (type1 == MIXEDINT_TYPE) {
-      bigType1 = BIGINT_TYPE;
-      bigSlot1++;
+      bigTypes.add(INT_TYPE);
+      mv.visitVarInsn(ILOAD, slot1);
+      bigTypes.add(BIGINT_TYPE);
+      mv.visitVarInsn(ALOAD, 1 + slot1);
+    } else {
+      mv.visitVarInsn(type1.getOpcode(ILOAD), slot1);
+      bigTypes.add(type1);
     }
     if (type2 == MIXEDINT_TYPE) {
-      bigType2 = BIGINT_TYPE;
-      bigSlot2++;
-    }
-    if (returnType == MIXEDINT_TYPE) {
-      bigReturnType = BIGINT_TYPE;
+      bigTypes.add(INT_TYPE);
+      mv.visitVarInsn(ILOAD, slot2);
+      bigTypes.add(BIGINT_TYPE);
+      mv.visitVarInsn(ALOAD, 1 + slot2);
+    } else {
+      mv.visitVarInsn(type2.getOpcode(ILOAD), slot2);
+      bigTypes.add(type2);
     }
     
-    // load spilled variables
-    mv.visitVarInsn(bigType1.getOpcode(ILOAD), bigSlot1);
-    mv.visitVarInsn(bigType2.getOpcode(ILOAD), bigSlot2);
-    
-    binaryGenerator.genBinaryNoOverFlow(bigReturnType, bigType1, bigType2, env);
+    Type bigReturnType = (returnType == MIXEDINT_TYPE)? BIGINT_TYPE: returnType;
+    binaryGenerator.genBinaryBig(bigReturnType, bigTypes, env);
     
     if (returnType == MIXEDINT_TYPE) {
       mv.visitVarInsn(ASTORE, 1 + resultVarSlot);
@@ -892,11 +895,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
             }
           }
           
-          mv.visitInvokeDynamicInsn(operator.name(),
-              Type.getMethodDescriptor(returnType, type1, type2),
-              OPERATOR_BSM);
-          
-          //throw new UnsupportedOperationException("binary no overflow "+returnType+" "+type1+" "+type2);
+          throw new UnsupportedOperationException("binary no overflow "+returnType+" "+type1+" "+type2);
         }
 
         @Override
@@ -923,6 +922,14 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
               Type.getMethodDescriptor(returnType, type1, type2),
               OPERATOR_OVERFLOW_BSM);
           return;
+        }
+        
+        @Override
+        public void genBinaryBig(Type returnType, List<Type> types, GenEnv env) {
+          MethodVisitor mv = env.getMethodVisitor();
+          mv.visitInvokeDynamicInsn(operator.name(),
+              Type.getMethodDescriptor(returnType, types.toArray(new Type[types.size()])),
+              OPERATOR_BIG_BSM);
         }
         
         /*

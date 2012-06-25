@@ -28,7 +28,6 @@ class JVMTypes {
   static final Type BIGINT_TYPE = Type.getType(BigInt.class);
   static final Type MIXEDINT_TYPE = Type.getType(long.class);  // fake type, but should occupy two slots
   static final Type BOXED_BOOLEAN_TYPE = Type.getType(Boolean.class);
-  static final Type BOXED_DOUBLE_TYPE = Type.getType(Double.class);
   static final Type FUNCTION_TYPE = Type.getType(MethodHandle.class);
   
   /*
@@ -93,8 +92,6 @@ class JVMTypes {
       }
       @Override
       public Type visitDoubleType(DoubleType type, Void unused) {
-        if (type.isNullable())
-          return BOXED_DOUBLE_TYPE;
         return DOUBLE_TYPE;
       }
       @Override
