@@ -848,7 +848,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       
       switch(operator) {
       case LT:
-        opcode = (inversed)? IF_ICMPLE: IF_ICMPLT;
+        opcode = (inversed)? IF_ICMPGE: IF_ICMPLT;
         mv.visitJumpInsn(opcode, ifBranches.getElseLabel());
         return null;
       default:
