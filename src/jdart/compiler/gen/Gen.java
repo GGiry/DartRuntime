@@ -185,8 +185,6 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         mv.visitInvokeDynamicInsn("ldc", "()"+BIGINT_DESC, LDC_BIGINT_BSM, "0");
       } if (returnType == BOXED_BOOLEAN_TYPE) {
         mv.visitFieldInsn(GETSTATIC, "java/lang/Boolean", "FALSE", "Ljava/lang/Boolean;");
-      } if (returnType == BOXED_DOUBLE_TYPE) {
-        mv.visitInvokeDynamicInsn("ldc", "()Ljava/lang/Double;", LDC_DOUBLE_BSM, 0.0);
       } else {
         mv.visitInsn(ACONST_NULL);
       }
@@ -211,8 +209,6 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
   static final String ARITHMETHICEXCEPTION_CLASS = getInternalClassName(ArithmeticException.class);
   private static final Handle LDC_BIGINT_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
       "ldcBSM", getBSMDesc(String.class));
-  private static final Handle LDC_DOUBLE_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
-      "ldcBSM", getBSMDesc(double.class));
   static final Handle METHOD_CALL_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,
       "methodCallBSM", getBSMDesc());
   static final Handle FUNCTION_CALL_BSM = new Handle(H_INVOKESTATIC, RT_CLASS,

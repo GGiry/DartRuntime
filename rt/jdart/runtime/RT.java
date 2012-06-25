@@ -23,11 +23,6 @@ public class RT {
     return new ConstantCallSite(MethodHandles.constant(BigInt.class, BigInt.valueOf(bigIntAsString)));
   }
   
-  //load a Double as a constant from a double
-  public static CallSite ldcBSM(Lookup lookup, String name, MethodType methodType, double value) {
-    return new ConstantCallSite(MethodHandles.constant(double.class, Double.valueOf(value)));
-  }
-  
   public static CallSite operatorBSM(Lookup lookup, String name, MethodType methodType) {
     String methodName;
     switch(name) {
