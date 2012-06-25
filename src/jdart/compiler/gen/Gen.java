@@ -84,6 +84,7 @@ import com.google.dart.compiler.resolver.ClassElement;
 import com.google.dart.compiler.resolver.Element;
 import com.google.dart.compiler.resolver.EnclosingElement;
 import com.google.dart.compiler.resolver.LibraryElement;
+import com.google.dart.compiler.resolver.MethodNodeElement;
 import com.google.dart.compiler.resolver.NodeElement;
 import com.google.dart.compiler.resolver.VariableElement;
 import com.google.dart.compiler.type.InterfaceType;
@@ -222,10 +223,11 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       "operatorOverflowBSM", getBSMDesc());
   
   // entry point
-  public static void genAll(Map<DartMethodDefinition, Profiles> methodMap) throws IOException {
+  public static void genAll(MethodNodeElement mainMethod, Map<DartMethodDefinition, Profiles> methodMap) throws IOException {
     Map<EnclosingElement, ArrayList<Entry<DartMethodDefinition, Profiles>>> unitMap = createUnitMap(methodMap);
     for(Entry<EnclosingElement, ArrayList<Entry<DartMethodDefinition, Profiles>>> unitEntry: unitMap.entrySet()) {
-      genUnit(unitEntry.getKey(), unitEntry.getValue());
+      EnclosingElement unitElement = unitEntry.getKey();
+      genUnit(unitElement, unitEntry.getValue(), mainMethod.getEnclosingElement() == unitElement);
     }
   }
 
@@ -244,7 +246,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     return map;
   }
   
-  private static void genUnit(EnclosingElement enclosingElement, ArrayList<Entry<DartMethodDefinition, Profiles>> methodList) throws IOException {
+  private static void genUnit(EnclosingElement enclosingElement, ArrayList<Entry<DartMethodDefinition, Profiles>> methodList, boolean mainUnit) throws IOException {
     ClassWriter cv = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
     
     String unitName = getInternalName(enclosingElement);
@@ -269,6 +271,10 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     
     for(Entry<DartMethodDefinition, Profiles> methodEntry: methodList) {
       genMethod(cv, unitType, methodEntry.getKey(), methodEntry.getValue());
+    }
+    
+    if (mainUnit) {
+      genMain(cv, unitType);
     }
     
     cv.visitEnd();
@@ -370,6 +376,13 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     mv.visitEnd();
   }
   
+  private static void genMain(ClassWriter cv, Type unitType) {
+    MethodVisitor mv = cv.visitMethod(ACC_PUBLIC|ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
+    mv.visitCode();
+    mv.visitMethodInsn(INVOKESTATIC, unitType.getInternalName(), "main", "()V");
+    mv.visitInsn(RETURN);
+    mv.visitEnd();
+  }
   
   // --- statements
 
