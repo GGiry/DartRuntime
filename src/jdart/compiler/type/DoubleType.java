@@ -434,4 +434,18 @@ public class DoubleType extends PrimitiveType implements NumType {
 
     return false;
   }
+
+  public static Type truncate(DoubleType dType1, DoubleType dType2) {
+    Double asConstant1 = dType1.asConstant();
+    Double asConstant2 = dType2.asConstant();
+    
+    if (asConstant1 != null && asConstant2 != null) {
+      BigDecimal bigDec1 = BigDecimal.valueOf(asConstant1);
+      BigDecimal bigDec2 = BigDecimal.valueOf(asConstant2);
+      
+      return constant(bigDec1.divideToIntegralValue(bigDec2).toBigInteger().doubleValue());
+    }
+    
+    return DOUBLE_NON_NULL_TYPE;
+  }
 }

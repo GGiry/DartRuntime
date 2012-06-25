@@ -726,7 +726,6 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
-  //FIXME Geoffrey, add TRUNC (~/) operator
   private static Type opIntInt(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
     IntType iType1 = (IntType) type1;
     IntType iType2 = (IntType) type2;
@@ -757,6 +756,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       case MUL:
         return iType1.mul(iType2);
       case DIV:
+      case TRUNC:
         return iType1.div(iType2);
       case MOD:
         return iType1.mod(iType2);
@@ -776,7 +776,6 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
-  //FIXME Geoffrey, add TRUNC (~/) operator
   private static Type opDoubleDouble(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
     Double asConstant1 = ((DoubleType) type1).asConstant();
     Double asConstant2 = ((DoubleType) type2).asConstant();
@@ -823,6 +822,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     case SUB:
     case MUL:
     case DIV:
+    case TRUNC:
     case MOD:
       operandIsNonNull(arg1, flowEnv);
       operandIsNonNull(arg2, flowEnv);
@@ -840,6 +840,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         return DoubleType.constant(asConstant1 * asConstant2);
       case DIV:
         return DoubleType.constant(asConstant1 / asConstant2);
+      case TRUNC:
+        return DoubleType.truncate((DoubleType) type1, (DoubleType) type2);
       case MOD:
         return DoubleType.constant(asConstant1 % asConstant2);
       default:
@@ -850,7 +852,6 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
-  //FIXME Geoffrey, BIT_OR, BIT_AND and BIT_XOR are valid operators on boolean (at least in Java)
   private static Type opBoolBool(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
     BoolType bType1 = (BoolType) type1;
     BoolType bType2 = (BoolType) type2;
