@@ -757,8 +757,9 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       case MUL:
         return iType1.mul(iType2);
       case DIV:
-      case TRUNC:
         return iType1.div(iType2);
+      case TRUNC:
+        return iType1.trunc(iType2);
       case MOD:
         return iType1.mod(iType2);
       case BIT_AND:

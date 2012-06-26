@@ -250,7 +250,30 @@ public class IntType extends PrimitiveType implements NumType {
     return new IntType(false, minBound, maxBound);
   }
 
-  public IntType div(IntType type) {
+  /**
+   * Return the result type of the division : this / other.
+   * It's a Dart division the return can be an int or a double.
+   * @param other Divisor.
+   * @return The result type of the division.
+   */
+  // In dart 5 / 2 = 2.5 and 4 / 2 = 2 (and not 2.0). We must use trunc (~/) to have a java-like divide.
+  public Type div(IntType other) {
+    BigInteger cst = asConstant();
+    BigInteger oCst = other.asConstant();
+    if (cst != null && oCst != null) {
+      BigDecimal bigDec1 = new BigDecimal(cst);
+      BigDecimal bigDec2 = new BigDecimal(oCst);
+      BigDecimal divide = bigDec1.divide(bigDec2);
+      BigDecimal divideIntegral = bigDec1.divideToIntegralValue(bigDec2);
+      if (divide.equals(divideIntegral)) {
+        return constant(divideIntegral.toBigInteger());
+      }
+      return DoubleType.constant(divide.doubleValue());
+    }
+    return Types.union(DOUBLE_NON_NULL_TYPE, trunc(other));
+  }
+
+  public IntType trunc(IntType type) {
     BigInteger minBound = (this.minBound == null | type.maxBound == null) ? null : this.minBound.divide(type.maxBound);
     BigInteger maxBound = (this.maxBound == null | type.minBound == null) ? null : this.maxBound.divide(type.minBound);
     if (minBound == null && maxBound == null) {
