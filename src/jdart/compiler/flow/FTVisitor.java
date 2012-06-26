@@ -31,6 +31,7 @@ import com.google.dart.compiler.ast.DartArrayLiteral;
 import com.google.dart.compiler.ast.DartBinaryExpression;
 import com.google.dart.compiler.ast.DartBlock;
 import com.google.dart.compiler.ast.DartBooleanLiteral;
+import com.google.dart.compiler.ast.DartBreakStatement;
 import com.google.dart.compiler.ast.DartDoWhileStatement;
 import com.google.dart.compiler.ast.DartDoubleLiteral;
 import com.google.dart.compiler.ast.DartEmptyStatement;
@@ -276,6 +277,11 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       accept(node.getException(), flowEnv);
       return DEAD;
     }
+    
+    @Override
+    public Liveness visitBreakStatement(DartBreakStatement node, FlowEnv parameter) {
+      return DEAD;
+    }
 
     @Override
     public Liveness visitVariableStatement(DartVariableStatement node, FlowEnv flowEnv) {
@@ -362,8 +368,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       FTVisitor.this.accept(condition, loopEnv.expectedType(BOOL_NON_NULL_TYPE));
       FTVisitor.ConditionVisitor conditionVisitor = new ConditionVisitor();
 
-      FTVisitor.LoopVisitor loopVisitor = new LoopVisitor();
-      Map<VariableElement, Type> map = loopVisitor.accept(body, envCopy);
+      LoopVisitor loopVisitor = new LoopVisitor(FTVisitor.this);
+      Map<VariableElement, Type> map = loopVisitor.accept(node, envCopy);
 
       conditionVisitor.accept(condition, new ConditionEnv(paramWithInit, loopEnv, afterLoopEnv, true));
       accept(body, loopEnv);
@@ -602,67 +608,6 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
-  // LoopVisitor returns all variables which had change during loop.
-  class LoopVisitor extends ASTVisitor2<Map<VariableElement, Type>, FlowEnv> {
-    @Override
-    protected Map<VariableElement, Type> accept(DartNode node, FlowEnv parameter) {
-      return super.accept(node, parameter);
-    }
-
-    private void addAllWithUnion(Map<VariableElement, Type> out, Map<VariableElement, Type> in) {
-      for (Entry<VariableElement, Type> entry : in.entrySet()) {
-        Type previousType = out.get(entry.getKey());
-        if (previousType == null) {
-          out.put(entry.getKey(), entry.getValue());
-        } else {
-          out.put(entry.getKey(), Types.union(entry.getValue(), previousType));
-        }
-      }
-    }
-
-    @Override
-    public Map<VariableElement, Type> visitBlock(DartBlock node, FlowEnv parameter) {
-      HashMap<VariableElement, Type> map = new HashMap<>();
-      for (DartStatement statement : node.getStatements()) {
-        Map<VariableElement, Type> acceptMap = accept(statement, parameter);
-        addAllWithUnion(map, acceptMap);
-      }
-      return map;
-    }
-
-    @Override
-    public Map<VariableElement, Type> visitIfStatement(DartIfStatement node, FlowEnv parameter) {
-      HashMap<VariableElement, Type> map = new HashMap<>();
-      addAllWithUnion(map, accept(node.getThenStatement(), parameter));
-      if (node.getElseStatement() != null) {
-        addAllWithUnion(map, accept(node.getElseStatement(), parameter));
-      }
-      return map;
-    }
-
-    @Override
-    public Map<VariableElement, Type> visitExprStmt(DartExprStmt node, FlowEnv parameter) {
-      HashMap<VariableElement, Type> map = new HashMap<>();
-      addAllWithUnion(map, accept(node.getExpression(), parameter));
-      return map;
-    }
-
-    @Override
-    public Map<VariableElement, Type> visitBinaryExpression(DartBinaryExpression node, FlowEnv parameter) {
-      HashMap<VariableElement, Type> map = new HashMap<>();
-      if (node.getOperator().isAssignmentOperator()) {
-
-        // We need to remember all variable's changes during the loop.
-        // Because we don't look at loop's iteration time we need widened types.
-
-        VariableElement element = (VariableElement) node.getArg1().getElement();
-        Type currentType = Types.widening(FTVisitor.this.accept(node, parameter));
-        map.put(element, currentType);
-      }
-      return map;
-    }
-  }
-
   // --- expressions
   @Override
   public Type visitIdentifier(DartIdentifier node, FlowEnv flowEnv) {
@@ -721,6 +666,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       parameter.register((VariableElement) element1, resultType);
       return resultType;
     case FIELD:
+      return resultType;
+    case METHOD:
       return resultType;
     default:
       throw new AssertionError("Assignment Expr: " + element1.getKind() + " not implemented");
@@ -911,7 +858,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         }
       });
     }
-
+    
     Class<?> class1 = type1.getClass();
     Class<?> class2 = type2.getClass();
     if (class1 == class2) {
@@ -1274,6 +1221,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         // the class doesn't provide any operator [] ou []=
         return DYNAMIC_NON_NULL_TYPE;
       }
+      node.setElement(element);
       return typeHelper.asType(true, ((MethodElement) element).getReturnType());
     }
 

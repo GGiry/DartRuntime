@@ -1,4 +1,7 @@
 package jdart.compiler.flow;
+
+import static jdart.compiler.type.CoreTypeRepository.*;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,9 +13,10 @@ import jdart.compiler.type.FunctionType;
 import jdart.compiler.type.Type;
 import jdart.compiler.type.TypeRepository;
 
-
 import com.google.dart.compiler.resolver.ClassElement;
+import com.google.dart.compiler.resolver.Element;
 import com.google.dart.compiler.resolver.MethodElement;
+import com.google.dart.compiler.resolver.TypeVariableElement;
 import com.google.dart.compiler.type.FunctionAliasType;
 
 /**
@@ -20,20 +24,23 @@ import com.google.dart.compiler.type.FunctionAliasType;
  */
 public class TypeHelper {
   private final TypeRepository typeRepository;
-  
+
   public TypeHelper(TypeRepository typeRepository) {
     this.typeRepository = typeRepository;
   }
-  
+
   public Type asType(boolean nullable, com.google.dart.compiler.type.Type type) {
     switch (type.getKind()) {
     case VOID:
       return CoreTypeRepository.VOID_TYPE;
     case DYNAMIC:
       return nullable ? CoreTypeRepository.DYNAMIC_TYPE : CoreTypeRepository.DYNAMIC_NON_NULL_TYPE;
-    case VARIABLE:
+    case VARIABLE: 
       // return typeRepository.findType(nullable, (ClassElement)
       // type.getElement());
+      if (!(type.getElement() instanceof ClassElement)) {
+        return DYNAMIC_NON_NULL_TYPE;
+      }
     case INTERFACE:
       return typeRepository.findType(nullable, (ClassElement) type.getElement());
     case FUNCTION:
@@ -50,7 +57,7 @@ public class TypeHelper {
     return typeRepository.findFunction(nullable, asType(true, functionType.getReturnType()), asTypeList(functionType.getParameterTypes()),
         asTypeMap(functionType.getNamedParameterTypes()), null);
   }
-  
+
   public FunctionType asConstantFunctionType(MethodElement element) {
     com.google.dart.compiler.type.FunctionType functionType = element.getFunctionType();
     return typeRepository.findFunction(false, asType(true, functionType.getReturnType()), asTypeList(functionType.getParameterTypes()),

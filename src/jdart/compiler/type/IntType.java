@@ -217,7 +217,7 @@ public class IntType extends PrimitiveType implements NumType {
     return asTypeGreaterOrEqualsThan(value.subtract(BigInteger.ONE));
   }
 
-  public IntType add(IntType type) {
+  public IntType addInt(IntType type) {
     BigInteger minBound = (this.minBound == null | type.minBound == null) ? null : this.minBound.add(type.minBound);
     BigInteger maxBound = (this.maxBound == null | type.maxBound == null) ? null : this.maxBound.add(type.maxBound);
     if (minBound == null && maxBound == null) {
@@ -226,13 +226,14 @@ public class IntType extends PrimitiveType implements NumType {
     return new IntType(false, minBound, maxBound);
   }
 
-  public IntType sub(IntType type) {
+  public IntType subInt(IntType type) {
     BigInteger minBound = (this.minBound == null | type.minBound == null) ? null : this.minBound.subtract(type.minBound);
     BigInteger maxBound = (this.maxBound == null | type.maxBound == null) ? null : this.maxBound.subtract(type.maxBound);
     if (minBound == null && maxBound == null) {
       return INT_NON_NULL_TYPE;
     }
-    if (minBound != null && minBound.compareTo(maxBound) > 0) {
+    
+    if (maxBound != null && minBound != null && minBound.compareTo(maxBound) > 0) {
       return new IntType(false, maxBound, minBound);
     }
     return new IntType(false, minBound, maxBound);
@@ -252,27 +253,28 @@ public class IntType extends PrimitiveType implements NumType {
 
   /**
    * Return the result type of the division : this / other.
-   * It's a Dart division the return can be an int or a double.
+   * It's a Dart division, the return is always a double.
    * @param other Divisor.
    * @return The result type of the division.
    */
-  // In dart 5 / 2 = 2.5 and 4 / 2 = 2 (and not 2.0). We must use trunc (~/) to have a java-like divide.
+  // In dart 5 / 2 = 2.5 and 4 / 2 = 2.0. We must use trunc (~/) to have a java-like divide.
   public Type div(IntType other) {
     BigInteger cst = asConstant();
     BigInteger oCst = other.asConstant();
     if (cst != null && oCst != null) {
-      BigDecimal bigDec1 = new BigDecimal(cst);
-      BigDecimal bigDec2 = new BigDecimal(oCst);
-      BigDecimal divide = bigDec1.divide(bigDec2);
-      BigDecimal divideIntegral = bigDec1.divideToIntegralValue(bigDec2);
-      if (divide.equals(divideIntegral)) {
-        return constant(divideIntegral.toBigInteger());
-      }
-      return DoubleType.constant(divide.doubleValue());
+      double doubleValue1 = cst.doubleValue();
+      double doubleValue2 = oCst.doubleValue();
+      return DoubleType.constant(doubleValue1 / doubleValue2);
     }
-    return Types.union(DOUBLE_NON_NULL_TYPE, trunc(other));
+    return DOUBLE_NON_NULL_TYPE;
   }
 
+  /**
+   * Return the result type of the operation divide and truncate : this ~/ other.
+   * @param other Divisor.
+   * @return The result type.
+   */
+  // trunc is the java-like division 5 ~/ 2 = 2 and 4 ~/ 2 = 2. 
   public IntType trunc(IntType type) {
     BigInteger minBound = (this.minBound == null | type.maxBound == null) ? null : this.minBound.divide(type.maxBound);
     BigInteger maxBound = (this.maxBound == null | type.minBound == null) ? null : this.maxBound.divide(type.minBound);
@@ -1077,6 +1079,10 @@ public class IntType extends PrimitiveType implements NumType {
 
   @Override
   public Type add(Type other) {
+    if (other instanceof IntType) {
+      return addInt((IntType) other);
+    }
+    
     if (other instanceof DoubleType) {
       return ((DoubleType) other).add(this);
     }
@@ -1125,6 +1131,10 @@ public class IntType extends PrimitiveType implements NumType {
 
   @Override
   public Type sub(Type other) {
+    if (other instanceof IntType) {
+      return subInt((IntType) other);
+    }
+    
     if (other instanceof DoubleType) {
       return ((DoubleType) other).reverseSub(this);
     }
