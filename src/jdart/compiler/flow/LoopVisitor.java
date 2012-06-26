@@ -12,6 +12,7 @@ import jdart.compiler.type.InterfaceType;
 import jdart.compiler.type.NumType;
 import jdart.compiler.type.Type;
 import jdart.compiler.type.Types;
+import jdart.compiler.type.VoidType;
 import jdart.compiler.visitor.ASTVisitor2;
 
 import com.google.dart.compiler.ast.DartArrayAccess;
@@ -28,8 +29,10 @@ import com.google.dart.compiler.ast.DartIntegerLiteral;
 import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.ast.DartStatement;
 import com.google.dart.compiler.ast.DartUnaryExpression;
+import com.google.dart.compiler.ast.DartUnqualifiedInvocation;
 import com.google.dart.compiler.ast.DartVariable;
 import com.google.dart.compiler.ast.DartVariableStatement;
+import com.google.dart.compiler.resolver.MethodElement;
 import com.google.dart.compiler.resolver.VariableElement;
 
 // LoopVisitor returns all variables which had change during loop.
@@ -159,6 +162,11 @@ class LoopVisitor extends ASTVisitor2<Map<VariableElement, Type>, FlowEnv> {
 
     return map;
   }
+  
+  @Override
+  public Map<VariableElement, Type> visitUnqualifiedInvocation(DartUnqualifiedInvocation node, FlowEnv parameter) {
+    return Collections.<VariableElement, Type>emptyMap();
+  }
 
   class TypeVisitor extends ASTVisitor2<Type, FlowEnv> {
     @Override
@@ -201,6 +209,12 @@ class LoopVisitor extends ASTVisitor2<Map<VariableElement, Type>, FlowEnv> {
       com.google.dart.compiler.type.InterfaceType type = (com.google.dart.compiler.type.InterfaceType) node.getTarget().getElement().getType();
 
       return flowTypeVisitor.typeHelper.asType(true, type.getArguments().get(0));
+    }
+    
+    @Override
+    public Type visitUnqualifiedInvocation(DartUnqualifiedInvocation node, FlowEnv parameter) {
+      MethodElement element = (MethodElement) node.getTarget().getElement();
+      return flowTypeVisitor.typeHelper.asType(true, element.getReturnType());
     }
   }
 }
