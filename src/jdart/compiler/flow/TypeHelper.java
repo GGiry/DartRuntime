@@ -14,9 +14,7 @@ import jdart.compiler.type.Type;
 import jdart.compiler.type.TypeRepository;
 
 import com.google.dart.compiler.resolver.ClassElement;
-import com.google.dart.compiler.resolver.Element;
 import com.google.dart.compiler.resolver.MethodElement;
-import com.google.dart.compiler.resolver.TypeVariableElement;
 import com.google.dart.compiler.type.FunctionAliasType;
 
 /**

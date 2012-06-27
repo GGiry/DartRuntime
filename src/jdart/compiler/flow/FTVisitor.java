@@ -7,9 +7,9 @@ import static jdart.compiler.type.CoreTypeRepository.*;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import jdart.compiler.type.ArrayType;
 import jdart.compiler.type.BoolType;
@@ -350,13 +350,27 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       return (trueLiveness == ALIVE && falseLiveness == ALIVE) ? ALIVE : DEAD;
     }
 
+    // Remove VariableElements wich are only in set and not in env.
+    private void removeUnknow(HashSet<VariableElement> set, FlowEnv flowEnv) {
+      for (VariableElement element : set) {
+        if (flowEnv.getType(element) == null) {
+          set.remove(element);
+        }
+      }
+    }
+    
     private Liveness computeLoop(DartStatement node, DartExpression condition, DartStatement body, DartStatement /*maybenull*/init, 
         DartExpression /*maybenull*/increment, FlowEnv flowEnv) {
       Map<VariableElement, Type> beforeLoopMap = flowEnv.getClonedMap();
+      
+      LoopVisitor loopVisitor = new LoopVisitor();
+      HashSet<VariableElement> changeSet = new HashSet<>();
+      loopVisitor.accept(node, changeSet);
+      
+      removeUnknow(changeSet, flowEnv);
 
-      FlowEnv loopEnv = new FlowEnv(flowEnv, flowEnv.getReturnType(), flowEnv.getExpectedType(), true);
+      FlowEnv loopEnv = new FlowEnv(flowEnv, flowEnv.getReturnType(), flowEnv.getExpectedType(), true, changeSet);
       FlowEnv afterLoopEnv = new FlowEnv(flowEnv);
-      FlowEnv envCopy = new FlowEnv(flowEnv);
       FlowEnv paramWithInit = new FlowEnv(flowEnv);
       if (init != null) {
         accept(init, loopEnv);
@@ -367,24 +381,15 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       // condition should be a boolean
       FTVisitor.this.accept(condition, loopEnv.expectedType(BOOL_NON_NULL_TYPE));
       FTVisitor.ConditionVisitor conditionVisitor = new ConditionVisitor();
-
-      LoopVisitor loopVisitor = new LoopVisitor(FTVisitor.this);
-      Map<VariableElement, Type> map = loopVisitor.accept(node, envCopy);
-
       conditionVisitor.accept(condition, new ConditionEnv(paramWithInit, loopEnv, afterLoopEnv, true));
       accept(body, loopEnv);
       if (increment != null) {
         FTVisitor.this.accept(increment, loopEnv);
       }
-      FTVisitor.this.accept(condition, loopEnv.expectedType(BOOL_NON_NULL_TYPE));
+      conditionVisitor.accept(condition, new ConditionEnv(paramWithInit, loopEnv, afterLoopEnv, true));
 
       flowEnv.copyAll(loopEnv);
       flowEnv.copyAll(afterLoopEnv);
-      // We register in FlowEnv variables which are already knows before loop and which change during the loop.
-      // Registered types are unions of widened possible type for each variable.
-      for (Entry<VariableElement, Type> entry : map.entrySet()) {
-        flowEnv.register(entry.getKey(), entry.getValue());
-      }
       phiTableMap.put(node, flowEnv.mapDiff(beforeLoopMap));
       return ALIVE;
     }
@@ -465,12 +470,12 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       case EQ: {
         Type commonValues = type1.commonValuesWith(type2);
         if (element1 != null && element1 instanceof VariableElement) {
-          parameter.trueEnv.register((VariableElement) element1, commonValues);
-          parameter.falseEnv.register((VariableElement) element1, type1.exclude(type2));
+          parameter.trueEnv.registerConditionVariable((VariableElement) element1, commonValues);
+          parameter.falseEnv.registerConditionVariable((VariableElement) element1, type1.exclude(type2));
         }
         if (element2 != null && element2 instanceof VariableElement) {
-          parameter.trueEnv.register((VariableElement) element2, commonValues);
-          parameter.falseEnv.register((VariableElement) element2, type2.exclude(type1));
+          parameter.trueEnv.registerConditionVariable((VariableElement) element2, commonValues);
+          parameter.falseEnv.registerConditionVariable((VariableElement) element2, type2.exclude(type1));
         }
         break;
       }
@@ -478,12 +483,12 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       case NE: {
         Type commonValues = type1.commonValuesWith(type2);
         if (element1 != null && element1 instanceof VariableElement) {
-          parameter.trueEnv.register((VariableElement) element1, type1.exclude(type2));
-          parameter.falseEnv.register((VariableElement) element1, commonValues);
+          parameter.trueEnv.registerConditionVariable((VariableElement) element1, type1.exclude(type2));
+          parameter.falseEnv.registerConditionVariable((VariableElement) element1, commonValues);
         }
         if (element2 != null && element2 instanceof VariableElement) {
-          parameter.trueEnv.register((VariableElement) element2, type2.exclude(type1));
-          parameter.falseEnv.register((VariableElement) element2, commonValues);
+          parameter.trueEnv.registerConditionVariable((VariableElement) element2, type2.exclude(type1));
+          parameter.falseEnv.registerConditionVariable((VariableElement) element2, commonValues);
         }
         break;
       }
@@ -492,19 +497,19 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
           Type lessThanOrEqualsValues = type1.lessThanOrEqualsValues(type2, parameter.trueEnv.inLoop());
           Type greaterThanValues = type1.greaterThanValues(type2, parameter.falseEnv.inLoop());
           if (lessThanOrEqualsValues != null) {
-            parameter.trueEnv.register((VariableElement) element1, lessThanOrEqualsValues);
+            parameter.trueEnv.registerConditionVariable((VariableElement) element1, lessThanOrEqualsValues);
           }
           if (parameter.loopCondition) {
-            parameter.falseEnv.register((VariableElement) element1, INT_NON_NULL_TYPE.commonValuesWith(type2));
+            parameter.falseEnv.registerConditionVariable((VariableElement) element1, INT_NON_NULL_TYPE.commonValuesWith(type2));
           } else {
             if (greaterThanValues != null) {
-              parameter.falseEnv.register((VariableElement) element1, greaterThanValues);
+              parameter.falseEnv.registerConditionVariable((VariableElement) element1, greaterThanValues);
             }
           }
         }
         if (element2 != null && element2 instanceof VariableElement) {
-          parameter.trueEnv.register((VariableElement) element2, type2);
-          parameter.falseEnv.register((VariableElement) element2, type2);
+          parameter.trueEnv.registerConditionVariable((VariableElement) element2, type2);
+          parameter.falseEnv.registerConditionVariable((VariableElement) element2, type2);
         }
         break;
       }
@@ -513,19 +518,19 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
           Type greaterThanOrEqualsValues = type1.greaterThanOrEqualsValues(type2, parameter.trueEnv.inLoop());
           Type lessThanValues = type1.lessThanValues(type2, parameter.falseEnv.inLoop());
           if (greaterThanOrEqualsValues != null) {
-            parameter.trueEnv.register((VariableElement) element1, greaterThanOrEqualsValues);
+            parameter.trueEnv.registerConditionVariable((VariableElement) element1, greaterThanOrEqualsValues);
           }
           if (parameter.loopCondition) {
-            parameter.falseEnv.register((VariableElement) element1, INT_NON_NULL_TYPE.commonValuesWith(type2));
+            parameter.falseEnv.registerConditionVariable((VariableElement) element1, INT_NON_NULL_TYPE.commonValuesWith(type2));
           } else {
             if (lessThanValues != null) {
-              parameter.falseEnv.register((VariableElement) element1, lessThanValues);
+              parameter.falseEnv.registerConditionVariable((VariableElement) element1, lessThanValues);
             }
           }
         }
         if (element2 != null && element2 instanceof VariableElement) {
-          parameter.trueEnv.register((VariableElement) element2, type2);
-          parameter.falseEnv.register((VariableElement) element2, type2);
+          parameter.trueEnv.registerConditionVariable((VariableElement) element2, type2);
+          parameter.falseEnv.registerConditionVariable((VariableElement) element2, type2);
         }
         break;
       }
@@ -534,19 +539,19 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         Type greaterThanOrEqualsValues = type1.greaterThanOrEqualsValues(type2, parameter.falseEnv.inLoop());
         if (element1 != null && element1 instanceof VariableElement) {
           if (lessThanValues != null) {
-            parameter.trueEnv.register((VariableElement) element1, lessThanValues);
+            parameter.trueEnv.registerConditionVariable((VariableElement) element1, lessThanValues);
           }
           if (parameter.loopCondition) {
-            parameter.falseEnv.register((VariableElement) element1, INT_NON_NULL_TYPE.commonValuesWith(type2));
+            parameter.falseEnv.registerConditionVariable((VariableElement) element1, INT_NON_NULL_TYPE.commonValuesWith(type2));
           } else {
             if (greaterThanOrEqualsValues != null) {
-              parameter.falseEnv.register((VariableElement) element1, greaterThanOrEqualsValues);
+              parameter.falseEnv.registerConditionVariable((VariableElement) element1, greaterThanOrEqualsValues);
             }
           }
         }
         if (element2 != null && element2 instanceof VariableElement) {
-          parameter.trueEnv.register((VariableElement) element2, type2);
-          parameter.falseEnv.register((VariableElement) element2, type2);
+          parameter.trueEnv.registerConditionVariable((VariableElement) element2, type2);
+          parameter.falseEnv.registerConditionVariable((VariableElement) element2, type2);
         }
         break;
       }
@@ -555,19 +560,19 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
         Type lessThanOrEqualsValues = type1.lessThanOrEqualsValues(type2, parameter.falseEnv.inLoop());
         if (element1 != null && element1 instanceof VariableElement) {
           if (greaterThanValues != null) {
-            parameter.trueEnv.register((VariableElement) element1, greaterThanValues);
+            parameter.trueEnv.registerConditionVariable((VariableElement) element1, greaterThanValues);
           }
           if (parameter.loopCondition) {
-            parameter.falseEnv.register((VariableElement) element1, INT_NON_NULL_TYPE.commonValuesWith(type2));
+            parameter.falseEnv.registerConditionVariable((VariableElement) element1, INT_NON_NULL_TYPE.commonValuesWith(type2));
           } else {
             if (lessThanOrEqualsValues != null) {
-              parameter.falseEnv.register((VariableElement) element1, lessThanOrEqualsValues);
+              parameter.falseEnv.registerConditionVariable((VariableElement) element1, lessThanOrEqualsValues);
             }
           }
         }
         if (element2 != null && element2 instanceof VariableElement) {
-          parameter.trueEnv.register((VariableElement) element2, type2);
-          parameter.falseEnv.register((VariableElement) element2, type2);
+          parameter.trueEnv.registerConditionVariable((VariableElement) element2, type2);
+          parameter.falseEnv.registerConditionVariable((VariableElement) element2, type2);
         }
         break;
       }

@@ -64,11 +64,11 @@ public class Toto {
 
     String[] paths = { 
         "DartTest/Mandelbrot.dart",
+        "DartTest/For2.dart",
         "DartTest/FunctionObject.dart",
         "DartTest/Super.dart",
         "DartTest/BinaryOpDoubles.dart",
         "DartTest/Clazz.dart",
-        // "DartTest/For2.dart",
         // "DartTest/If7.dart",
         // "DartTest/For.dart",
         // "DartTest/If4.dart",

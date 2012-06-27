@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 
 import jdart.compiler.type.CoreTypeRepository;
 import jdart.compiler.type.Type;
@@ -21,19 +22,21 @@ public class FlowEnv {
   private final Type expectedType;
   private final/* maybenull */ HashMap<VariableElement, Type> variableTypeMap;
   private final boolean inLoop;
+  private final Set<VariableElement> loopSet;
 
   private FlowEnv(/* maybenull */FlowEnv parent, /* maybenull */Type thisType, Type returnType, Type expectedType,
-      /* maybenull */HashMap<VariableElement, Type> variableTypeMap, boolean inLoop) {
+      /* maybenull */HashMap<VariableElement, Type> variableTypeMap, boolean inLoop, Set<VariableElement> loopSet) {
     this.parent = parent;
     this.thisType = thisType;
     this.returnType = Objects.requireNonNull(returnType);
     this.expectedType = Objects.requireNonNull(expectedType);
     this.variableTypeMap = variableTypeMap;
     this.inLoop = inLoop;
+    this.loopSet = loopSet;
   }
 
   public FlowEnv(Type thisType) {
-    this(null, thisType, CoreTypeRepository.VOID_TYPE, CoreTypeRepository.VOID_TYPE, null, false);
+    this(null, thisType, CoreTypeRepository.VOID_TYPE, CoreTypeRepository.VOID_TYPE, null, false, null);
   }
 
   /**
@@ -45,7 +48,20 @@ public class FlowEnv {
    * @param inLoop 
    */
   public FlowEnv(FlowEnv parent, Type returnType, Type expectedType, boolean inLoop) {
-    this(parent, parent.thisType, returnType, expectedType, new HashMap<VariableElement, Type>(), inLoop);
+    this(parent, parent.thisType, returnType, expectedType, new HashMap<VariableElement, Type>(), inLoop, null);
+  }
+  
+  /**
+   * Create a new flow environment with a parent and an expected type.
+   * 
+   * @param parent
+   * @param returnType 
+   * @param expectedType
+   * @param inLoop 
+   * @param loopSet
+   */
+  public FlowEnv(FlowEnv parent, Type returnType, Type expectedType, boolean inLoop, Set<VariableElement> loopSet) {
+    this(parent, parent.thisType, returnType, expectedType, new HashMap<VariableElement, Type>(), inLoop, loopSet);
   }
   
   /**
@@ -55,7 +71,7 @@ public class FlowEnv {
    * @param parent Parent to use.
    */
   public FlowEnv(FlowEnv parent) {
-    this(parent, parent.getReturnType(), parent.getExpectedType(), parent.inLoop());
+    this(parent, parent.getReturnType(), parent.getExpectedType(), parent.inLoop(), parent.loopSet);
   }
 
   /**
@@ -92,6 +108,27 @@ public class FlowEnv {
   public void register(VariableElement variable, Type type) {
     Objects.requireNonNull(variable);
     Objects.requireNonNull(type);
+    
+    if (inLoop && loopSet != null) {
+      if (loopSet.contains(variable)) {
+        variableTypeMap.put(variable, Types.widening(type));
+        return;
+      }
+    }
+    variableTypeMap.put(variable, type);
+  }
+  
+  /** TODO
+   * Register a new type for a variable.
+   * 
+   * @param variable
+   *          a variable
+   * @param type
+   *          a type
+   */
+  public void registerConditionVariable(VariableElement variable, Type type) {
+    Objects.requireNonNull(variable);
+    Objects.requireNonNull(type);
     variableTypeMap.put(variable, type);
   }
 
@@ -125,7 +162,7 @@ public class FlowEnv {
     if (expectedType.equals(this.expectedType)) { // implicit null check
       return this;
     }
-    return new FlowEnv(parent, thisType, returnType, expectedType, variableTypeMap, inLoop);
+    return new FlowEnv(parent, thisType, returnType, expectedType, variableTypeMap, inLoop, loopSet);
   }
 
   /**
