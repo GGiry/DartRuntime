@@ -8,6 +8,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -352,9 +353,13 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
     // Remove VariableElements wich are only in set and not in env.
     private void removeUnknow(HashSet<VariableElement> set, FlowEnv flowEnv) {
-      for (VariableElement element : set) {
+      Iterator<VariableElement> iterator = set.iterator();
+      
+      while (iterator.hasNext()) {
+        VariableElement element = iterator.next();
+        
         if (flowEnv.getType(element) == null) {
-          set.remove(element);
+          iterator.remove();
         }
       }
     }
@@ -388,6 +393,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       }
       conditionVisitor.accept(condition, new ConditionEnv(paramWithInit, loopEnv, afterLoopEnv, true));
 
+      System.out.println(loopEnv);
+      
       flowEnv.copyAll(loopEnv);
       flowEnv.copyAll(afterLoopEnv);
       phiTableMap.put(node, flowEnv.mapDiff(beforeLoopMap));
@@ -483,8 +490,13 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       case NE: {
         Type commonValues = type1.commonValuesWith(type2);
         if (element1 != null && element1 instanceof VariableElement) {
-          parameter.trueEnv.registerConditionVariable((VariableElement) element1, type1.exclude(type2));
-          parameter.falseEnv.registerConditionVariable((VariableElement) element1, commonValues);
+          Type exclude = type1.exclude(type2);
+          if (exclude != null) {
+            parameter.trueEnv.registerConditionVariable((VariableElement) element1, exclude);
+          }
+          if (commonValues != null) {
+            parameter.falseEnv.registerConditionVariable((VariableElement) element1, commonValues);
+          }
         }
         if (element2 != null && element2 instanceof VariableElement) {
           parameter.trueEnv.registerConditionVariable((VariableElement) element2, type2.exclude(type1));

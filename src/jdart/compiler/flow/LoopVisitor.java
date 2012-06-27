@@ -6,6 +6,8 @@ import jdart.compiler.visitor.ASTVisitor2;
 
 import com.google.dart.compiler.ast.DartBinaryExpression;
 import com.google.dart.compiler.ast.DartBlock;
+import com.google.dart.compiler.ast.DartBreakStatement;
+import com.google.dart.compiler.ast.DartDoWhileStatement;
 import com.google.dart.compiler.ast.DartEmptyStatement;
 import com.google.dart.compiler.ast.DartExprStmt;
 import com.google.dart.compiler.ast.DartForStatement;
@@ -13,6 +15,8 @@ import com.google.dart.compiler.ast.DartIfStatement;
 import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.ast.DartStatement;
 import com.google.dart.compiler.ast.DartUnaryExpression;
+import com.google.dart.compiler.ast.DartVariable;
+import com.google.dart.compiler.ast.DartVariableStatement;
 import com.google.dart.compiler.parser.Token;
 import com.google.dart.compiler.resolver.VariableElement;
 
@@ -26,9 +30,22 @@ class LoopVisitor extends ASTVisitor2<Void, HashSet<VariableElement>> {
   
   @Override
   public Void visitForStatement(DartForStatement node, HashSet<VariableElement> parameter) {
+    accept(node.getCondition(), parameter);
     accept(node.getInit(), parameter);
     accept(node.getBody(), parameter);
     accept(node.getIncrement(), parameter);
+    return null;
+  }
+  
+  @Override
+  public Void visitBreakStatement(DartBreakStatement node, HashSet<VariableElement> parameter) {
+    return null;
+  }
+  
+  @Override
+  public Void visitDoWhileStatement(DartDoWhileStatement node, HashSet<VariableElement> parameter) {
+    accept(node.getBody(), parameter);
+    accept(node.getCondition(), parameter);
     return null;
   }
   
@@ -60,7 +77,10 @@ class LoopVisitor extends ASTVisitor2<Void, HashSet<VariableElement>> {
   public Void visitIfStatement(DartIfStatement node, HashSet<VariableElement> parameter) {
     accept(node.getCondition(), parameter);
     accept(node.getThenStatement(), parameter);
-    accept(node.getElseStatement(), parameter);
+    DartStatement elseStatement = node.getElseStatement();
+    if (elseStatement != null) {
+      accept(elseStatement, parameter);
+    }
     return null;
   }
   
@@ -76,6 +96,20 @@ class LoopVisitor extends ASTVisitor2<Void, HashSet<VariableElement>> {
   
   @Override
   public Void visitEmptyStatement(DartEmptyStatement node, HashSet<VariableElement> parameter) {
+    return null;
+  }
+  
+  @Override
+  public Void visitVariableStatement(DartVariableStatement node, HashSet<VariableElement> parameter) {
+    for (DartVariable variable : node.getVariables()) {
+      accept(variable, parameter);
+    }
+    return null;
+  }
+  
+  @Override
+  public Void visitVariable(DartVariable node, HashSet<VariableElement> parameter) {
+    parameter.add(node.getElement());
     return null;
   }
 }
