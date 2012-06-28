@@ -4,7 +4,6 @@ void main() {
   int maxiter = 50;
   double limit = 4.0;
 
-  List<int> list = new List<int>(1024*1024~/8);
   int index = 0;
 
   for (int y = 0; y < height; y++) {
@@ -30,16 +29,12 @@ void main() {
       } while (--i > 0);
 
       if (++xcounter == 8) {
-        list[index++] = bits ^ 0xff;
+        int res = bits ^ 0xff;
         bits = 0;
         xcounter = 0;
       }
     }
     if (xcounter != 0)
-      list[index++] = (bits << (8 - xcounter)) ^ 0xff;
-  }
-
-  for (int i = 0; i < index; i++) {
-    var toto = print(list[i]);
+      int res = (bits << (8 - xcounter)) ^ 0xff;
   }
 }

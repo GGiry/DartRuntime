@@ -15,6 +15,7 @@ import com.google.dart.compiler.ast.DartIfStatement;
 import com.google.dart.compiler.ast.DartNode;
 import com.google.dart.compiler.ast.DartStatement;
 import com.google.dart.compiler.ast.DartUnaryExpression;
+import com.google.dart.compiler.ast.DartUnqualifiedInvocation;
 import com.google.dart.compiler.ast.DartVariable;
 import com.google.dart.compiler.ast.DartVariableStatement;
 import com.google.dart.compiler.parser.Token;
@@ -110,6 +111,11 @@ class LoopVisitor extends ASTVisitor2<Void, HashSet<VariableElement>> {
   @Override
   public Void visitVariable(DartVariable node, HashSet<VariableElement> parameter) {
     parameter.add(node.getElement());
+    return null;
+  }
+  
+  @Override
+  public Void visitUnqualifiedInvocation(DartUnqualifiedInvocation node, HashSet<VariableElement> parameter) {
     return null;
   }
 }

@@ -393,8 +393,6 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       }
       conditionVisitor.accept(condition, new ConditionEnv(paramWithInit, loopEnv, afterLoopEnv, true));
 
-      System.out.println(loopEnv);
-      
       flowEnv.copyAll(loopEnv);
       flowEnv.copyAll(afterLoopEnv);
       phiTableMap.put(node, flowEnv.mapDiff(beforeLoopMap));
