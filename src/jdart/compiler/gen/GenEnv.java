@@ -3,6 +3,7 @@ package jdart.compiler.gen;
 import java.util.HashMap;
 import java.util.Objects;
 
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
@@ -18,6 +19,7 @@ class GenEnv {
   private final /*maybenull*/GenEnv parent;
   private final HashMap<VariableElement, Var> variableMap;
   private int slotCount;
+  private Label loopLabel;
   
   private GenEnv(MethodVisitor methodVisitor, MethodVisitor sideMethodVisitor, Type returnType, int mixedIntShift, IfBranches ifBranches, /*maybenull*/GenEnv parent, HashMap<VariableElement, Var> variableMap, int slotCount) {
     this.methodVisitor = methodVisitor;
@@ -81,5 +83,15 @@ class GenEnv {
       return parent.getVar(element);
     }
     return null;
+  }
+
+  public void newLoopLabel(Label label) {
+    //TODO MODIFIED
+    this.loopLabel = label;
+  }
+
+  public Label getLoopLabel() {
+  //TODO MODIFIED
+    return loopLabel;
   }
 }

@@ -84,6 +84,11 @@ public class VoidType implements Type {
     if (other instanceof DynamicType) {
       return true;
     }
+    
+    if (other instanceof VoidType) {
+      // TODO MODIFIED
+      return true;
+    }
 
     // TODO
     throw new IllegalStateException("Not yet implemented.");

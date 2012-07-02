@@ -10,7 +10,7 @@ void main() {
     int bits = 0;
     int xcounter = 0;
     double Ci = 2.0*y/height - 1.0;
-
+    
     for (int x = 0; x < width; x++){
       double Zr = 0.0;
       double Zi = 0.0;
@@ -18,23 +18,23 @@ void main() {
       int i = maxiter;
 
       bits = bits << 1;
-      do {
-        double Tr = Zr*Zr - Zi*Zi + Cr;
-        Zi = 2.0*Zr*Zi + Ci;
-        Zr = Tr;
-        if (Zr*Zr + Zi*Zi > limit) {
-          bits |= 1;
-          break;
-        }
-      } while (--i > 0);
-
-      if (++xcounter == 8) {
-        int res = bits ^ 0xff;
-        bits = 0;
-        xcounter = 0;
-      }
+//      do {
+//        double Tr = Zr*Zr - Zi*Zi + Cr;
+//        Zi = 2.0*Zr*Zi + Ci;
+//        Zr = Tr;
+//        if (Zr*Zr + Zi*Zi > limit) {
+//          bits = bits | 1;
+//          break;
+//        }
+//      } while (--i > 0);
+//
+//      if (++xcounter == 8) {
+//        int res = bits ^ 0xff;
+//        bits = 0;
+//        xcounter = 0;
+//      }
     }
-    if (xcounter != 0)
-      int res = (bits << (8 - xcounter)) ^ 0xff;
+//    if (xcounter != 0)
+//      int res = (bits << (8 - xcounter)) ^ 0xff;
   }
 }

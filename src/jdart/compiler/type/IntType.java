@@ -1189,12 +1189,15 @@ public class IntType extends PrimitiveType implements NumType {
       case SECOND_CONTAINS_FIRST:
         return true;
       case FIRST_IS_LEFT_OVERLAP:
-        if (iType.minBound.compareTo(minBound) <= 0) {
+        if (minBound == null || iType.minBound.compareTo(minBound) <= 0) {
           return true;
         }
         return false;
       case SECOND_IS_LEFT_OVERLAP:
-        if (iType.maxBound.compareTo(maxBound) >= 0) {
+        if (maxBound == null && iType.maxBound == null) {
+          return true;
+        }
+        if (iType.maxBound == null || (maxBound != null && iType.maxBound.compareTo(maxBound) >= 0)) {
           return true;
         }
         return false;

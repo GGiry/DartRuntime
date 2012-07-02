@@ -10,6 +10,7 @@ import com.google.dart.compiler.ast.DartBreakStatement;
 import com.google.dart.compiler.ast.DartDoWhileStatement;
 import com.google.dart.compiler.ast.DartEmptyStatement;
 import com.google.dart.compiler.ast.DartExprStmt;
+import com.google.dart.compiler.ast.DartExpression;
 import com.google.dart.compiler.ast.DartForStatement;
 import com.google.dart.compiler.ast.DartIfStatement;
 import com.google.dart.compiler.ast.DartNode;
@@ -31,10 +32,22 @@ class LoopVisitor extends ASTVisitor2<Void, HashSet<VariableElement>> {
   
   @Override
   public Void visitForStatement(DartForStatement node, HashSet<VariableElement> parameter) {
-    accept(node.getCondition(), parameter);
-    accept(node.getInit(), parameter);
-    accept(node.getBody(), parameter);
-    accept(node.getIncrement(), parameter);
+    DartExpression condition = node.getCondition();
+    DartStatement init = node.getInit();
+    DartStatement body = node.getBody();
+    DartExpression increment = node.getIncrement();
+    if (condition != null) {
+      accept(condition, parameter);
+    }
+    if (init != null) {
+      accept(init, parameter);
+    } 
+    if (body != null) {
+      accept(body, parameter);
+    }
+    if (increment != null) {
+      accept(increment, parameter);
+    }
     return null;
   }
   
@@ -45,8 +58,14 @@ class LoopVisitor extends ASTVisitor2<Void, HashSet<VariableElement>> {
   
   @Override
   public Void visitDoWhileStatement(DartDoWhileStatement node, HashSet<VariableElement> parameter) {
-    accept(node.getBody(), parameter);
-    accept(node.getCondition(), parameter);
+    DartStatement body = node.getBody();
+    DartExpression condition = node.getCondition();
+    if (body != null) {
+      accept(body, parameter);
+    }
+    if (condition != null) {
+      accept(condition, parameter);
+    }
     return null;
   }
   
