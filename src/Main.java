@@ -87,9 +87,9 @@ public class Main {
     String sdkPath = "../../dart-sdk/";
 
     String[] paths = { 
-
+          "DartTest/inc.dart",
 //        "DartTest/shl.dart",
-        "DartTest/BigMandelbrot.dart",
+//        "DartTest/BigMandelbrot.dart",
 //         "DartTest/Fibo.dart",
 //        "DartTest/Multiply.dart",
         // "DartTest/For2.dart",

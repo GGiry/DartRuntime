@@ -1240,15 +1240,17 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
   public GenResult visitUnaryExpression(DartUnaryExpression node, GenEnv env) {
     // TODO MODIFIED
     MethodVisitor mv = env.getMethodVisitor();
-    accept(node.getArg(), env);
     Token operator = node.getOperator();
-    int varSlot = env.getVar((VariableElement) node.getArg().getElement()).getSlot();
     switch (operator) {
     case INC:
-      mv.visitIincInsn(varSlot, 1);
+      accept(node.getArg(), env);
+      mv.visitInsn(ICONST_1);
+      mv.visitInsn(IADD);
       return null;
     case DEC:
-      mv.visitIincInsn(varSlot, -1);
+      accept(node.getArg(), env);
+      mv.visitInsn(ICONST_1);
+      mv.visitInsn(ISUB);
       return null;
     default:
       throw new UnsupportedOperationException("operator " + operator + " (" + operator.name() + ")");
