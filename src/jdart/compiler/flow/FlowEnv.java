@@ -126,10 +126,14 @@ public class FlowEnv {
    * @param type
    *          a type
    */
-  public void registerConditionVariable(VariableElement variable, Type type) {
+  public void registerConditionVariable(VariableElement variable, Type type, boolean loopCondition) {
     Objects.requireNonNull(variable);
     Objects.requireNonNull(type);
-    variableTypeMap.put(variable, type);
+    if (loopCondition) {
+      variableTypeMap.put(variable, type);
+    } else {
+      register(variable, type);
+    }
   }
 
   /**
