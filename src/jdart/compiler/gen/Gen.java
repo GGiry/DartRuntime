@@ -64,6 +64,7 @@ import com.google.dart.compiler.ast.DartDoubleLiteral;
 import com.google.dart.compiler.ast.DartEmptyStatement;
 import com.google.dart.compiler.ast.DartExprStmt;
 import com.google.dart.compiler.ast.DartExpression;
+import com.google.dart.compiler.ast.DartForStatement;
 import com.google.dart.compiler.ast.DartFunction;
 import com.google.dart.compiler.ast.DartIdentifier;
 import com.google.dart.compiler.ast.DartIfStatement;
@@ -77,6 +78,7 @@ import com.google.dart.compiler.ast.DartReturnStatement;
 import com.google.dart.compiler.ast.DartStatement;
 import com.google.dart.compiler.ast.DartStringLiteral;
 import com.google.dart.compiler.ast.DartThisExpression;
+import com.google.dart.compiler.ast.DartUnaryExpression;
 import com.google.dart.compiler.ast.DartUnqualifiedInvocation;
 import com.google.dart.compiler.ast.DartVariable;
 import com.google.dart.compiler.ast.DartVariableStatement;
@@ -369,7 +371,11 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       // generate exceptional paths
       methodRecorder.replay(mv);
 
-      mv.visitMaxs(0, 0);  
+      try {
+        mv.visitMaxs(0, 0);          
+      } catch (Exception e) {
+        // TODO remove try {} catch {}.
+      }
     }
 
     mv.visitEnd();
@@ -604,6 +610,38 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       accept(elseStatement, env);
       mv.visitLabel(endLabel);
     }
+    return null;
+  }
+
+  @Override
+  public GenResult visitForStatement(DartForStatement node, GenEnv env) {
+    MethodVisitor mv = env.getMethodVisitor();
+    Label conditionLabel = new Label();
+    Label loopBodyLabel = new Label();
+    Label endLabel = new Label();
+
+    if (node.getInit() != null) {
+      accept(node.getInit(), env);
+    }
+    mv.visitJumpInsn(GOTO, conditionLabel);
+
+    // loop body
+    mv.visitLabel(loopBodyLabel);
+    accept(node.getBody(), env);
+    if (node.getIncrement() != null) {
+      accept(node.getIncrement(), env);
+      mv.visitInsn(POP);
+    }
+
+    // loop condition
+    mv.visitLabel(conditionLabel);
+    if (node.getCondition() != null) {
+      accept(node.getCondition(), env.newIf(new IfBranches(false, loopBodyLabel, null)));
+    } else {
+      mv.visitJumpInsn(GOTO, loopBodyLabel);
+    }
+    mv.visitLabel(endLabel);
+
     return null;
   }
 
@@ -858,7 +896,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       int opcode;
       boolean inversed = ifBranches.isInversed();
 
-      
+
       if (operator == Token.ASSIGN) {
         accept(expr2, subEnv);
         Type type2 = asJVMType(typeMap.get(expr2), TypeContext.VAR_TYPE);
@@ -910,10 +948,24 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
               mv.visitInsn(ISUB);
               return;
             default:
-              throw new UnsupportedOperationException("binary no overflow "+returnType+" "+type1+" "+type2);
+              throw new UnsupportedOperationException("binary no overflow " + operator + "(" + type1 + "" + type2 + ")" + returnType);
             }
           }
-          throw new UnsupportedOperationException("binary no overflow "+returnType+" "+type1+" "+type2);
+          if (sort1 == Type.DOUBLE && sort2 == Type.INT) {
+            switch(operator) {
+            case MUL:
+              mv.visitInsn(I2D);
+              mv.visitInsn(DMUL);
+              return;
+            case DIV:
+              mv.visitInsn(I2D);
+              mv.visitInsn(DDIV);
+              return;
+            default:
+              throw new UnsupportedOperationException("binary no overflow " + operator + "(" + type1 + "" + type2 + ")" + returnType);
+            }
+          }
+          throw new UnsupportedOperationException("binary no overflow " + operator + "(" + type1 + "" + type2 + ")" + returnType);
         }
 
         @Override
@@ -1030,6 +1082,31 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     mv.visitInsn(ICONST_0);
     mv.visitLabel(endLabel);
     return null;
+  }
+
+  @Override
+  public GenResult visitUnaryExpression(DartUnaryExpression node, GenEnv env) {
+    MethodVisitor mv = env.getMethodVisitor();
+
+    DartExpression arg = node.getArg();
+    Token operator = node.getOperator();
+    Element element = arg.getElement();
+    Type type = asJVMType(typeMap.get(arg), TypeContext.VAR_TYPE);
+    switch (operator) {
+    case INC:
+      //TODO double type
+      if (type == INT_TYPE) {
+        accept(arg, env);
+        mv.visitInsn(ICONST_1);
+        mv.visitInsn(IADD);
+        Var var = env.getVar((VariableElement) element);
+        mv.visitIntInsn(ISTORE, var.getSlot());
+        accept(arg, env);
+        return null;
+      }
+    default:
+      throw new UnsupportedOperationException("Operation not yet suported: " + type + ' ' + operator);
+    }
   }
 
   @Override
