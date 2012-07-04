@@ -88,12 +88,12 @@ public class Main {
 
     String[] paths = { 
 //        "DartTest/SimpleClazz.dart",
-         "DartTest/BigMandelbrot.dart",
+//         "DartTest/BigMandelbrot.dart",
         // "DartTest/inc.dart",
         // "DartTest/shl.dart",
         // "DartTest/Fibo.dart",
         // "DartTest/Multiply.dart",
-        // "DartTest/For2.dart",
+         "DartTest/For2.dart",
         // "DartTest/Hello.dart",
     };
 
