@@ -633,7 +633,6 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     accept(node.getBody(), env);
     if (node.getIncrement() != null) {
       accept(node.getIncrement(), env);
-      mv.visitInsn(POP);
     }
 
     // loop condition
@@ -929,16 +928,10 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       int opcode;
       boolean inversed = ifBranches.isInversed();
 
-      accept(expr1, subEnv);
-      accept(expr2, subEnv);
-
-      //FIXME, check argument types
       
-      switch(operator) {
-      case ASSIGN:
-        // TODO MODIFIED
+      if (operator == Token.ASSIGN) {
+        accept(expr2, subEnv);
         Type type2 = asJVMType(typeMap.get(expr2), TypeContext.VAR_TYPE);
-        
         switch (type2.getSort()) {
         case Type.OBJECT:
           mv.visitVarInsn(ASTORE, subEnv.getVar((VariableElement) expr1.getElement()).getSlot());
@@ -949,6 +942,12 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         default:
           throw new UnsupportedOperationException("Assign: " + type2.getSort());
         }
+      }
+      accept(expr1, subEnv);
+      accept(expr2, subEnv);
+
+      //FIXME, check argument types
+      switch(operator) {
       case LT:
         opcode = (inversed)? IF_ICMPGE: IF_ICMPLT;
         mv.visitJumpInsn(opcode, ifBranches.getElseLabel());
@@ -976,7 +975,6 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     switch(operator) {
     case ASSIGN:
       // TODO MODIFIED
-      accept(expr1, subEnv);
       accept(expr2, subEnv);
 
       Type type2 = asJVMType(typeMap.get(expr2), TypeContext.VAR_TYPE);
@@ -1085,7 +1083,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
             //TODO MODIFIED
             switch(operator) {
             case SHL:
-              mv.visitMethodInsn(INVOKEDYNAMIC, RT_CLASS, "shilftLeft", "(Ljdart/runtime/BigInt;I)Ljdart/runtime/BigInt;");
+              mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "shilftLeft", "(Ljdart/runtime/BigInt;I)Ljdart/runtime/BigInt;");
               return;
             default:
               throw new UnsupportedOperationException("binary no overflow " + operator + " " +returnType+" "+type1+" "+type2);
@@ -1119,13 +1117,13 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
               // TODO MODIFIED
               mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "multiplyExact", "(II)I");
               return;
-            case BIT_OR:
-              // TODO MODIFIED
-              mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "bitOr", "(II)I");
-              return;
             case SHL:
               //TODO MODIFIED
               mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "shilftLeft", "(II)I");
+              return;
+            case BIT_OR:
+              // TODO MODIFIED
+              mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "bitOr", "(II)I");
               return;
             case BIT_XOR:
               // TODO MODIFIED
@@ -1246,6 +1244,9 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       accept(node.getArg(), env);
       mv.visitInsn(ICONST_1);
       mv.visitInsn(IADD);
+      if (env.getReturnType() == VOID_TYPE) {
+        mv.visitInsn(POP);
+      }
       return null;
     case DEC:
       accept(node.getArg(), env);

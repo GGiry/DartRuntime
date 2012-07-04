@@ -44,14 +44,14 @@ public class Main {
     }
 
     final ClassHierarchyAnalysisPhase chaInstance = ClassHierarchyAnalysisPhase.getInstance();
-    
+
     CompilerConfiguration config = new DefaultCompilerConfiguration(compilerOptions, libraryManager) {
       @Override
       public List<DartCompilationPhase> getPhases() {
         List<DartCompilationPhase> phases = new ArrayList<>();
         phases.add(new CompileTimeConstantAnalyzer.Phase());
         phases.add(new Resolver.Phase());
-        
+
         phases.add(chaInstance);
         return phases;
       }
@@ -62,7 +62,7 @@ public class Main {
       System.err.println("an error occured !");
       return;
     }
-    
+
     Set<DartUnit> units = chaInstance.getUnits();
     DartUnit mainUnit = units.iterator().next();
     MethodNodeElement mainMethod = (MethodNodeElement)mainUnit.getLibrary().getElement().getEntryPoint();
@@ -70,16 +70,16 @@ public class Main {
       System.err.println("unit "+mainUnit.getSourceName()+" has no entry point");
       return;
     }
-    
-     // initialize core type repository
+
+    // initialize core type repository
     CoreTypeRepository coreTypeRepository = CoreTypeRepository.initCoreTypeRepository(chaInstance.getCoreTypeProvider());
     TypeRepository typeRepository = new TypeRepository(coreTypeRepository);
     TypeHelper typeHelper = new TypeHelper(typeRepository);
-    
+
     // type flow starting with main method
     InterProceduralMethodCallResolver methodCallResolver = new InterProceduralMethodCallResolver(typeHelper);
     methodCallResolver.functionCall(mainMethod, Collections.<Type>emptyList(), CoreTypeRepository.VOID_TYPE);
-    
+
     Gen.genAll(mainMethod, methodCallResolver.getMethodMap());
   }
 
@@ -87,11 +87,12 @@ public class Main {
     String sdkPath = "../../dart-sdk/";
 
     String[] paths = { 
-          "DartTest/inc.dart",
-//        "DartTest/shl.dart",
-//        "DartTest/BigMandelbrot.dart",
-//         "DartTest/Fibo.dart",
-//        "DartTest/Multiply.dart",
+//        "DartTest/SimpleClazz.dart",
+         "DartTest/BigMandelbrot.dart",
+        // "DartTest/inc.dart",
+        // "DartTest/shl.dart",
+        // "DartTest/Fibo.dart",
+        // "DartTest/Multiply.dart",
         // "DartTest/For2.dart",
         // "DartTest/Hello.dart",
     };
