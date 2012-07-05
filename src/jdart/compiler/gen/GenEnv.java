@@ -19,9 +19,10 @@ class GenEnv {
   private final /*maybenull*/GenEnv parent;
   private final HashMap<VariableElement, Var> variableMap;
   private int slotCount;
-  private Label loopLabel;
+
+  private final Label loopLabel;
   
-  private GenEnv(MethodVisitor methodVisitor, MethodVisitor sideMethodVisitor, Type returnType, int mixedIntShift, IfBranches ifBranches, /*maybenull*/GenEnv parent, HashMap<VariableElement, Var> variableMap, int slotCount) {
+  private GenEnv(MethodVisitor methodVisitor, MethodVisitor sideMethodVisitor, Type returnType, int mixedIntShift, IfBranches ifBranches, /*maybenull*/GenEnv parent, HashMap<VariableElement, Var> variableMap, int slotCount, Label loopLabel) {
     this.methodVisitor = methodVisitor;
     this.sideMethodVisitor = sideMethodVisitor;
     this.returnType = returnType;
@@ -30,10 +31,11 @@ class GenEnv {
     this.parent = parent;
     this.variableMap = variableMap;
     this.slotCount = slotCount;
+    this.loopLabel = loopLabel;
   }
   
   public GenEnv(MethodVisitor methodVisitor, MethodVisitor sideMethodVisitor, Type returnType, int slotCount) {
-    this(methodVisitor, sideMethodVisitor, returnType, 0, null, null, new HashMap<VariableElement, Var>(), slotCount);
+    this(methodVisitor, sideMethodVisitor, returnType, 0, null, null, new HashMap<VariableElement, Var>(), slotCount, null);
   }
   
   public MethodVisitor getMethodVisitor() {
@@ -53,11 +55,11 @@ class GenEnv {
   }
   
   public GenEnv newSplitPathEnv(MethodVisitor mv, int mixedIntShift) {
-    return new GenEnv(mv, sideMethodVisitor, returnType, mixedIntShift, ifBranches, parent, variableMap, slotCount);
+    return new GenEnv(mv, sideMethodVisitor, returnType, mixedIntShift, ifBranches, parent, variableMap, slotCount, loopLabel);
   }
   
   public GenEnv newIf(IfBranches ifBranches) {
-    return new GenEnv(methodVisitor, sideMethodVisitor, returnType, mixedIntShift, ifBranches, parent, variableMap, slotCount);
+    return new GenEnv(methodVisitor, sideMethodVisitor, returnType, mixedIntShift, ifBranches, parent, variableMap, slotCount, loopLabel);
   }
   
   public Var newVar(Type type) {
@@ -85,9 +87,8 @@ class GenEnv {
     return null;
   }
 
-  public void newLoopLabel(Label label) {
-    //TODO MODIFIED
-    this.loopLabel = label;
+  public GenEnv newLoopLabel(Label label) {
+    return new GenEnv(methodVisitor, sideMethodVisitor, returnType, mixedIntShift, ifBranches, parent, variableMap, slotCount, label);
   }
 
   public Label getLoopLabel() {

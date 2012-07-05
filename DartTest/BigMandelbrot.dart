@@ -19,15 +19,15 @@ void main() {
 
       bits = bits << 1;
 //      do {
-//        double Tr = Zr*Zr - Zi*Zi + Cr;
-//        Zi = 2.0*Zr*Zi + Ci;
+        double Tr = Zr*Zr - Zi*Zi + Cr;
+        Zi = 2.0*Zr*Zi + Ci;
 //        Zr = Tr;
 //        if (Zr*Zr + Zi*Zi > limit) {
 //          bits = bits | 1;
 //          break;
 //        }
 //      } while (--i > 0);
-//
+
 //      if (++xcounter == 8) {
 //        int res = bits ^ 0xff;
 //        bits = 0;

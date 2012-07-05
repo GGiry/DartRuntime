@@ -141,4 +141,18 @@ public class RT {
     }
     return result;
   }
+  
+  public static BigInt shl(int r1, int r2) {
+    BigInt _r1 = BigInt.valueOf(r1);
+    return _r1.shiftLeft(r2);
+  }
+  
+  public static int shlExact(int r1, int r2) {
+    return r1 << r2;
+  }
+  
+  public static int assignExact(int r1, int r2) {
+    r1 = r2;
+    return r2;
+  }
 }

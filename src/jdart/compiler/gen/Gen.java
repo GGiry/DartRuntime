@@ -60,6 +60,8 @@ import com.google.dart.compiler.ast.DartArrayLiteral;
 import com.google.dart.compiler.ast.DartBinaryExpression;
 import com.google.dart.compiler.ast.DartBlock;
 import com.google.dart.compiler.ast.DartBooleanLiteral;
+import com.google.dart.compiler.ast.DartBreakStatement;
+import com.google.dart.compiler.ast.DartDoWhileStatement;
 import com.google.dart.compiler.ast.DartDoubleLiteral;
 import com.google.dart.compiler.ast.DartEmptyStatement;
 import com.google.dart.compiler.ast.DartExprStmt;
@@ -614,34 +616,61 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
   }
 
   @Override
+  public GenResult visitDoWhileStatement(DartDoWhileStatement node, GenEnv env) {
+    MethodVisitor mv = env.getMethodVisitor();
+    Label loopBodyLabel = new Label();
+    Label endLabel = new Label();
+    GenEnv subEnv = env.newLoopLabel(endLabel);
+
+    // loop body
+    mv.visitLabel(loopBodyLabel);
+    accept(node.getBody(), subEnv);
+
+    if (node.getCondition() != null) {
+      accept(node.getCondition(), subEnv.newIf(new IfBranches(false, loopBodyLabel, null)));
+    }
+    mv.visitLabel(endLabel);
+
+    return null;
+  }
+
+  @Override
   public GenResult visitForStatement(DartForStatement node, GenEnv env) {
     MethodVisitor mv = env.getMethodVisitor();
     Label conditionLabel = new Label();
     Label loopBodyLabel = new Label();
     Label endLabel = new Label();
+    GenEnv subEnv = env.newLoopLabel(endLabel);
 
     if (node.getInit() != null) {
-      accept(node.getInit(), env);
+      accept(node.getInit(), subEnv);
     }
     mv.visitJumpInsn(GOTO, conditionLabel);
 
     // loop body
     mv.visitLabel(loopBodyLabel);
-    accept(node.getBody(), env);
+    accept(node.getBody(), subEnv);
     if (node.getIncrement() != null) {
-      accept(node.getIncrement(), env);
+      accept(node.getIncrement(), subEnv);
       mv.visitInsn(POP);
     }
 
     // loop condition
     mv.visitLabel(conditionLabel);
     if (node.getCondition() != null) {
-      accept(node.getCondition(), env.newIf(new IfBranches(false, loopBodyLabel, null)));
+      accept(node.getCondition(), subEnv.newIf(new IfBranches(false, loopBodyLabel, null)));
     } else {
       mv.visitJumpInsn(GOTO, loopBodyLabel);
     }
     mv.visitLabel(endLabel);
 
+    return null;
+  }
+
+  @Override
+  public GenResult visitBreakStatement(DartBreakStatement node, GenEnv env) {
+    MethodVisitor mv = env.getMethodVisitor();
+    mv.visitJumpInsn(GOTO, env.getLoopLabel());
     return null;
   }
 
@@ -895,17 +924,24 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     if (ifBranches != null) {
       int opcode;
       boolean inversed = ifBranches.isInversed();
-
-
       if (operator == Token.ASSIGN) {
         accept(expr2, subEnv);
         Type type2 = asJVMType(typeMap.get(expr2), TypeContext.VAR_TYPE);
+        VariableElement element = (VariableElement) expr1.getElement();
+        int slot = subEnv.getVar(element).getSlot();
         switch (type2.getSort()) {
         case Type.OBJECT:
-          mv.visitVarInsn(ASTORE, subEnv.getVar((VariableElement) expr1.getElement()).getSlot());
+          mv.visitVarInsn(ASTORE, slot);
           return null;
         case Type.INT:
-          mv.visitVarInsn(ISTORE, subEnv.getVar((VariableElement) expr1.getElement()).getSlot());
+          mv.visitVarInsn(ISTORE, slot);
+          return null;
+        case Type.DOUBLE:
+          mv.visitVarInsn(DSTORE, slot);
+          return null;
+        case Type.LONG:
+          System.out.println(node);
+          mv.visitVarInsn(LSTORE, slot);
           return null;
         default:
           throw new UnsupportedOperationException("Assign: " + type2.getSort());
@@ -920,12 +956,46 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         opcode = (inversed)? IF_ICMPGE: IF_ICMPLT;
         mv.visitJumpInsn(opcode, ifBranches.getElseLabel());
         return null;
+      case GT:
+        opcode = (inversed)? IF_ICMPLE: IF_ICMPGT;
+        mv.visitJumpInsn(opcode, ifBranches.getElseLabel());
+        return null;
+      case EQ:
+        opcode = (inversed)? IF_ICMPNE: IF_ICMPEQ;
+        mv.visitJumpInsn(opcode, ifBranches.getElseLabel());
+        return null;
+      case NE:
+        opcode = (inversed)? IF_ICMPEQ : IF_ICMPNE;
+        mv.visitJumpInsn(opcode, ifBranches.getElseLabel());
+        return null;
       default:
         throw new UnsupportedOperationException("operator " + operator + " (" + operator.name() + ")");
       }
     }
 
     switch(operator) {
+    case ASSIGN:
+      Type type2 = asJVMType(typeMap.get(expr2), TypeContext.VAR_TYPE);
+      int sort = type2.getSort();
+      if (sort == Type.OBJECT || sort == Type.INT || sort == Type.DOUBLE) {
+        accept(expr2, subEnv);
+        VariableElement element = (VariableElement) expr1.getElement();
+
+        int slot = subEnv.getVar(element).getSlot();
+        switch (sort) {
+        case Type.OBJECT:
+          mv.visitVarInsn(ASTORE, slot);
+          return null;
+        case Type.INT:
+          mv.visitVarInsn(ISTORE, slot);
+          return null;
+        case Type.DOUBLE:
+          // TODO weird, we need to duplicate before store? 
+          mv.visitInsn(DUP2);
+          mv.visitVarInsn(DSTORE, slot);
+          return null;
+        }
+      }
     case SUB:
     case ADD:
     case MUL:
@@ -947,10 +1017,34 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
             case SUB:
               mv.visitInsn(ISUB);
               return;
+            case SHL:
+              if (returnType == Type.INT_TYPE) {
+                mv.visitInsn(ISHL);
+              } else {
+                mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "shl", "(II)Ljdart/runtime/BigInt;");
+              }
+              return;
             default:
               throw new UnsupportedOperationException("binary no overflow " + operator + "(" + type1 + "" + type2 + ")" + returnType);
             }
           }
+
+          if (sort1 == Type.DOUBLE && sort2 == Type.DOUBLE) {
+            switch(operator) {
+            case ADD:
+              mv.visitInsn(DADD);
+              return;
+            case SUB:
+              mv.visitInsn(DSUB);
+              return;
+            case MUL:
+              mv.visitInsn(DMUL);
+              return;
+            default:
+              throw new UnsupportedOperationException("binary no overflow " + operator + "(" + type1 + "" + type2 + ")" + returnType);
+            }
+          }
+
           if (sort1 == Type.DOUBLE && sort2 == Type.INT) {
             switch(operator) {
             case MUL:
@@ -973,11 +1067,23 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
           MethodVisitor mv = env.getMethodVisitor();
           if (type1 == Type.INT_TYPE && type2 == Type.INT_TYPE) {
             switch(operator) {
+            case ASSIGN:
+              mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "assignExact", "(II)I");
+              return;
             case ADD:
               mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "addExact", "(II)I");
               return;
             case SUB:
               mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "subtractExact", "(II)I");
+              return;
+            case SHL:
+              mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "shlExact", "(II)I");
+              return;
+            case BIT_OR:
+              mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "bitOrExact", "(II)I");
+              return;
+            case BIT_XOR:
+              mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "bitXorExact", "(II)I");
               return;
             default:
               throw new UnsupportedOperationException("binary with overflow " + operator + " " +returnType+" "+type1+" "+type2);
@@ -1099,6 +1205,17 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         accept(arg, env);
         mv.visitInsn(ICONST_1);
         mv.visitInsn(IADD);
+        Var var = env.getVar((VariableElement) element);
+        mv.visitIntInsn(ISTORE, var.getSlot());
+        accept(arg, env);
+        return null;
+      }
+    case DEC:
+      //TODO double type
+      if (type == INT_TYPE) {
+        accept(arg, env);
+        mv.visitInsn(ICONST_1);
+        mv.visitInsn(ISUB);
         Var var = env.getVar((VariableElement) element);
         mv.visitIntInsn(ISTORE, var.getSlot());
         accept(arg, env);
