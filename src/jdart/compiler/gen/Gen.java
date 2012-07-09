@@ -61,6 +61,7 @@ import com.google.dart.compiler.ast.DartBinaryExpression;
 import com.google.dart.compiler.ast.DartBlock;
 import com.google.dart.compiler.ast.DartBooleanLiteral;
 import com.google.dart.compiler.ast.DartBreakStatement;
+import com.google.dart.compiler.ast.DartContinueStatement;
 import com.google.dart.compiler.ast.DartDoWhileStatement;
 import com.google.dart.compiler.ast.DartDoubleLiteral;
 import com.google.dart.compiler.ast.DartEmptyStatement;
@@ -620,13 +621,15 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     MethodVisitor mv = env.getMethodVisitor();
     Label loopBodyLabel = new Label();
     Label endLabel = new Label();
-    GenEnv subEnv = env.newLoopLabel(endLabel);
+    Label continueLabel = new Label();
+    GenEnv subEnv = env.newLoopLabels(endLabel, continueLabel);
     // TODO continue.
 
     // loop body
     mv.visitLabel(loopBodyLabel);
     accept(node.getBody(), subEnv);
 
+    mv.visitLabel(continueLabel);
     if (node.getCondition() != null) {
       accept(node.getCondition(), subEnv.newIf(new IfBranches(false, loopBodyLabel, endLabel)));
     }
@@ -641,7 +644,8 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     Label conditionLabel = new Label();
     Label loopBodyLabel = new Label();
     Label endLabel = new Label();
-    GenEnv subEnv = env.newLoopLabel(endLabel);
+    Label continueLabel = new Label();
+    GenEnv subEnv = env.newLoopLabels(endLabel, continueLabel);
 
     if (node.getInit() != null) {
       accept(node.getInit(), subEnv);
@@ -651,6 +655,9 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     // loop body
     mv.visitLabel(loopBodyLabel);
     accept(node.getBody(), subEnv);
+    
+    // increment
+    mv.visitLabel(continueLabel);
     if (node.getIncrement() != null) {
       accept(node.getIncrement(), subEnv);
       mv.visitInsn(POP);
@@ -670,8 +677,13 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
 
   @Override
   public GenResult visitBreakStatement(DartBreakStatement node, GenEnv env) {
-    MethodVisitor mv = env.getMethodVisitor();
-    mv.visitJumpInsn(GOTO, env.getLoopLabel());
+    env.getMethodVisitor().visitJumpInsn(GOTO, env.getBreakLabel());
+    return null;
+  }
+  
+  @Override
+  public GenResult visitContinueStatement(DartContinueStatement node, GenEnv env) {
+    env.getMethodVisitor().visitJumpInsn(GOTO, env.getContinueLabel());
     return null;
   }
 
@@ -984,10 +996,16 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       if (sort == Type.OBJECT || sort == Type.INT || sort == Type.DOUBLE) {
         accept(expr2, env);
         VariableElement element = (VariableElement) expr1.getElement();
+        int slot;
+        Var previousVar = subEnv.getVar(element);
+        if (previousVar == null || previousVar.getType() != type2) {
+          Var newVar = env.newVar(type2);
+          subEnv.registerVar(element, newVar);
+          slot = newVar.getSlot();
+        } else {
+          slot = previousVar.getSlot();
+        }
         
-        Var newVar = env.newVar(type2);
-        subEnv.registerVar(element, newVar);
-        int slot = newVar.getSlot();
         Type type = asJVMType(typeMap.get(node), TypeContext.VAR_TYPE);
         if (type != VOID_TYPE) {
           mv.visitInsn(type.getSize() == 1 ? DUP : DUP2);

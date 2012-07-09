@@ -15,14 +15,15 @@ class GenEnv {
   private final Type returnType;
   private final int mixedIntShift;  // 0 for int and 1 for BigInt
   private final IfBranches ifBranches;
-  
+
   private final /*maybenull*/GenEnv parent;
   private final HashMap<VariableElement, Var> variableMap;
   private int slotCount;
 
-  private final Label loopLabel;
-  
-  private GenEnv(MethodVisitor methodVisitor, MethodVisitor sideMethodVisitor, Type returnType, int mixedIntShift, IfBranches ifBranches, /*maybenull*/GenEnv parent, HashMap<VariableElement, Var> variableMap, int slotCount, Label loopLabel) {
+  private final Label breakLabel;
+  private final Label continueLabel;
+
+  private GenEnv(MethodVisitor methodVisitor, MethodVisitor sideMethodVisitor, Type returnType, int mixedIntShift, IfBranches ifBranches, /*maybenull*/GenEnv parent, HashMap<VariableElement, Var> variableMap, int slotCount, Label breakabel, Label continueLabel) {
     this.methodVisitor = methodVisitor;
     this.sideMethodVisitor = sideMethodVisitor;
     this.returnType = returnType;
@@ -31,13 +32,14 @@ class GenEnv {
     this.parent = parent;
     this.variableMap = variableMap;
     this.slotCount = slotCount;
-    this.loopLabel = loopLabel;
+    this.breakLabel = breakabel;
+    this.continueLabel = continueLabel;
   }
-  
+
   public GenEnv(MethodVisitor methodVisitor, MethodVisitor sideMethodVisitor, Type returnType, int slotCount) {
-    this(methodVisitor, sideMethodVisitor, returnType, 0, null, null, new HashMap<VariableElement, Var>(), slotCount, null);
+    this(methodVisitor, sideMethodVisitor, returnType, 0, null, null, new HashMap<VariableElement, Var>(), slotCount, null, null);
   }
-  
+
   public MethodVisitor getMethodVisitor() {
     return methodVisitor;
   }
@@ -53,15 +55,15 @@ class GenEnv {
   public /*maybenull*/IfBranches getIfBranches() {
     return ifBranches;
   }
-  
+
   public GenEnv newSplitPathEnv(MethodVisitor mv, int mixedIntShift) {
-    return new GenEnv(mv, sideMethodVisitor, returnType, mixedIntShift, ifBranches, parent, variableMap, slotCount, loopLabel);
+    return new GenEnv(mv, sideMethodVisitor, returnType, mixedIntShift, ifBranches, parent, variableMap, slotCount, breakLabel, continueLabel);
   }
-  
+
   public GenEnv newIf(IfBranches ifBranches) {
-    return new GenEnv(methodVisitor, sideMethodVisitor, returnType, mixedIntShift, ifBranches, parent, variableMap, slotCount, loopLabel);
+    return new GenEnv(methodVisitor, sideMethodVisitor, returnType, mixedIntShift, ifBranches, parent, variableMap, slotCount, breakLabel, continueLabel);
   }
-  
+
   public Var newVar(Type type) {
     Objects.requireNonNull(type);
     int slot = slotCount;
@@ -69,13 +71,13 @@ class GenEnv {
     Var var = new Var(type, slot);
     return var;
   }
-  
+
   public void registerVar(VariableElement element, Var var) {
     Objects.requireNonNull(element);
     Objects.requireNonNull(var);
     variableMap.put(element, var);
   }
-  
+
   public Var getVar(VariableElement element) {
     Var var = variableMap.get(element);
     if (var != null) {
@@ -87,13 +89,16 @@ class GenEnv {
     return null;
   }
 
-  public GenEnv newLoopLabel(Label label) {
-    return new GenEnv(methodVisitor, sideMethodVisitor, returnType, mixedIntShift, ifBranches, parent, variableMap, slotCount, label);
+  public GenEnv newLoopLabels(Label breakLabel, Label continueLabel) {
+    return new GenEnv(methodVisitor, sideMethodVisitor, returnType, mixedIntShift, ifBranches, parent, variableMap, slotCount, breakLabel, continueLabel);
   }
 
-  public Label getLoopLabel() {
-  //TODO MODIFIED
-    return loopLabel;
+  public Label getBreakLabel() {
+    return breakLabel;
+  }
+
+  public Label getContinueLabel() {
+    return continueLabel;
   }
 
   @Override
