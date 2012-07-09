@@ -647,9 +647,9 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     DartExpression arg1 = node.getArg1();
     DartExpression arg2 = node.getArg2();
     Type type1 = accept(arg1, parameter);
-    Type type2 = accept(arg2, parameter);
+    Type type2 = accept(arg2, parameter.expectedType(DYNAMIC_TYPE));
     Token operator = node.getOperator();
-
+    
     if (!operator.isAssignmentOperator()) {
       return visitBinaryOp(node, operator, arg1, type1, arg2, type2, parameter);
     }
@@ -674,11 +674,11 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     case VARIABLE:
     case PARAMETER:
       parameter.register((VariableElement) element1, resultType);
-      return resultType;
+      return parameter.getExpectedType().equals(VOID_TYPE) ? VOID_TYPE : resultType;
     case FIELD:
-      return resultType;
+      return parameter.getExpectedType().equals(VOID_TYPE) ? VOID_TYPE : resultType;
     case METHOD:
-      return resultType;
+      return parameter.getExpectedType().equals(VOID_TYPE) ? VOID_TYPE : resultType;
     default:
       throw new AssertionError("Assignment Expr: " + element1.getKind() + " not implemented");
     }
@@ -849,7 +849,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
   }
 
-  Type visitBinaryOp(final DartBinaryExpression node, final Token operator, final DartExpression arg1, final Type type1, final DartExpression arg2,
+  Type visitBinaryOp(final DartBinaryExpression node, final Token operator, final DartExpression arg1, final Type type1, final DartExpression arg2, 
       final Type type2, final FlowEnv flowEnv) {
     if (type1 instanceof UnionType) {
       return type1.map(new TypeMapper() {

@@ -169,10 +169,15 @@ public class DoubleType extends PrimitiveType implements NumType {
   @Override
   public Type lessThanValues(Type other, boolean inLoop) {
     if (other instanceof DoubleType) {
-      if (constant.compareTo((Double) other.asConstant()) < 0) {
-        return this;
+      if (constant != null) {
+        if (((DoubleType) other).constant != null) {
+          if (constant.compareTo((Double) other.asConstant()) < 0) {
+            return this;
+          }
+          return null;
+        }
       }
-      return null;
+      return DOUBLE_NON_NULL_TYPE;
     }
 
     if (other instanceof IntType) {
@@ -201,10 +206,15 @@ public class DoubleType extends PrimitiveType implements NumType {
   @Override
   public Type greaterThanOrEqualsValues(Type other, boolean inLoop) {
     if (other instanceof DoubleType) {
-      if (constant.compareTo((Double) other.asConstant()) >= 0) {
-        return this;
-      }
-      return null;
+        if (constant != null) {
+          if (((DoubleType) other).constant != null) {
+            if (constant.compareTo((Double) other.asConstant()) >= 0) {
+              return this;
+            }
+            return null;
+          }
+        }
+        return DOUBLE_NON_NULL_TYPE;
     }
 
     if (other instanceof IntType) {

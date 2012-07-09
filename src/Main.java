@@ -86,8 +86,9 @@ public class Main {
   public static void main(String[] args) throws IOException {
     String sdkPath = "../../dart-sdk/";
 
-    String[] paths = { 
-         "DartTest/BigMandelbrot.dart",
+    String[] paths = {
+        "DartTest/Doubles.dart",
+//        "DartTest/BigMandelbrot.dart",
 //        "DartTest/DoWhile.dart",
 //        "DartTest/BinaryOpDoubles.dart",
 //        "DartTest/For2.dart",

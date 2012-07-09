@@ -95,4 +95,9 @@ class GenEnv {
   //TODO MODIFIED
     return loopLabel;
   }
+
+  @Override
+  public String toString() {
+    return "GenEnv " + variableMap;
+  }
 }

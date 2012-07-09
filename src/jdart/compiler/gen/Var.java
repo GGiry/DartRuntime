@@ -17,4 +17,9 @@ public class Var {
   public int getSlot() {
     return slot;
   }
+  
+  @Override
+  public String toString() {
+    return "[" + type.getClassName() + ", " + slot + "]";
+  }
 }

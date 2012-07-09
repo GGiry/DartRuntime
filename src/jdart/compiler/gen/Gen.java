@@ -621,13 +621,14 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     Label loopBodyLabel = new Label();
     Label endLabel = new Label();
     GenEnv subEnv = env.newLoopLabel(endLabel);
+    // TODO continue.
 
     // loop body
     mv.visitLabel(loopBodyLabel);
     accept(node.getBody(), subEnv);
 
     if (node.getCondition() != null) {
-      accept(node.getCondition(), subEnv.newIf(new IfBranches(false, loopBodyLabel, null)));
+      accept(node.getCondition(), subEnv.newIf(new IfBranches(false, loopBodyLabel, endLabel)));
     }
     mv.visitLabel(endLabel);
 
@@ -658,7 +659,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     // loop condition
     mv.visitLabel(conditionLabel);
     if (node.getCondition() != null) {
-      accept(node.getCondition(), subEnv.newIf(new IfBranches(false, loopBodyLabel, null)));
+      accept(node.getCondition(), subEnv.newIf(new IfBranches(false, loopBodyLabel, endLabel)));
     } else {
       mv.visitJumpInsn(GOTO, loopBodyLabel);
     }
@@ -724,8 +725,9 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         int mixedIntShift = env.getMixedIntShift();
         type = (mixedIntShift == 0)? Type.INT_TYPE: BIGINT_TYPE;
         slot += mixedIntShift;
-      }
-      mv.visitVarInsn(type.getOpcode(ILOAD), slot);
+      } else {
+        mv.visitVarInsn(type.getOpcode(ILOAD), slot);
+      } 
       return (type == MIXEDINT_TYPE)? new GenResult(slot, var): null;
 
     case FIELD:
@@ -928,7 +930,10 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         accept(expr2, subEnv);
         Type type2 = asJVMType(typeMap.get(expr2), TypeContext.VAR_TYPE);
         VariableElement element = (VariableElement) expr1.getElement();
-        int slot = subEnv.getVar(element).getSlot();
+        
+        env.registerVar(element, env.newVar(type2));
+        Var var = env.getVar(element);
+        int slot = var.getSlot();
         switch (type2.getSort()) {
         case Type.OBJECT:
           mv.visitVarInsn(ASTORE, slot);
@@ -940,7 +945,6 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
           mv.visitVarInsn(DSTORE, slot);
           return null;
         case Type.LONG:
-          System.out.println(node);
           mv.visitVarInsn(LSTORE, slot);
           return null;
         default:
@@ -978,10 +982,16 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       Type type2 = asJVMType(typeMap.get(expr2), TypeContext.VAR_TYPE);
       int sort = type2.getSort();
       if (sort == Type.OBJECT || sort == Type.INT || sort == Type.DOUBLE) {
-        accept(expr2, subEnv);
+        accept(expr2, env);
         VariableElement element = (VariableElement) expr1.getElement();
-
-        int slot = subEnv.getVar(element).getSlot();
+        
+        Var newVar = env.newVar(type2);
+        subEnv.registerVar(element, newVar);
+        int slot = newVar.getSlot();
+        Type type = asJVMType(typeMap.get(node), TypeContext.VAR_TYPE);
+        if (type != VOID_TYPE) {
+          mv.visitInsn(type.getSize() == 1 ? DUP : DUP2);
+        }
         switch (sort) {
         case Type.OBJECT:
           mv.visitVarInsn(ASTORE, slot);
@@ -990,8 +1000,6 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
           mv.visitVarInsn(ISTORE, slot);
           return null;
         case Type.DOUBLE:
-          // TODO weird, we need to duplicate before store? 
-          mv.visitInsn(DUP2);
           mv.visitVarInsn(DSTORE, slot);
           return null;
         }
