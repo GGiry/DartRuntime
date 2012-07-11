@@ -375,9 +375,10 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
       methodRecorder.replay(mv);
 
       try {
-        mv.visitMaxs(0, 0);          
+        mv.visitMaxs(0, 0);
       } catch (Exception e) {
-        // TODO remove try {} catch {}.
+        //TODO remove try catch block
+        ;
       }
     }
 
@@ -623,7 +624,6 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     Label endLabel = new Label();
     Label continueLabel = new Label();
     GenEnv subEnv = env.newLoopLabels(endLabel, continueLabel);
-    // TODO continue.
 
     // loop body
     mv.visitLabel(loopBodyLabel);
@@ -655,12 +655,11 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     // loop body
     mv.visitLabel(loopBodyLabel);
     accept(node.getBody(), subEnv);
-    
+
     // increment
     mv.visitLabel(continueLabel);
     if (node.getIncrement() != null) {
       accept(node.getIncrement(), subEnv);
-      mv.visitInsn(POP);
     }
 
     // loop condition
@@ -680,7 +679,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     env.getMethodVisitor().visitJumpInsn(GOTO, env.getBreakLabel());
     return null;
   }
-  
+
   @Override
   public GenResult visitContinueStatement(DartContinueStatement node, GenEnv env) {
     env.getMethodVisitor().visitJumpInsn(GOTO, env.getContinueLabel());
@@ -805,6 +804,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     int slot1;
     GenResult result1 = accept(expr1, env);
     if (result1 == null) {
+      // FIXME type1 can be MIXEDINT.
       Var var = env.newVar(type1);
       slot1 = var.getSlot();
       mv.visitVarInsn(type1.getOpcode(ISTORE), slot1);
@@ -815,6 +815,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
     int slot2;
     GenResult result2 = accept(expr2, env);
     if (result2 == null) {
+      // FIXME type2 can be MIXEDINT.
       Var var = env.newVar(type2);
       slot2 = var.getSlot();
       mv.visitVarInsn(type1.getOpcode(ISTORE), slot2);
@@ -942,7 +943,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         accept(expr2, subEnv);
         Type type2 = asJVMType(typeMap.get(expr2), TypeContext.VAR_TYPE);
         VariableElement element = (VariableElement) expr1.getElement();
-        
+
         env.registerVar(element, env.newVar(type2));
         Var var = env.getVar(element);
         int slot = var.getSlot();
@@ -1005,7 +1006,7 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         } else {
           slot = previousVar.getSlot();
         }
-        
+
         Type type = asJVMType(typeMap.get(node), TypeContext.VAR_TYPE);
         if (type != VOID_TYPE) {
           mv.visitInsn(type.getSize() == 1 ? DUP : DUP2);
@@ -1094,7 +1095,8 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
           if (type1 == Type.INT_TYPE && type2 == Type.INT_TYPE) {
             switch(operator) {
             case ASSIGN:
-              mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "assignExact", "(II)I");
+              StringBuilder desc = new StringBuilder("(II)").append(env.getReturnType().getDescriptor());
+              mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "assignExact", desc.toString());
               return;
             case ADD:
               mv.visitMethodInsn(INVOKESTATIC, RT_CLASS, "addExact", "(II)I");
@@ -1233,7 +1235,9 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         mv.visitInsn(IADD);
         Var var = env.getVar((VariableElement) element);
         mv.visitIntInsn(ISTORE, var.getSlot());
-        accept(arg, env);
+        if (env.getReturnType() != VOID_TYPE) {
+          accept(arg, env);
+        }
         return null;
       }
     case DEC:
@@ -1244,7 +1248,9 @@ public class Gen extends ASTVisitor2<GenResult, GenEnv> {
         mv.visitInsn(ISUB);
         Var var = env.getVar((VariableElement) element);
         mv.visitIntInsn(ISTORE, var.getSlot());
-        accept(arg, env);
+        if (env.getReturnType() != VOID_TYPE) {
+          accept(arg, env);
+        }
         return null;
       }
     default:

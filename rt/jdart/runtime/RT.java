@@ -151,8 +151,7 @@ public class RT {
     return r1 << r2;
   }
   
-  public static int assignExact(int r1, int r2) {
+  public static void assignExact(int r1, int r2) {
     r1 = r2;
-    return r2;
   }
 }
