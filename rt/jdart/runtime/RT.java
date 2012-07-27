@@ -142,16 +142,28 @@ public class RT {
     return result;
   }
   
+  public static BigInt sub(int r1, BigInt r2) {
+    return BigInt.valueOf(r1).subtract(r2);
+  }
+  
   public static BigInt shl(int r1, int r2) {
     BigInt _r1 = BigInt.valueOf(r1);
     return _r1.shiftLeft(r2);
   }
   
-  public static int shlExact(int r1, int r2) {
-    return r1 << r2;
+  public static BigInt shl(BigInt r1, int r2) {
+    return r1.shiftLeft(r2);
   }
   
-  public static void assignExact(int r1, int r2) {
-    r1 = r2;
+  public static int shlExact(int r1, int r2) {
+    int result = r1 << r2;
+    if (((r1 ^ result) & (r2 ^ result)) < 0) {
+      throw new ArithmeticException("integer overflow");
+    }
+    return result;
+  }
+  
+  public static int bitOrExact(int r1, int r2) {
+     return r1 | r2;
   }
 }

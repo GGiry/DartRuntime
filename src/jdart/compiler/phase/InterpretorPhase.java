@@ -12,7 +12,6 @@ import com.google.dart.compiler.parser.Token;
 import com.google.dart.compiler.resolver.CoreTypeProvider;
 
 public class InterpretorPhase implements DartCompilationPhase {
-
   private static HashMap<String, DartExpression> map = new HashMap<>();
 
   @Override

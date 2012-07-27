@@ -4,16 +4,21 @@ import java.util.HashSet;
 
 import jdart.compiler.visitor.ASTVisitor2;
 
+import com.google.dart.compiler.ast.DartArrayAccess;
 import com.google.dart.compiler.ast.DartBinaryExpression;
 import com.google.dart.compiler.ast.DartBlock;
 import com.google.dart.compiler.ast.DartBreakStatement;
 import com.google.dart.compiler.ast.DartDoWhileStatement;
+import com.google.dart.compiler.ast.DartDoubleLiteral;
 import com.google.dart.compiler.ast.DartEmptyStatement;
 import com.google.dart.compiler.ast.DartExprStmt;
 import com.google.dart.compiler.ast.DartExpression;
 import com.google.dart.compiler.ast.DartForStatement;
+import com.google.dart.compiler.ast.DartIdentifier;
 import com.google.dart.compiler.ast.DartIfStatement;
+import com.google.dart.compiler.ast.DartIntegerLiteral;
 import com.google.dart.compiler.ast.DartNode;
+import com.google.dart.compiler.ast.DartParenthesizedExpression;
 import com.google.dart.compiler.ast.DartStatement;
 import com.google.dart.compiler.ast.DartUnaryExpression;
 import com.google.dart.compiler.ast.DartUnqualifiedInvocation;
@@ -77,6 +82,8 @@ class LoopVisitor extends ASTVisitor2<Void, HashSet<VariableElement>> {
   
   @Override
   public Void visitBinaryExpression(DartBinaryExpression node, HashSet<VariableElement> parameter) {
+    accept(node.getArg1(), parameter);
+    accept(node.getArg2(), parameter);
     if (node.getOperator().isAssignmentOperator()) {
       if (node.getArg1().getElement() instanceof VariableElement) {
         parameter.add((VariableElement) node.getArg1().getElement());
@@ -130,6 +137,32 @@ class LoopVisitor extends ASTVisitor2<Void, HashSet<VariableElement>> {
   @Override
   public Void visitVariable(DartVariable node, HashSet<VariableElement> parameter) {
     parameter.add(node.getElement());
+    return null;
+  }
+  
+  @Override
+  public Void visitIdentifier(DartIdentifier node, HashSet<VariableElement> parameter) {
+    return null;
+  }
+  
+  @Override
+  public Void visitIntegerLiteral(DartIntegerLiteral node, HashSet<VariableElement> parameter) {
+    return null;
+  }
+  
+  @Override
+  public Void visitDoubleLiteral(DartDoubleLiteral node, HashSet<VariableElement> parameter) {
+    return null;
+  }
+  
+  @Override
+  public Void visitArrayAccess(DartArrayAccess node, HashSet<VariableElement> parameter) {
+    accept(node.getKey(), parameter);
+    return null;
+  }
+  
+  @Override
+  public Void visitParenthesizedExpression(DartParenthesizedExpression node, HashSet<VariableElement> parameter) {
     return null;
   }
   

@@ -1,11 +1,14 @@
 package jdart.compiler.gen;
 
+import static org.objectweb.asm.Type.BOOLEAN_TYPE;
+import static org.objectweb.asm.Type.DOUBLE_TYPE;
+import static org.objectweb.asm.Type.INT_TYPE;
+import static org.objectweb.asm.Type.VOID_TYPE;
+
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import org.objectweb.asm.Type;
 
 import jdart.compiler.type.ArrayType;
 import jdart.compiler.type.BoolType;
@@ -21,7 +24,7 @@ import jdart.compiler.type.UnionType;
 import jdart.compiler.type.VoidType;
 import jdart.runtime.BigInt;
 
-import static org.objectweb.asm.Type.*;
+import org.objectweb.asm.Type;
 
 class JVMTypes {
   static final Type OBJECT_TYPE = Type.getType(Object.class);
@@ -66,6 +69,7 @@ class JVMTypes {
     }
     return typeList;
   }
+
   public static Type asJVMType(jdart.compiler.type.Type type, final TypeContext typeContext) {
     return type.accept(new TypeVisitor<Type, Void>() {
       @Override

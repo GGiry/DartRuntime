@@ -30,7 +30,7 @@ import com.google.dart.compiler.resolver.MethodNodeElement;
 import com.google.dart.compiler.resolver.Resolver;
 
 public class Main {
-  public static void compile(File sourceFile, String sdkPath) throws IOException {
+  public static void compile(File sourceFile, String sdkPath, boolean debug) throws IOException {
     File sdkFile = new File(sdkPath);
 
     CompilerOptions compilerOptions = new CompilerOptions();
@@ -87,6 +87,9 @@ public class Main {
     String sdkPath = "../../dart-sdk/";
 
     String[] paths = {
+//        "DartTest/SimpleLoop.dart",
+//        "DartTest/assign.dart",
+//        "DartTest/Loop.dart"
 //        "DartTest/Doubles.dart",
         "DartTest/BigMandelbrot.dart",
 //        "DartTest/DoWhile.dart",
@@ -94,8 +97,8 @@ public class Main {
 //        "DartTest/For2.dart",
 //        "DartTest/UnaryInc.dart",
 //        "DartTest/SimpleClazz.dart",
-        // "DartTest/inc.dart",
-        // "DartTest/shl.dart",
+//         "DartTest/inc.dart",
+//         "DartTest/shl.dart",
         // "DartTest/Fibo.dart",
         // "DartTest/Multiply.dart",
         // "DartTest/Hello.dart",
@@ -103,7 +106,7 @@ public class Main {
 
     for (String path : paths) {
       File sourceFile = new File(path);
-      compile(sourceFile, sdkPath);
+      compile(sourceFile, sdkPath, false);
     }
   }
 }

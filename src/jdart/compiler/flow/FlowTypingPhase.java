@@ -16,7 +16,7 @@ import com.google.dart.compiler.resolver.CoreTypeProvider;
 import com.google.dart.compiler.resolver.Element;
 import com.google.dart.compiler.resolver.MethodElement;
 
-public class FlowTypingPhase implements DartCompilationPhase {
+public class FlowTypingPhase implements DartCompilationPhase {  
   @Override
   public DartUnit exec(DartUnit unit, DartCompilerContext context, CoreTypeProvider coreTypeProvider) {
     // initialize core type repository

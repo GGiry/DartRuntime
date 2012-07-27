@@ -4,6 +4,7 @@ import static jdart.compiler.flow.Liveness.ALIVE;
 import static jdart.compiler.flow.Liveness.DEAD;
 import static jdart.compiler.type.CoreTypeRepository.*;
 
+import java.io.PrintStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -79,9 +80,12 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
   private final StatementVisitor statementVisitor;
 
   private final HashMap<DartNode, Type> typeMap = new HashMap<>();
-  final HashMap<DartNode, Liveness> livenessMap = new HashMap<>();
-  final HashMap<DartNode, Map<VariableElement, Type>> phiTableMap = new HashMap<>();
+  private final HashMap<DartNode, Liveness> livenessMap = new HashMap<>();
+  private final HashMap<DartNode, Map<VariableElement, Type>> phiTableMap = new HashMap<>();
   private Type inferredReturnType;
+  
+  public boolean debug;
+  public PrintStream debugStream = System.out;
 
   public FTVisitor(TypeHelper typeHelper, MethodCallResolver methodCallResolver) {
     this.typeHelper = typeHelper;
@@ -346,7 +350,8 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
           flowEnv.copyAll(envElse);
         }
       }
-      phiTableMap.put(node, flowEnv.mapDiff(beforeConditionMap));
+      Map<VariableElement, Type> mapDiff = flowEnv.mapDiff(beforeConditionMap);
+      phiTableMap.put(node, mapDiff);
       return (trueLiveness == ALIVE && falseLiveness == ALIVE) ? ALIVE : DEAD;
     }
     
@@ -357,8 +362,11 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       LoopVisitor loopVisitor = new LoopVisitor();
       HashSet<VariableElement> changeSet = new HashSet<>();
       loopVisitor.accept(node, changeSet);
+      changeSet = removeUnknow(changeSet, flowEnv);
       
-      //removeUnknow(changeSet, flowEnv);
+      for (VariableElement element : changeSet) {
+        flowEnv.register(element, Types.widening(flowEnv.getType(element)));
+      }
 
       FlowEnv loopEnv = new FlowEnv(flowEnv, flowEnv.getReturnType(), flowEnv.getExpectedType(), true, changeSet);
       FlowEnv afterLoopEnv = new FlowEnv(flowEnv);
@@ -387,8 +395,20 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
       flowEnv.copyAll(loopEnv);
       flowEnv.copyAll(afterLoopEnv);
-      phiTableMap.put(node, flowEnv.mapDiff(beforeLoopMap));
+      Map<VariableElement, Type> mapDiff = flowEnv.mapDiff(beforeLoopMap);
+      phiTableMap.put(node, mapDiff);
       return ALIVE;
+    }
+
+    // remove all variables from changeSet which are not in flowEnv.
+    private HashSet<VariableElement> removeUnknow(HashSet<VariableElement> changeSet, FlowEnv flowEnv) {
+      HashSet<VariableElement> result = new HashSet<>();
+      for (VariableElement element : changeSet) {
+        if (flowEnv.getType(element) != null) {
+          result.add(element);
+        }
+      }
+      return result;
     }
 
     @Override
@@ -670,18 +690,10 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     }
 
     Element element1 = arg1.getElement();
-    switch (element1.getKind()) {
-    case VARIABLE:
-    case PARAMETER:
+    if (element1 != null) {
       parameter.register((VariableElement) element1, resultType);
-      return parameter.getExpectedType().equals(VOID_TYPE) ? VOID_TYPE : resultType;
-    case FIELD:
-      return parameter.getExpectedType().equals(VOID_TYPE) ? VOID_TYPE : resultType;
-    case METHOD:
-      return parameter.getExpectedType().equals(VOID_TYPE) ? VOID_TYPE : resultType;
-    default:
-      throw new AssertionError("Assignment Expr: " + element1.getKind() + " not implemented");
     }
+    return parameter.getExpectedType().equals(VOID_TYPE) ? VOID_TYPE : resultType;
   }
 
   private static Type opIntInt(Token operator, DartExpression arg1, Type type1, DartExpression arg2, Type type2, FlowEnv flowEnv) {
@@ -851,6 +863,7 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
 
   Type visitBinaryOp(final DartBinaryExpression node, final Token operator, final DartExpression arg1, final Type type1, final DartExpression arg2, 
       final Type type2, final FlowEnv flowEnv) {
+    
     if (type1 instanceof UnionType) {
       return type1.map(new TypeMapper() {
         @Override
@@ -910,40 +923,58 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
     DartExpression arg = node.getArg();
     Token operator = node.getOperator();
     Type type = accept(arg, parameter);
+    Type resultType = null;
     switch (operator) {
     case NOT:
       if (type instanceof BoolType) {
-        return ((BoolType) type).not();
+        resultType = ((BoolType) type).not();
       }
       break;
     case BIT_NOT:
       if (type instanceof IntType) {
-        return ((IntType) type).bitNot();
+        resultType = ((IntType) type).bitNot();
       }
       break;
     case INC:
       if (type instanceof NumType) {
-        return ((NumType) type).add(IntType.constant(BigInteger.ONE));
+        resultType = ((NumType) type).add(IntType.constant(BigInteger.ONE));
       }
       break;
     case DEC:
       if (type instanceof NumType) {
-        return ((NumType) type).sub(IntType.constant(BigInteger.ONE));
+        resultType = ((NumType) type).sub(IntType.constant(BigInteger.ONE));
       }
       break;
     case SUB:
       if (type instanceof NumType) {
-        return ((NumType) type).unarySub();
+        resultType = ((NumType) type).unarySub();
       }
       break;
     default:
       throw new UnsupportedOperationException("Unary Expr: " + operator + " (" + operator.name() + ") not implemented for " + type + ".");
+    }
+    
+    if (resultType != null) {
+      Element element1 = arg.getElement();
+      switch (element1.getKind()) {
+      case VARIABLE:
+      case PARAMETER:
+        parameter.register((VariableElement) element1, resultType);
+        return resultType;
+      case FIELD:
+        return resultType;
+      case METHOD:
+        return resultType;
+      default:
+        throw new AssertionError("Assignment Expr: " + element1.getKind() + " not implemented");
+      }
     }
 
     if (node.getElement() == null) {
       System.err.println("NoSuchMethodException: " + node.getOperator() + " for type: " + type);
       return DYNAMIC_TYPE;
     }
+    
     return typeHelper.asType(true, node.getElement().getFunctionType().getReturnType());
   }
 
@@ -1257,5 +1288,12 @@ public class FTVisitor extends ASTVisitor2<Type, FlowEnv> {
       type = Types.union(type, constant.get(i));
     }
     return type;
+  }
+
+  /**
+   * @return the phiTableMap
+   */
+  public HashMap<DartNode, Map<VariableElement, Type>> getPhiTableMap() {
+    return phiTableMap;
   }
 }

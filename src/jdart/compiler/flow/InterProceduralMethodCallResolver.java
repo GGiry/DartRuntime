@@ -29,6 +29,7 @@ import com.google.dart.compiler.resolver.ClassElement;
 import com.google.dart.compiler.resolver.Element;
 import com.google.dart.compiler.resolver.MethodElement;
 import com.google.dart.compiler.resolver.MethodNodeElement;
+import com.google.dart.compiler.resolver.VariableElement;
 
 public class InterProceduralMethodCallResolver implements MethodCallResolver {
   final TypeHelper typeHelper;
@@ -110,7 +111,7 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
     DartFunction function = node.getFunction();
     if (function == null) {
       // native function use declared return type
-      return new ProfileInfo(typeHelper.asType(true, node.getType()), argumentTypes, null, null);
+      return new ProfileInfo(typeHelper.asType(true, node.getType()), argumentTypes, null, null, null);
     }
     
     // We should allow to propagate the type of 'this' in the flow env
@@ -132,7 +133,7 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
     Type returnType = ((FunctionType) typeHelper.asType(false, element.getType())).getReturnType();
 
     // register temporary signature with declared return type for recursive function 
-    profiles.profileMap.put(argumentTypes, new ProfileInfo(returnType, argumentTypes, null, null));
+    profiles.profileMap.put(argumentTypes, new ProfileInfo(returnType, argumentTypes, null, null, null));
     
     FTVisitor flowTypeVisitor = new FTVisitor(typeHelper, this);
     FlowEnv flowEnv = new FlowEnv(new FlowEnv(thisType), returnType, VOID_TYPE, false);
@@ -144,14 +145,16 @@ public class InterProceduralMethodCallResolver implements MethodCallResolver {
 
     Map<DartNode, Type> typeMap = null;
     Map<DartNode, Liveness> livenessMap = null;
+    Map<DartNode, Map<VariableElement, Type>> phiTableMap = null;
     DartBlock body = function.getBody();
     if (body != null) {
       flowTypeVisitor.liveness(body, flowEnv);
       returnType = flowTypeVisitor.getInferredReturnType(returnType);
       typeMap = flowTypeVisitor.getTypeMap();
       livenessMap = flowTypeVisitor.getLivenessMap();
+      phiTableMap = flowTypeVisitor.getPhiTableMap();
     }
-    return new ProfileInfo(returnType, argumentTypes, typeMap, livenessMap);
+    return new ProfileInfo(returnType, argumentTypes, typeMap, livenessMap, phiTableMap);
   }
   
   Type directCall(MethodNodeElement element, OwnerType receiverType, List<Type> argumentType, Type expectedType, boolean virtual) {

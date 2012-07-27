@@ -8,6 +8,7 @@ import static jdart.compiler.type.CoreTypeRepository.NEGATIVE_INT32_TYPE;
 import static jdart.compiler.type.CoreTypeRepository.NULL_TYPE;
 import static jdart.compiler.type.CoreTypeRepository.POSITIVE_INT32_TYPE;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 
@@ -15,10 +16,10 @@ public class Types {
   public static boolean isCompatible(Type parameterType, Type argumentType) {
     return argumentType.isIncludeIn(parameterType);
   }
-  
+
   public static boolean isCompatible(List<Type> parameterTypes, List<Type> argumentTypes) {
     assert parameterTypes.size() == argumentTypes.size();
-    
+
     for(int i=0; i<parameterTypes.size(); i++) {
       if (!isCompatible(parameterTypes.get(i), argumentTypes.get(i))) {
         return false;
@@ -26,7 +27,7 @@ public class Types {
     }
     return true;
   }
-  
+
   public static Type union(Type type1, Type type2) {
     Objects.requireNonNull(type1);
     Objects.requireNonNull(type2);
@@ -94,7 +95,6 @@ public class Types {
     }
   };
 
-  
   public static Type widening(Type type) {
     return type.accept(WIDENING_VISITOR, null);
   } // where
@@ -102,6 +102,12 @@ public class Types {
     @Override
     public Type visitIntType(IntType type, Void unused) {
       boolean nullable = type.isNullable();
+      
+      BigInteger asConstant = type.asConstant();
+      if (asConstant != null && asConstant.equals(BigInteger.ZERO)) {
+        return INT32_TYPE.asNullable(nullable);
+      }
+      
       if (type.isIncludeIn(POSITIVE_INT32_TYPE)) {
         return POSITIVE_INT32_TYPE.asNullable(nullable);
       }
@@ -113,17 +119,17 @@ public class Types {
       }
       return INT_NON_NULL_TYPE.asNullable(nullable);
     }
-    
+
     @Override
     public Type visitDoubleType(DoubleType type, Void unused) {
       return DOUBLE_NON_NULL_TYPE.asNullable(type.isNullable());
     }
-    
+
     @Override
     public Type visitBoolType(BoolType type, Void parameter) {
       return BOOL_NON_NULL_TYPE.asNullable(type.isNullable());
     }
-    
+
     @Override
     public Type visitUnionType(UnionType type, Void unused) {
       return type.map(new TypeMapper() {
@@ -133,12 +139,12 @@ public class Types {
         }
       });
     }
-    
+
     @Override
     public Type visitFunctionType(FunctionType type, Void parameter) {
       return CoreTypeRepository.getCoreTypeRepository().getFunctionType();
     }
-    
+
     @Override
     protected Type visitType(Type type, Void parameter) {
       return type;

@@ -20,7 +20,7 @@ import com.google.dart.compiler.resolver.CompileTimeConstantAnalyzer;
 import com.google.dart.compiler.resolver.Resolver;
 
 public class Toto {
-  public static boolean test2(File sourceFile, String sdkPath) throws IOException {
+  public static boolean test2(File sourceFile, String sdkPath, boolean debug) throws IOException {
     File sdkFile = new File(sdkPath);
 
     CompilerOptions compilerOptions = new CompilerOptions();
@@ -63,8 +63,10 @@ public class Toto {
     String sdkPath = "../../dart-sdk/";
 
     String[] paths = { 
-        "DartTest/Doubles.dart",
+        "DartTest/assign.dart",
         "DartTest/Mandelbrot.dart",
+        "DartTest/Loop.dart",
+        "DartTest/Doubles.dart",
         "DartTest/For3.dart",
         "DartTest/FunctionObject.dart",
         "DartTest/Super.dart",
@@ -91,7 +93,7 @@ public class Toto {
 
     for (String path : paths) {
       File sourceFile = new File(path);
-      test2(sourceFile, sdkPath);
+      test2(sourceFile, sdkPath, true);
     }
   }
 }
